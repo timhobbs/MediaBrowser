@@ -37,6 +37,7 @@ namespace MediaBrowser.Api.Library
     }
 
     [Route("/Videos/{Id}/Subtitles/{Index}", "GET")]
+    [Route("/Videos/{Id}/Subtitles/{Index}/stream.srt", "GET")]
     [Api(Description = "Gets an external subtitle file")]
     public class GetSubtitle
     {
@@ -228,6 +229,14 @@ namespace MediaBrowser.Api.Library
     public class GetMediaFolders : IReturn<ItemsResult>
     {
 
+    }
+
+    [Route("/Library/Series/Updated", "POST")]
+    [Api(Description = "Reports that new episodes of a series have been added by an external source")]
+    public class PostUpdatedSeries : IReturnVoid
+    {
+        [ApiMember(Name = "TvdbId", Description = "Tvdb Id", IsRequired = true, DataType = "string", ParameterType = "path", Verb = "GET")]
+        public string TvdbId { get; set; }
     }
 
     /// <summary>
