@@ -1,6 +1,9 @@
-﻿using MediaBrowser.Controller.Entities;
+﻿using MediaBrowser.Common.Extensions;
+using MediaBrowser.Controller.Configuration;
+using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Notifications;
+using MediaBrowser.Model.Configuration;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Notifications;
 using System;
@@ -15,39 +18,83 @@ namespace MediaBrowser.Server.Implementations.Notifications
     {
         private readonly ILogger _logger;
         private readonly IUserManager _userManager;
-        private INotificationService[] _services;
+        private readonly IServerConfigurationManager _config;
 
-        public NotificationManager(ILogManager logManager, IUserManager userManager)
+        private INotificationService[] _services;
+        private INotificationTypeFactory[] _typeFactories;
+
+        public NotificationManager(ILogManager logManager, IUserManager userManager, IServerConfigurationManager config)
         {
             _userManager = userManager;
+            _config = config;
             _logger = logManager.GetLogger(GetType().Name);
         }
 
         public Task SendNotification(NotificationRequest request, CancellationToken cancellationToken)
         {
-            var users = request.UserIds.Select(i => _userManager.GetUserById(new Guid(i)));
+            var notificationType = request.NotificationType;
 
-            var tasks = _services.Select(i => SendNotification(request, i, users, cancellationToken));
+            var options = string.IsNullOrWhiteSpace(notificationType) ?
+                null :
+                _config.Configuration.NotificationOptions.GetOptions(notificationType);
+
+            var users = GetUserIds(request, options)
+                .Except(request.UserIds)
+                .Select(i => _userManager.GetUserById(new Guid(i)));
+
+            var title = GetTitle(request, options);
+
+            var tasks = _services.Where(i => IsEnabled(i, notificationType))
+                .Select(i => SendNotification(request, i, users, title, cancellationToken));
 
             return Task.WhenAll(tasks);
         }
 
-        public Task SendNotification(NotificationRequest request,
+        private Task SendNotification(NotificationRequest request,
             INotificationService service,
             IEnumerable<User> users,
+            string title,
             CancellationToken cancellationToken)
         {
             users = users.Where(i => IsEnabledForUser(service, i))
                 .ToList();
 
-            var tasks = users.Select(i => SendNotification(request, service, i, cancellationToken));
+            var tasks = users.Select(i => SendNotification(request, service, title, i, cancellationToken));
 
             return Task.WhenAll(tasks);
 
         }
 
-        public async Task SendNotification(NotificationRequest request,
+        private IEnumerable<string> GetUserIds(NotificationRequest request, NotificationOption options)
+        {
+            if (request.SendToUserMode.HasValue)
+            {
+                switch (request.SendToUserMode.Value)
+                {
+                    case SendToUserType.Admins:
+                        return _userManager.Users.Where(i => i.Configuration.IsAdministrator)
+                                .Select(i => i.Id.ToString("N"));
+                    case SendToUserType.All:
+                        return _userManager.Users.Select(i => i.Id.ToString("N"));
+                    case SendToUserType.Custom:
+                        return request.UserIds;
+                    default:
+                        throw new ArgumentException("Unrecognized SendToUserMode: " + request.SendToUserMode.Value);
+                }
+            }
+
+            if (options != null && !string.IsNullOrWhiteSpace(request.NotificationType))
+            {
+                return _userManager.Users.Where(i => _config.Configuration.NotificationOptions.IsEnabledToSendToUser(request.NotificationType, i.Id.ToString("N"), i.Configuration))
+                   .Select(i => i.Id.ToString("N"));
+            }
+
+            return new List<string>();
+        }
+
+        private async Task SendNotification(NotificationRequest request,
             INotificationService service,
+            string title,
             User user,
             CancellationToken cancellationToken)
         {
@@ -56,13 +103,13 @@ namespace MediaBrowser.Server.Implementations.Notifications
                 Date = request.Date,
                 Description = request.Description,
                 Level = request.Level,
-                Name = request.Name,
+                Name = title,
                 Url = request.Url,
                 User = user
             };
 
             _logger.Debug("Sending notification via {0} to user {1}", service.Name, user.Name);
-            
+
             try
             {
                 await service.SendNotification(notification, cancellationToken).ConfigureAwait(false);
@@ -71,6 +118,48 @@ namespace MediaBrowser.Server.Implementations.Notifications
             {
                 _logger.ErrorException("Error sending notification to {0}", ex, service.Name);
             }
+        }
+
+        private string GetTitle(NotificationRequest request, NotificationOption options)
+        {
+            var title = request.Name;
+
+            // If empty, grab from options 
+            if (string.IsNullOrEmpty(title))
+            {
+                if (!string.IsNullOrEmpty(request.NotificationType))
+                {
+                    if (options != null)
+                    {
+                        title = options.Title;
+                    }
+                }
+            }
+
+            // If still empty, grab default
+            if (string.IsNullOrEmpty(title))
+            {
+                if (!string.IsNullOrEmpty(request.NotificationType))
+                {
+                    var info = GetNotificationTypes().FirstOrDefault(i => string.Equals(i.Type, request.NotificationType, StringComparison.OrdinalIgnoreCase));
+
+                    if (info != null)
+                    {
+                        title = info.DefaultTitle;
+                    }
+                }
+            }
+
+            title = title ?? string.Empty;
+
+            foreach (var pair in request.Variables)
+            {
+                var token = "{" + pair.Key + "}";
+
+                title = title.Replace(token, pair.Value, StringComparison.OrdinalIgnoreCase);
+            }
+
+            return title;
         }
 
         private bool IsEnabledForUser(INotificationService service, User user)
@@ -86,9 +175,50 @@ namespace MediaBrowser.Server.Implementations.Notifications
             }
         }
 
-        public void AddParts(IEnumerable<INotificationService> services)
+        private bool IsEnabled(INotificationService service, string notificationType)
+        {
+            return string.IsNullOrEmpty(notificationType) ||
+                _config.Configuration.NotificationOptions.IsServiceEnabled(service.Name, notificationType);
+        }
+
+        public void AddParts(IEnumerable<INotificationService> services, IEnumerable<INotificationTypeFactory> notificationTypeFactories)
         {
             _services = services.ToArray();
+            _typeFactories = notificationTypeFactories.ToArray();
+        }
+
+        public IEnumerable<NotificationTypeInfo> GetNotificationTypes()
+        {
+            var list = _typeFactories.Select(i =>
+            {
+                try
+                {
+                    return i.GetNotificationTypes().ToList();
+                }
+                catch (Exception ex)
+                {
+                    _logger.ErrorException("Error in GetNotificationTypes", ex);
+                    return new List<NotificationTypeInfo>();
+                }
+
+            }).SelectMany(i => i).ToList();
+
+            foreach (var i in list)
+            {
+                i.Enabled = _config.Configuration.NotificationOptions.IsEnabled(i.Type);
+            }
+
+            return list;
+        }
+
+        public IEnumerable<NotificationServiceInfo> GetNotificationServices()
+        {
+            return _services.Select(i => new NotificationServiceInfo
+            {
+                Name = i.Name,
+                Id = i.Name.GetMD5().ToString("N")
+
+            }).OrderBy(i => i.Name);
         }
     }
 }
