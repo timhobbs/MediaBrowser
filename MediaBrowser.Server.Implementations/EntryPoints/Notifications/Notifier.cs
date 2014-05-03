@@ -67,6 +67,22 @@ namespace MediaBrowser.Server.Implementations.EntryPoints.Notifications
             _sessionManager.PlaybackStart += _sessionManager_PlaybackStart;
             _appHost.HasPendingRestartChanged += _appHost_HasPendingRestartChanged;
             _appHost.HasUpdateAvailableChanged += _appHost_HasUpdateAvailableChanged;
+            _appHost.ApplicationUpdated += _appHost_ApplicationUpdated;
+        }
+
+        async void _appHost_ApplicationUpdated(object sender, GenericEventArgs<PackageVersionInfo> e)
+        {
+            var type = NotificationType.ApplicationUpdateInstalled.ToString();
+
+            var notification = new NotificationRequest
+            {
+                NotificationType = type
+            };
+
+            notification.Variables["Version"] = e.Argument.versionStr;
+            notification.Variables["ReleaseNotes"] = e.Argument.description;
+   
+            await SendNotification(notification).ConfigureAwait(false);
         }
 
         async void _installationManager_PluginUpdated(object sender, GenericEventArgs<Tuple<IPlugin, PackageVersionInfo>> e)
@@ -83,6 +99,7 @@ namespace MediaBrowser.Server.Implementations.EntryPoints.Notifications
 
             notification.Variables["Name"] = installationInfo.Name;
             notification.Variables["Version"] = installationInfo.Version.ToString();
+            notification.Variables["ReleaseNotes"] = e.Argument.Item2.description;
 
             await SendNotification(notification).ConfigureAwait(false);
         }
@@ -146,6 +163,13 @@ namespace MediaBrowser.Server.Implementations.EntryPoints.Notifications
             var user = e.Users.FirstOrDefault();
 
             var item = e.MediaInfo;
+
+            if (e.Item !=null && e.Item.Parent == null)
+            {
+                // Don't report theme song or local trailer playback
+                // TODO: This will also cause movie specials to not be reported
+                return;
+            }
 
             var notification = new NotificationRequest
             {
@@ -227,6 +251,7 @@ namespace MediaBrowser.Server.Implementations.EntryPoints.Notifications
                 };
 
                 notification.Variables["Name"] = e.Argument.Name;
+                notification.Variables["ErrorMessage"] = e.Argument.ErrorMessage;
 
                 await SendNotification(notification).ConfigureAwait(false);
             }
@@ -295,6 +320,7 @@ namespace MediaBrowser.Server.Implementations.EntryPoints.Notifications
 
             _appHost.HasPendingRestartChanged -= _appHost_HasPendingRestartChanged;
             _appHost.HasUpdateAvailableChanged -= _appHost_HasUpdateAvailableChanged;
+            _appHost.ApplicationUpdated -= _appHost_ApplicationUpdated;
         }
     }
 }

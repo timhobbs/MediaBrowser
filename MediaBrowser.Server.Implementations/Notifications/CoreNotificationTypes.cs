@@ -27,6 +27,7 @@ namespace MediaBrowser.Server.Implementations.Notifications
                 new NotificationTypeInfo
                 {
                      Type = NotificationType.ApplicationUpdateInstalled.ToString(),
+                     DefaultDescription = "{ReleaseNotes}",
                      DefaultTitle = "A new version of Media Browser Server has been installed.",
                      Variables = new List<string>{"Version"}
                 },
@@ -47,6 +48,14 @@ namespace MediaBrowser.Server.Implementations.Notifications
 
                 new NotificationTypeInfo
                 {
+                     Type = NotificationType.PluginError.ToString(),
+                     DefaultTitle = "{Name} has encountered an error.",
+                     DefaultDescription = "{ErrorMessage}",
+                     Variables = new List<string>{"Name", "ErrorMessage"}
+                },
+
+                new NotificationTypeInfo
+                {
                      Type = NotificationType.PluginUninstalled.ToString(),
                      DefaultTitle = "{Name} was uninstalled.",
                      Variables = new List<string>{"Name", "Version"}
@@ -56,7 +65,8 @@ namespace MediaBrowser.Server.Implementations.Notifications
                 {
                      Type = NotificationType.PluginUpdateInstalled.ToString(),
                      DefaultTitle = "{Name} was updated.",
-                     Variables = new List<string>{"Name", "Version"}
+                     DefaultDescription = "{ReleaseNotes}",
+                     Variables = new List<string>{"Name", "ReleaseNotes", "Version"}
                 },
 
                 new NotificationTypeInfo
@@ -69,7 +79,8 @@ namespace MediaBrowser.Server.Implementations.Notifications
                 {
                      Type = NotificationType.TaskFailed.ToString(),
                      DefaultTitle = "{Name} failed.",
-                     Variables = new List<string>{"Name"}
+                     DefaultDescription = "{ErrorMessage}",
+                     Variables = new List<string>{"Name", "ErrorMessage"}
                 },
 
                 new NotificationTypeInfo
@@ -115,7 +126,11 @@ namespace MediaBrowser.Server.Implementations.Notifications
                 Update(type);
             }
 
-            return knownTypes.OrderBy(i => i.Category).ThenBy(i => i.Name);
+            var systemName = _localization.GetLocalizedString("CategorySystem");
+
+            return knownTypes.OrderByDescending(i => string.Equals(i.Category, systemName, StringComparison.OrdinalIgnoreCase))
+                .ThenBy(i => i.Category)
+                .ThenBy(i => i.Name);
         }
 
         private void Update(NotificationTypeInfo note)
@@ -127,6 +142,10 @@ namespace MediaBrowser.Server.Implementations.Notifications
             if (note.Type.IndexOf("Playback", StringComparison.OrdinalIgnoreCase) != -1)
             {
                 note.Category = _localization.GetLocalizedString("CategoryUser");
+            }
+            else   if (note.Type.IndexOf("Plugin", StringComparison.OrdinalIgnoreCase) != -1)
+            {
+                note.Category = _localization.GetLocalizedString("CategoryPlugin");
             }
             else
             {

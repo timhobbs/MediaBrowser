@@ -602,7 +602,7 @@
         this.timer = setInterval(this.incrementMediaTimeHandler, this.timerStep);
     };
 
-    var castPlayer = new CastPlayer();
+    //var castPlayer = new CastPlayer();
 
     function getCodecLimits() {
 
@@ -1410,44 +1410,6 @@
             castPlayer.setReceiverVolume(false, vol / 100);
         };
 
-        self.sendCommand = function (cmd) {
-
-            // Full list
-            // https://github.com/MediaBrowser/MediaBrowser/blob/master/MediaBrowser.Model/Session/GeneralCommand.cs#L23
-
-            switch (cmd.Name) {
-
-                case 'VolumeUp':
-                    self.volumeUp();
-                    break;
-                case 'VolumeDown':
-                    self.volumeDown();
-                    break;
-                case 'Mute':
-                    self.mute();
-                    break;
-                case 'Unmute':
-                    self.unMute();
-                    break;
-                case 'ToggleMute':
-                    self.toggleMute();
-                    break;
-                case 'SetVolume':
-                    self.setVolume(cmd.Arguments.Volume);
-                    break;
-                case 'SetAudioStreamIndex':
-                    break;
-                case 'SetSubtitleStreamIndex':
-                    break;
-                case 'ToggleFullscreen':
-                    break;
-                default:
-                    // Not player-related
-                    Dashboard.processGeneralCommand(cmd);
-            }
-
-        };
-
         self.getPlayerState = function () {
 
             var deferred = $.Deferred();
@@ -1513,16 +1475,16 @@
         };
     }
 
-    MediaController.registerPlayer(new chromecastPlayer());
+    //MediaController.registerPlayer(new chromecastPlayer());
 
-    $(MediaController).on('playerchange', function () {
+    //$(MediaController).on('playerchange', function () {
 
-        if (MediaController.getPlayerInfo().name == PlayerName) {
+    //    if (MediaController.getPlayerInfo().name == PlayerName) {
 
-            if (castPlayer.deviceState != DEVICE_STATE.ACTIVE && castPlayer.isInitialized) {
-                castPlayer.launchApp();
-            }
-        }
-    });
+    //        if (castPlayer.deviceState != DEVICE_STATE.ACTIVE && castPlayer.isInitialized) {
+    //            castPlayer.launchApp();
+    //        }
+    //    }
+    //});
 
 })(window, window.chrome, console);

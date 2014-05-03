@@ -10,9 +10,13 @@
         IncludeItemTypes: "Movie",
         Recursive: true,
         Fields: "PrimaryImageAspectRatio",
-        StartIndex: 0,
-        CollapseBoxSetItems: true
+        StartIndex: 0
     };
+
+    function getSavedQueryKey() {
+
+        return 'movies' + (query.ParentId || '');
+    }
 
     function reloadItems(page) {
 
@@ -97,7 +101,7 @@
                 reloadItems(page);
             });
 
-            LibraryBrowser.saveQueryValues('movies', query);
+            LibraryBrowser.saveQueryValues(getSavedQueryKey(), query);
 
             Dashboard.hideLoadingMsg();
         });
@@ -204,7 +208,7 @@
                 reloadItems(page);
             }
 
-            LibraryBrowser.saveViewSetting('movies', view);
+            LibraryBrowser.saveViewSetting(getSavedQueryKey(), view);
         });
 
         $('.chkVideoTypeFilter', this).on('change', function () {
@@ -362,6 +366,8 @@
 
     }).on('pagebeforeshow', "#moviesPage", function () {
 
+        query.ParentId = LibraryMenu.getTopParentId();
+
         var page = this;
         var limit = LibraryBrowser.getDefaultPageSize();
 
@@ -371,9 +377,11 @@
             query.StartIndex = 0;
         }
 
-        LibraryBrowser.loadSavedQueryValues('movies', query);
+        var viewkey = getSavedQueryKey();
 
-        LibraryBrowser.getSavedViewSetting('movies').done(function (val) {
+        LibraryBrowser.loadSavedQueryValues(viewkey, query);
+
+        LibraryBrowser.getSavedViewSetting(viewkey).done(function (val) {
 
             if (val) {
                 $('#selectView', page).val(val).selectmenu('refresh').trigger('change');

@@ -58,6 +58,12 @@ namespace MediaBrowser.Model.Configuration
                     Type = NotificationType.PluginInstalled.ToString(),
                     Enabled = true,
                     SendToUserMode = SendToUserType.Admins
+                },
+                new NotificationOption
+                {
+                    Type = NotificationType.PluginError.ToString(),
+                    Enabled = true,
+                    SendToUserMode = SendToUserType.Admins
                 }
             };
         }
@@ -140,6 +146,12 @@ namespace MediaBrowser.Model.Configuration
         public string Title { get; set; }
 
         /// <summary>
+        /// Gets or sets the description.
+        /// </summary>
+        /// <value>The description.</value>
+        public string Description { get; set; }
+        
+        /// <summary>
         /// Gets or sets the disabled services.
         /// </summary>
         /// <value>The disabled services.</value>
@@ -166,6 +178,7 @@ namespace MediaBrowser.Model.Configuration
         AudioPlayback,
         GamePlayback,
         InstallationFailed,
+        PluginError,
         PluginInstalled,
         PluginUpdateInstalled,
         PluginUninstalled,

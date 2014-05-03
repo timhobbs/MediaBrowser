@@ -106,26 +106,24 @@
 
                 var currentSrc = element.currentSrc;
 
+                var transcodingExtension = self.getTranscodingExtension();
+                var isStatic;
+
                 if (currentItem.MediaType == "Video") {
+
                     if (params.AudioStreamIndex != null) {
                         currentSrc = replaceQueryString(currentSrc, 'AudioStreamIndex', params.AudioStreamIndex);
                     }
                     if (params.SubtitleStreamIndex != null) {
                         currentSrc = replaceQueryString(currentSrc, 'SubtitleStreamIndex', (params.SubtitleStreamIndex == -1 ? '' : params.SubtitleStreamIndex));
                     }
-                }
 
-                var maxWidth = params.MaxWidth || getParameterByName('MaxWidth', currentSrc);
-                var audioStreamIndex = params.AudioStreamIndex == null ? getParameterByName('AudioStreamIndex', currentSrc) : params.AudioStreamIndex;
-                var subtitleStreamIndex = params.SubtitleStreamIndex == null ? getParameterByName('SubtitleStreamIndex', currentSrc) : params.SubtitleStreamIndex;
-                var videoBitrate = parseInt(getParameterByName('VideoBitrate', currentSrc) || '0');
-                var audioBitrate = parseInt(getParameterByName('AudioBitrate', currentSrc) || '0');
-                var bitrate = params.Bitrate || (videoBitrate + audioBitrate);
-
-                var transcodingExtension = self.getTranscodingExtension();
-
-                var isStatic;
-                if (currentItem.MediaType == "Video") {
+                    var maxWidth = params.MaxWidth || getParameterByName('MaxWidth', currentSrc);
+                    var audioStreamIndex = params.AudioStreamIndex == null ? getParameterByName('AudioStreamIndex', currentSrc) : params.AudioStreamIndex;
+                    var subtitleStreamIndex = params.SubtitleStreamIndex == null ? getParameterByName('SubtitleStreamIndex', currentSrc) : params.SubtitleStreamIndex;
+                    var videoBitrate = parseInt(getParameterByName('VideoBitrate', currentSrc) || '0');
+                    var audioBitrate = parseInt(getParameterByName('AudioBitrate', currentSrc) || '0');
+                    var bitrate = params.Bitrate || (videoBitrate + audioBitrate);
 
                     var finalParams = self.getFinalVideoParams(currentMediaSource, maxWidth, bitrate, audioStreamIndex, subtitleStreamIndex, transcodingExtension);
 
@@ -645,49 +643,6 @@
             });
         };
 
-        self.sendCommand = function (cmd) {
-
-            // Full list
-            // https://github.com/MediaBrowser/MediaBrowser/blob/master/MediaBrowser.Model/Session/GeneralCommand.cs#L23
-
-            switch (cmd.Name) {
-
-                case 'VolumeUp':
-                    self.volumeUp();
-                    break;
-                case 'VolumeDown':
-                    self.volumeDown();
-                    break;
-                case 'Mute':
-                    self.mute();
-                    break;
-                case 'Unmute':
-                    self.unMute();
-                    break;
-                case 'ToggleMute':
-                    self.toggleMute();
-                    break;
-                case 'SetVolume':
-                    self.setVolume(cmd.Arguments.Volume);
-                    break;
-                case 'SetAudioStreamIndex':
-                    break;
-                case 'SetSubtitleStreamIndex':
-                    break;
-                case 'ToggleFullscreen':
-
-                    if (currentItem && currentItem.MediaType == 'Video') {
-                        self.toggleFullscreen();
-                    }
-
-                    break;
-                default:
-                    // Not player-related
-                    Dashboard.processGeneralCommand(cmd);
-            }
-
-        };
-
         self.pause = function () {
 
             currentMediaElement.pause();
@@ -716,6 +671,8 @@
 
             if (currentMediaElement) {
 
+                console.log('MediaPlayer toggling mute');
+
                 if (currentMediaElement.volume) {
                     self.mute();
                 } else {
@@ -743,6 +700,7 @@
 
             if (currentMediaElement) {
 
+                console.log('MediaPlayer setting volume to ' + val);
                 currentMediaElement.volume = val / 100;
 
                 self.onVolumeChanged(currentMediaElement);
@@ -1187,7 +1145,9 @@
                 IsPaused: currentMediaElement.paused,
                 IsMuted: currentMediaElement.volume == 0,
                 VolumeLevel: currentMediaElement.volume * 100,
-                PositionTicks: self.getCurrentTicks()
+                PositionTicks: self.getCurrentTicks(),
+
+                CanSeek: currentMediaSource.RunTimeTicks && currentMediaSource.RunTimeTicks > 0
             });
         }
 
@@ -1197,7 +1157,7 @@
                 clearTimeout(currentProgressInterval);
                 currentProgressInterval = null;
             }
-        };
+        }
 
         function canPlayWebm() {
 

@@ -264,7 +264,7 @@ namespace MediaBrowser.Server.Implementations.Session
         /// <param name="libraryItem">The library item.</param>
         private void UpdateNowPlayingItem(SessionInfo session, PlaybackProgressInfo info, BaseItem libraryItem)
         {
-            var runtimeTicks = libraryItem.RunTimeTicks;
+            var runtimeTicks = libraryItem == null ? null : libraryItem.RunTimeTicks;
 
             if (string.IsNullOrWhiteSpace(info.MediaSourceId))
             {
@@ -277,7 +277,7 @@ namespace MediaBrowser.Server.Implementations.Session
                 runtimeTicks = _libraryManager.GetItemById(new Guid(info.MediaSourceId)).RunTimeTicks;
             }
 
-            if (!string.IsNullOrWhiteSpace(info.ItemId))
+            if (!string.IsNullOrWhiteSpace(info.ItemId) && libraryItem != null)
             {
                 info.Item = GetItemInfo(libraryItem, runtimeTicks);
             }
@@ -855,7 +855,6 @@ namespace MediaBrowser.Server.Implementations.Session
                 Name = GeneralCommandType.DisplayContent.ToString()
             };
 
-            generalCommand.Arguments["Context"] = command.Context;
             generalCommand.Arguments["ItemId"] = command.ItemId;
             generalCommand.Arguments["ItemName"] = command.ItemName;
             generalCommand.Arguments["ItemType"] = command.ItemType;
@@ -1139,7 +1138,6 @@ namespace MediaBrowser.Server.Implementations.Session
                 SupportsRemoteControl = session.SupportsRemoteControl,
                 IsPaused = session.PlayState.IsPaused,
                 IsMuted = session.PlayState.IsMuted,
-                NowViewingContext = session.NowViewingContext,
                 NowViewingItem = session.NowViewingItem,
                 ApplicationVersion = session.ApplicationVersion,
                 CanSeek = session.PlayState.CanSeek,
@@ -1345,21 +1343,20 @@ namespace MediaBrowser.Server.Implementations.Session
             return _dtoService.GetDtoId(item);
         }
 
-        public void ReportNowViewingItem(string sessionId, string itemId, string context)
+        public void ReportNowViewingItem(string sessionId, string itemId)
         {
             var item = _libraryManager.GetItemById(new Guid(itemId));
 
             var info = GetItemInfo(item, item.RunTimeTicks);
 
-            ReportNowViewingItem(sessionId, info, context);
+            ReportNowViewingItem(sessionId, info);
         }
 
-        public void ReportNowViewingItem(string sessionId, BaseItemInfo item, string context)
+        public void ReportNowViewingItem(string sessionId, BaseItemInfo item)
         {
             var session = GetSession(sessionId);
 
             session.NowViewingItem = item;
-            session.NowViewingContext = context;
         }
     }
 }
