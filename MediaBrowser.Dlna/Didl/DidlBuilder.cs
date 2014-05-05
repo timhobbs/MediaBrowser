@@ -1,4 +1,5 @@
-﻿using MediaBrowser.Common.Net;
+﻿using System.Collections.Generic;
+using MediaBrowser.Common.Net;
 using MediaBrowser.Controller.Drawing;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
@@ -413,10 +414,14 @@ namespace MediaBrowser.Dlna.Didl
                     {
                         classType = "object.container.album.musicAlbum";
                     }
-                    if (item is MusicArtist)
+                    else if (item is MusicArtist)
                     {
                         classType = "object.container.person.musicArtist";
                     }
+                    else if (item is Series || item is Season || item is BoxSet)
+                    {
+                        classType = "object.container.album.videoAlbum";
+                    }                  
                 }
 
                 objectClass.InnerText = classType ?? "object.container.storageFolder";
@@ -434,7 +439,7 @@ namespace MediaBrowser.Dlna.Didl
                 if (!_profile.RequiresPlainVideoItems && item is Movie)
                 {
                     objectClass.InnerText = "object.item.videoItem.movie";
-                }
+                }                
                 else
                 {
                     objectClass.InnerText = "object.item.videoItem";
@@ -672,21 +677,28 @@ namespace MediaBrowser.Dlna.Didl
 
         private ImageUrlInfo GetImageUrl(ImageDownloadInfo info, int? maxWidth, int? maxHeight)
         {
-            var url = string.Format("{0}/Items/{1}/Images/{2}?tag={3}&format=jpg",
+            var url = string.Format("{0}/Items/{1}/Images/{2}?params=",
                 _serverAddress,
                 info.ItemId,
-                info.Type,
-                info.ImageTag);
+                info.Type);
+
+            var options = new List<string>
+            {
+                info.ImageTag,
+                "jpg"
+            };
 
             if (maxWidth.HasValue)
             {
-                url += "&maxWidth=" + maxWidth.Value.ToString(_usCulture);
+                options.Add(maxWidth.Value.ToString(_usCulture));
             }
 
             if (maxHeight.HasValue)
             {
-                url += "&maxHeight=" + maxHeight.Value.ToString(_usCulture);
+                options.Add(maxHeight.Value.ToString(_usCulture));
             }
+
+            url += string.Join(";", options.ToArray());
 
             var width = info.Width;
             var height = info.Height;

@@ -1,8 +1,6 @@
-﻿using System;
+﻿using MediaBrowser.Model.MediaInfo;
 using System.Collections.Generic;
 using System.Linq;
-using MediaBrowser.Model.Entities;
-using MediaBrowser.Model.MediaInfo;
 
 namespace MediaBrowser.Model.Dlna
 {
@@ -138,8 +136,8 @@ namespace MediaBrowser.Model.Dlna
                 //flagValue = flagValue | DlnaFlags.DLNA_ORG_FLAG_TIME_BASED_SEEK;
             }
 
-            var dlnaflags = string.Format(";DLNA.ORG_FLAGS={0}000000000000000000000000",
-             Enum.Format(typeof(DlnaFlags), flagValue, "x"));
+            var dlnaflags = string.Format(";DLNA.ORG_FLAGS={0}",
+             FlagsToString(flagValue));
 
             var mediaProfile = _profile.GetVideoMediaProfile(container,
                 audioCodec,

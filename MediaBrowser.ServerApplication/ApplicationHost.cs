@@ -507,7 +507,7 @@ namespace MediaBrowser.ServerApplication
                 MediaEncoder);
             RegisterSingleInstance(EncodingManager);
 
-            ChannelManager = new ChannelManager(UserManager, DtoService, LibraryManager, Logger, ServerConfigurationManager, FileSystemManager);
+            ChannelManager = new ChannelManager(UserManager, DtoService, LibraryManager, Logger, ServerConfigurationManager, FileSystemManager, UserDataManager, JsonSerializer);
             RegisterSingleInstance(ChannelManager);
 
             var appThemeManager = new AppThemeManager(ApplicationPaths, FileSystemManager, JsonSerializer, Logger);
@@ -712,7 +712,7 @@ namespace MediaBrowser.ServerApplication
 
             SessionManager.AddParts(GetExports<ISessionControllerFactory>());
 
-            ChannelManager.AddParts(GetExports<IChannel>());
+            ChannelManager.AddParts(GetExports<IChannel>(), GetExports<IChannelFactory>());
 
             NotificationManager.AddParts(GetExports<INotificationService>(), GetExports<INotificationTypeFactory>());
         }

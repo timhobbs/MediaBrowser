@@ -2,13 +2,29 @@
 
     $(document).on('pagebeforeshow', "#indexPage", function () {
 
-        var parentId = LibraryMenu.getTopParentId();
-
         var screenWidth = $(window).width();
 
         var page = this;
 
         var options = {
+
+            SortBy: "SortName",
+            Fields: "PrimaryImageAspectRatio"
+        };
+
+        ApiClient.getItems(Dashboard.getCurrentUserId(), options).done(function (result) {
+
+            $('.myLibrary', page).html(LibraryBrowser.getPosterViewHtml({
+                items: result.Items,
+                shape: 'backdrop',
+                showTitle: true,
+                centerText: true
+
+            })).createPosterItemMenus();
+
+        });
+
+        options = {
 
             SortBy: "DatePlayed",
             SortOrder: "Descending",
@@ -18,8 +34,7 @@
             Recursive: true,
             Fields: "PrimaryImageAspectRatio",
             CollapseBoxSetItems: false,
-            ExcludeLocationTypes: "Virtual",
-            ParentId: parentId
+            ExcludeLocationTypes: "Virtual"
         };
 
         ApiClient.getItems(Dashboard.getCurrentUserId(), options).done(function (result) {
@@ -45,19 +60,18 @@
 
             SortBy: "DateCreated",
             SortOrder: "Descending",
-            Limit: screenWidth >= 1920 ? 24 : (screenWidth >= 1440 ? 24 : (screenWidth >= 800 ? 18 : 12)),
+            Limit: screenWidth >= 1920 ? 10 : (screenWidth >= 1440 ? 8 : (screenWidth >= 800 ? 8 : 8)),
             Recursive: true,
             Fields: "PrimaryImageAspectRatio",
             Filters: "IsUnplayed,IsNotFolder",
             CollapseBoxSetItems: false,
-            ExcludeLocationTypes: "Virtual,Remote",
-            ParentId: parentId
+            ExcludeLocationTypes: "Virtual,Remote"
         };
 
         ApiClient.getItems(Dashboard.getCurrentUserId(), options).done(function (result) {
 
             $('#recentlyAddedItems', page).html(LibraryBrowser.getPosterViewHtml({
-                
+
                 items: result.Items,
                 preferThumb: true,
                 shape: 'backdrop',

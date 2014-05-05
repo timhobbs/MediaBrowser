@@ -17,16 +17,10 @@ namespace MediaBrowser.Controller.Channels
         string Name { get; }
 
         /// <summary>
-        /// Gets the home page URL.
+        /// Gets the channel information.
         /// </summary>
-        /// <value>The home page URL.</value>
-        string HomePageUrl { get; }
-
-        /// <summary>
-        /// Gets the capabilities.
-        /// </summary>
-        /// <returns>ChannelCapabilities.</returns>
-        ChannelCapabilities GetCapabilities();
+        /// <returns>ChannelInfo.</returns>
+        ChannelInfo GetChannelInfo();
 
         /// <summary>
         /// Determines whether [is enabled for] [the specified user].
@@ -67,9 +61,9 @@ namespace MediaBrowser.Controller.Channels
         IEnumerable<ImageType> GetSupportedChannelImages();
     }
 
-    public class ChannelCapabilities
+    public interface IChannelFactory
     {
-        public bool CanSearch { get; set; }
+        IEnumerable<IChannel> GetChannels();
     }
 
     public class ChannelSearchInfo
