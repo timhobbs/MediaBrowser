@@ -52,10 +52,11 @@
         var currentPlayer;
         var currentTargetInfo;
         var players = [];
-        var isPaused = true;
-        var keyEvent = "keydown";
-        var keyOther = "keypress keyup";
+        
         var keys = new bindKeys(self);
+
+        $(window).on("keydown", keys.keyBinding);
+        $(window).on("keypress keyup", keys.keyPrevent);
 
         self.registerPlayer = function (player) {
 
@@ -165,9 +166,6 @@
             }
 
             currentPlayer.play(options);
-
-            $(window).on(keyEvent, keys.keyBinding);
-            $(window).on(keyOther, keys.keyPrevent);
         };
 
         self.shuffle = function (id) {
@@ -252,9 +250,6 @@
 
         self.stop = function () {
             currentPlayer.stop();
-
-            $(window).off(keyEvent, keys.keyBinding);
-            $(window).off(keyOther, keys.keyPrevent);
         };
 
         self.unpause = function () {
@@ -584,6 +579,7 @@
     function bindKeys(controller) {
 
         var self = this;
+        var keyResult = {};
 
         var position = 0;
         var newPosition = 0;
@@ -591,7 +587,7 @@
         var tooltip;
         var slideVol = null;
 
-        self.keyBinding = function (e) {
+        self.keyBinding = function(e) {
 
             if (bypass()) return;
 
@@ -601,20 +597,19 @@
                 e.preventDefault();
                 keyResult[e.keyCode](e);
             }
-        }
+        };
 
-        self.keyPrevent = function (e) {
+        self.keyPrevent = function(e) {
 
             if (bypass()) return;
 
-            var codes = [ 32, 38, 40, 37, 39, 81, 77, 65, 84, 83, 70 ];
+            var codes = [32, 38, 40, 37, 39, 81, 77, 65, 84, 83, 70];
 
             if (codes.indexOf(e.keyCode) != -1) {
                 e.preventDefault();
             }
-        }
+        };
 
-        var keyResult = {};
         keyResult[32] = function () { // spacebar
 
             controller.getPlayerState().then(function (result) {
@@ -653,7 +648,7 @@
 
         keyResult[81] = function(e) { // q
             var supported = checkSupport("GoToSettings");
-            
+
             if (!supported) return;
 
             var player = getPlayer();
@@ -661,19 +656,19 @@
             try {
                 player.showQualityFlyout();
             } catch (err) {}
-        }
+        };
 
         keyResult[77] = function(e) { // m
             var supported = checkSupport("Mute") && checkSupport("Unmute");
-            
+
             if (!supported) return;
 
             toggleMute();
-        }
+        };
 
         keyResult[65] = function(e) { // a
             var supported = checkSupport("SetAudioStreamIndex");
-            
+
             if (!supported) return;
 
             var player = getPlayer();
@@ -681,11 +676,11 @@
             try {
                 player.showAudioTracksFlyout();
             } catch (err) {}
-        }
+        };
 
         keyResult[84] = function(e) { // t
             var supported = checkSupport("SetSubtitleStreamIndex");
-            
+
             if (!supported) return;
 
             var player = getPlayer();
@@ -693,11 +688,11 @@
             try {
                 player.showSubtitleMenu();
             } catch (err) {}
-        }
+        };
 
         keyResult[83] = function(e) { // s
             var supported = checkSupport("DisplayContent");
-            
+
             if (!supported) return;
 
             var player = getPlayer();
@@ -705,11 +700,11 @@
             try {
                 player.showChaptersFlyout();
             } catch (err) {}
-        }
+        };
 
         keyResult[70] = function(e) { // f
             var supported = checkSupport("ToggleFullscreen");
-            
+
             if (!supported) return;
 
             var player = getPlayer();
@@ -717,14 +712,14 @@
             try {
                 player.toggleFullscreen();
             } catch (err) {}
-        }
+        };
 
-        var bypass = function () {
+        var bypass = function() {
             // Get active elem to see what type it is
             var active = document.activeElement;
             var type = active.type || active.tagName.toLowerCase();
             return (type === "text" || type === "select" || type === "textarea");
-        } 
+        };
 
         function getPlayer() {
             var player;
@@ -817,7 +812,7 @@
         }
     }
 
-    $(document).on('headercreated', function () {
+    $(document).on('headercreated', '.libraryPage', function () {
 
         $('.btnCast').on('click', function () {
 

@@ -8,29 +8,11 @@
 
         var options = {
 
-            SortBy: "SortName",
-            Fields: "PrimaryImageAspectRatio"
-        };
-
-        ApiClient.getItems(Dashboard.getCurrentUserId(), options).done(function (result) {
-
-            $('.myLibrary', page).html(LibraryBrowser.getPosterViewHtml({
-                items: result.Items,
-                shape: 'backdrop',
-                showTitle: true,
-                centerText: true
-
-            })).createPosterItemMenus();
-
-        });
-
-        options = {
-
             SortBy: "DatePlayed",
             SortOrder: "Descending",
             MediaTypes: "Video",
             Filters: "IsResumable",
-            Limit: screenWidth >= 1920 ? 4 : (screenWidth >= 1440 ? 4 : 3),
+            Limit: screenWidth >= 1920 ? 5 : (screenWidth >= 1440 ? 4 : 3),
             Recursive: true,
             Fields: "PrimaryImageAspectRatio",
             CollapseBoxSetItems: false,
@@ -50,7 +32,8 @@
                 preferBackdrop: true,
                 shape: 'backdrop',
                 overlayText: true,
-                showTitle: true
+                showTitle: true,
+                showParentTitle: true
 
             })).createPosterItemMenus();
 
@@ -60,7 +43,7 @@
 
             SortBy: "DateCreated",
             SortOrder: "Descending",
-            Limit: screenWidth >= 1920 ? 10 : (screenWidth >= 1440 ? 8 : (screenWidth >= 800 ? 8 : 8)),
+            Limit: screenWidth >= 1920 ? 20 : (screenWidth >= 1440 ? 16 : (screenWidth >= 800 ? 12 : 8)),
             Recursive: true,
             Fields: "PrimaryImageAspectRatio",
             Filters: "IsUnplayed,IsNotFolder",
