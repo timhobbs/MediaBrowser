@@ -144,6 +144,14 @@
             }
         };
 
+        self.setAudioStreamIndex = function (index) {
+            self.changeStream(self.getCurrentTicks(), { AudioStreamIndex: index });
+        };
+
+        self.setSubtitleStreamIndex = function (index) {
+            self.changeStream(self.getCurrentTicks(), { SubtitleStreamIndex: index });
+        };
+
         $(document).on('webkitfullscreenchange mozfullscreenchange fullscreenchange', function (e) {
 
             var videoControls = $('#videoControls');
@@ -206,7 +214,7 @@
                 if (!$(this).hasClass('selectedMediaFlyoutOption')) {
                     var index = parseInt(this.getAttribute('data-index'));
 
-                    self.changeStream(self.getCurrentTicks(), { AudioStreamIndex: index });
+                    self.setAudioStreamIndex(index);
                 }
 
                 hideFlyout($('#video-audioTracksFlyout'));
@@ -217,7 +225,7 @@
                 if (!$(this).hasClass('selectedMediaFlyoutOption')) {
                     var index = parseInt(this.getAttribute('data-index'));
 
-                    self.changeStream(self.getCurrentTicks(), { SubtitleStreamIndex: index });
+                    self.setSubtitleStreamIndex(index);
                 }
 
                 hideFlyout($('#video-subtitleFlyout'));

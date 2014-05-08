@@ -29,6 +29,7 @@ using MediaBrowser.Controller.Persistence;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Controller.Resolvers;
+using MediaBrowser.Controller.Security;
 using MediaBrowser.Controller.Session;
 using MediaBrowser.Controller.Sorting;
 using MediaBrowser.Controller.Subtitles;
@@ -61,6 +62,7 @@ using MediaBrowser.Server.Implementations.Localization;
 using MediaBrowser.Server.Implementations.MediaEncoder;
 using MediaBrowser.Server.Implementations.Notifications;
 using MediaBrowser.Server.Implementations.Persistence;
+using MediaBrowser.Server.Implementations.Security;
 using MediaBrowser.Server.Implementations.ServerManager;
 using MediaBrowser.Server.Implementations.Session;
 using MediaBrowser.Server.Implementations.Themes;
@@ -494,7 +496,7 @@ namespace MediaBrowser.ServerApplication
             DtoService = new DtoService(Logger, LibraryManager, UserManager, UserDataManager, ItemRepository, ImageProcessor, ServerConfigurationManager, FileSystemManager, ProviderManager);
             RegisterSingleInstance(DtoService);
 
-            SessionManager = new SessionManager(UserDataManager, ServerConfigurationManager, Logger, UserRepository, LibraryManager, UserManager, musicManager, DtoService, ImageProcessor);
+            SessionManager = new SessionManager(UserDataManager, ServerConfigurationManager, Logger, UserRepository, LibraryManager, UserManager, musicManager, DtoService, ImageProcessor, ItemRepository);
             RegisterSingleInstance(SessionManager);
 
             var newsService = new Server.Implementations.News.NewsService(ApplicationPaths, JsonSerializer);
@@ -532,6 +534,8 @@ namespace MediaBrowser.ServerApplication
 
             NotificationManager = new NotificationManager(LogManager, UserManager, ServerConfigurationManager);
             RegisterSingleInstance(NotificationManager);
+
+            RegisterSingleInstance<IEncryptionManager>(new EncryptionManager());
 
             SubtitleManager = new SubtitleManager(LogManager.GetLogger("SubtitleManager"), FileSystemManager, LibraryMonitor);
             RegisterSingleInstance(SubtitleManager);

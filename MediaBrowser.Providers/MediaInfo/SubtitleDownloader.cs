@@ -24,9 +24,10 @@ namespace MediaBrowser.Providers.MediaInfo
         }
 
         public async Task<List<string>> DownloadSubtitles(Video video,
-            List<MediaStream> internalSubtitleStreams,
+            List<MediaStream> internalMediaStreams,
             List<MediaStream> externalSubtitleStreams,
-            bool forceExternal,
+            bool skipIfGraphicalSubtitlesPresent,
+            bool skipIfAudioTrackMatches,
             IEnumerable<string> languages,
             CancellationToken cancellationToken)
         {
@@ -58,7 +59,7 @@ namespace MediaBrowser.Providers.MediaInfo
             {
                 try
                 {
-                    var downloaded = await DownloadSubtitles(video, internalSubtitleStreams, externalSubtitleStreams, forceExternal, lang, mediaType, cancellationToken)
+                    var downloaded = await DownloadSubtitles(video, internalMediaStreams, externalSubtitleStreams, skipIfGraphicalSubtitlesPresent, skipIfAudioTrackMatches, lang, mediaType, cancellationToken)
                         .ConfigureAwait(false);
 
                     if (downloaded)
@@ -76,9 +77,10 @@ namespace MediaBrowser.Providers.MediaInfo
         }
 
         private async Task<bool> DownloadSubtitles(Video video,
-            IEnumerable<MediaStream> internalSubtitleStreams,
+            List<MediaStream> internalMediaStreams,
             IEnumerable<MediaStream> externalSubtitleStreams,
-            bool forceExternal,
+            bool skipIfGraphicalSubtitlesPresent,
+            bool skipIfAudioTrackMatches,
             string language,
             SubtitleMediaType mediaType,
             CancellationToken cancellationToken)
@@ -89,8 +91,16 @@ namespace MediaBrowser.Providers.MediaInfo
                 return false;
             }
 
+            // There's already a default audio stream for this language
+            if (skipIfAudioTrackMatches &&
+                internalMediaStreams.Any(i => i.Type == MediaStreamType.Audio && i.IsDefault && string.Equals(i.Language, language, StringComparison.OrdinalIgnoreCase)))
+            {
+                return false;
+            }
+
             // There's an internal subtitle stream for this language
-            if (!forceExternal && internalSubtitleStreams.Any(i => string.Equals(i.Language, language, StringComparison.OrdinalIgnoreCase)))
+            if (skipIfGraphicalSubtitlesPresent &&
+                internalMediaStreams.Any(i => i.Type == MediaStreamType.Subtitle && string.Equals(i.Language, language, StringComparison.OrdinalIgnoreCase)))
             {
                 return false;
             }
