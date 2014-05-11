@@ -74,7 +74,6 @@
             $("#videoControls").removeClass("inactive");
             $("video").remove();
             $("html").css("cursor", "default");
-            $(".ui-loader").hide();
         };
 
         self.exitFullScreen = function () {
@@ -832,7 +831,6 @@
             //======================================================================================>
 
             // Show loading animation
-            $(".ui-loader").show();
             $("html").css("cursor", "wait");
 
             // Create video player
@@ -976,7 +974,6 @@
                 self.clearPauseStop();
 
                 $("html").css("cursor", "default");
-                $(".ui-loader").hide();
                 self.resetEnhancements();
 
                 var errorCode = this.error ? this.error.code : '';
@@ -1019,7 +1016,6 @@
 
             }).on("canplay", function () {
 
-                $(".ui-loader").hide();
                 $("html").css("cursor", "default");
 
             }).on("ended.playbackstopped", function () {

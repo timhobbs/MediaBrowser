@@ -1,4 +1,5 @@
-﻿using MediaBrowser.Common.Events;
+﻿using System.Globalization;
+using MediaBrowser.Common.Events;
 using MediaBrowser.Common.Extensions;
 using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Drawing;
@@ -281,7 +282,18 @@ namespace MediaBrowser.Server.Implementations.Session
 
             if (!string.IsNullOrWhiteSpace(info.ItemId) && libraryItem != null)
             {
-                info.Item = GetItemInfo(libraryItem, runtimeTicks, libraryItem, info.MediaSourceId);
+                var current = session.NowPlayingItem;
+
+                if (current == null || !string.Equals(current.Id, info.ItemId, StringComparison.OrdinalIgnoreCase))
+                {
+                    info.Item = GetItemInfo(libraryItem, libraryItem, info.MediaSourceId);
+                }
+                else
+                {
+                    info.Item = current;
+                }
+
+                info.Item.RunTimeTicks = runtimeTicks;
             }
 
             session.NowPlayingItem = info.Item;
@@ -712,12 +724,20 @@ namespace MediaBrowser.Server.Implementations.Session
 
         public Task SendMessageCommand(string controllingSessionId, string sessionId, MessageCommand command, CancellationToken cancellationToken)
         {
-            var session = GetSessionForRemoteControl(sessionId);
+            var generalCommand = new GeneralCommand
+            {
+                Name = GeneralCommandType.DisplayMessage.ToString()
+            };
 
-            var controllingSession = GetSession(controllingSessionId);
-            AssertCanControl(session, controllingSession);
+            generalCommand.Arguments["Header"] = command.Header;
+            generalCommand.Arguments["Text"] = command.Text;
 
-            return session.SessionController.SendMessageCommand(command, cancellationToken);
+            if (command.TimeoutMs.HasValue)
+            {
+                generalCommand.Arguments["TimeoutMs"] = command.TimeoutMs.Value.ToString(CultureInfo.InvariantCulture);
+            }
+
+            return SendGeneralCommand(controllingSessionId, sessionId, generalCommand, cancellationToken);
         }
 
         public Task SendGeneralCommand(string controllingSessionId, string sessionId, GeneralCommand command, CancellationToken cancellationToken)
@@ -1173,12 +1193,11 @@ namespace MediaBrowser.Server.Implementations.Session
         /// Converts a BaseItem to a BaseItemInfo
         /// </summary>
         /// <param name="item">The item.</param>
-        /// <param name="runtimeTicks">The now playing runtime ticks.</param>
         /// <param name="chapterOwner">The chapter owner.</param>
         /// <param name="mediaSourceId">The media source identifier.</param>
         /// <returns>BaseItemInfo.</returns>
         /// <exception cref="System.ArgumentNullException">item</exception>
-        private BaseItemInfo GetItemInfo(BaseItem item, long? runtimeTicks, BaseItem chapterOwner, string mediaSourceId)
+        private BaseItemInfo GetItemInfo(BaseItem item, BaseItem chapterOwner, string mediaSourceId)
         {
             if (item == null)
             {
@@ -1191,7 +1210,7 @@ namespace MediaBrowser.Server.Implementations.Session
                 Name = item.Name,
                 MediaType = item.MediaType,
                 Type = item.GetClientTypeName(),
-                RunTimeTicks = runtimeTicks,
+                RunTimeTicks = item.RunTimeTicks,
                 IndexNumber = item.IndexNumber,
                 ParentIndexNumber = item.ParentIndexNumber,
                 PremiereDate = item.PremiereDate,
@@ -1199,7 +1218,7 @@ namespace MediaBrowser.Server.Implementations.Session
             };
 
             info.PrimaryImageTag = GetImageCacheTag(item, ImageType.Primary);
-            if (info.PrimaryImageTag.HasValue)
+            if (info.PrimaryImageTag != null)
             {
                 info.PrimaryImageItemId = GetDtoId(item);
             }
@@ -1237,14 +1256,14 @@ namespace MediaBrowser.Server.Implementations.Session
                 info.Album = audio.Album;
                 info.Artists = audio.Artists;
 
-                if (!info.PrimaryImageTag.HasValue)
+                if (info.PrimaryImageTag == null)
                 {
                     var album = audio.Parents.OfType<MusicAlbum>().FirstOrDefault();
 
                     if (album != null && album.HasImage(ImageType.Primary))
                     {
                         info.PrimaryImageTag = GetImageCacheTag(album, ImageType.Primary);
-                        if (info.PrimaryImageTag.HasValue)
+                        if (info.PrimaryImageTag != null)
                         {
                             info.PrimaryImageItemId = GetDtoId(album);
                         }
@@ -1345,7 +1364,7 @@ namespace MediaBrowser.Server.Implementations.Session
             return info;
         }
 
-        private Guid? GetImageCacheTag(BaseItem item, ImageType type)
+        private string GetImageCacheTag(BaseItem item, ImageType type)
         {
             try
             {
@@ -1367,7 +1386,7 @@ namespace MediaBrowser.Server.Implementations.Session
         {
             var item = _libraryManager.GetItemById(new Guid(itemId));
 
-            var info = GetItemInfo(item, item.RunTimeTicks, null, null);
+            var info = GetItemInfo(item, null, null);
 
             ReportNowViewingItem(sessionId, info);
         }

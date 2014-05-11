@@ -91,16 +91,25 @@ namespace MediaBrowser.Providers.MediaInfo
                 return false;
             }
 
+            var audioStreams = internalMediaStreams.Where(i => i.Type == MediaStreamType.Audio).ToList();
+            var defaultAudioStreams = audioStreams.Where(i => i.IsDefault).ToList();
+
+            // If none are marked as default, just take a guess
+            if (defaultAudioStreams.Count == 0)
+            {
+                defaultAudioStreams = audioStreams.Take(1).ToList();
+            }
+
             // There's already a default audio stream for this language
             if (skipIfAudioTrackMatches &&
-                internalMediaStreams.Any(i => i.Type == MediaStreamType.Audio && i.IsDefault && string.Equals(i.Language, language, StringComparison.OrdinalIgnoreCase)))
+                defaultAudioStreams.Any(i => string.Equals(i.Language, language, StringComparison.OrdinalIgnoreCase)))
             {
                 return false;
             }
 
             // There's an internal subtitle stream for this language
             if (skipIfGraphicalSubtitlesPresent &&
-                internalMediaStreams.Any(i => i.Type == MediaStreamType.Subtitle && string.Equals(i.Language, language, StringComparison.OrdinalIgnoreCase)))
+                internalMediaStreams.Any(i => i.Type == MediaStreamType.Subtitle && i.IsGraphicalSubtitleStream && string.Equals(i.Language, language, StringComparison.OrdinalIgnoreCase)))
             {
                 return false;
             }

@@ -4,7 +4,7 @@
     var lastPlayerState;
     var isPositionSliderActive;
 
-    function showAudioMenu(page, item) {
+    function showAudioMenu(page, item, currentIndex) {
 
         var streams = (item.MediaStreams || []).filter(function (i) {
 
@@ -13,11 +13,17 @@
 
         var elem = $('#popupAudioTrackMenu', page);
 
-        var html = '<li data-role="list-divider">Select Audio</li>';
+        var html = '<ul data-role="listview" data-inset="true" style="min-width: 210px;"><li data-role="list-divider">Select Audio</li>';
 
         html += streams.map(function (s) {
 
-            var streamHtml = '<li><a data-index="' + s.Index + '" href="#" style="font-size:13px;" class="lnkTrackOption">';
+            var streamHtml = '<li><a data-index="' + s.Index + '" href="#" class="lnkTrackOption">';
+
+            streamHtml += '<h3>';
+            
+            if (s.Index == currentIndex) {
+                streamHtml += '<img src="css/images/checkmarkgreen.png" style="width:18px;border-radius:3px;margin-right:.5em;vertical-align:top;" />';
+            }
 
             streamHtml += (s.Codec || '').toUpperCase();
 
@@ -25,7 +31,7 @@
                 streamHtml += ' ' + s.Profile;
             }
 
-            streamHtml += '<br/>';
+            streamHtml += '</h3><p>';
 
             var extras = [];
 
@@ -45,19 +51,23 @@
 
             streamHtml += extras.join(' - ');
 
-            streamHtml += '</a></li>';
+            streamHtml += '</p></a></li>';
 
             return streamHtml;
 
         }).join('');
 
-        $('ul', elem).html(html).listview('refresh').trigger('create');
+        html += '</ul>';
+
+        $('.trackList', elem).html(html).trigger('create');
 
         elem.popup('open');
     }
 
-    function showSubtitleMenu(page, item) {
+    function showSubtitleMenu(page, item, currentIndex) {
 
+        var currentStreamImage = '<img src="css/images/checkmarkgreen.png" style="width:18px;border-radius:3px;margin-right:.5em;vertical-align:top;" />';
+        
         var streams = (item.MediaStreams || []).filter(function (i) {
 
             return i.Type == 'Subtitle';
@@ -65,13 +75,26 @@
 
         var elem = $('#popupSubtitleTrackMenu', page);
 
-        var html = '<li data-role="list-divider">Select Subtitles</li>';
+        var html = '<ul data-role="listview" data-inset="true" style="min-width: 210px;"><li data-role="list-divider">Select Subtitles</li>';
 
-        html += '<li><a href="#" style="font-size:13px;" data-index="-1" class="lnkTrackOption">Off</a></li>';
+        html += '<li><a href="#" data-index="-1" class="lnkTrackOption"><h3>';
+
+        if (currentIndex == null) {
+            html += currentStreamImage;
+        }
+
+        html += 'Off';
+        html += '</h3></a></li>';
 
         html += streams.map(function (s) {
 
-            var streamHtml = '<li><a data-index="' + s.Index + '" href="#" style="font-size:13px;" class="lnkTrackOption">';
+            var streamHtml = '<li><a data-index="' + s.Index + '" href="#" class="lnkTrackOption">';
+
+            streamHtml += '<h3>';
+
+            if (s.Index == currentIndex) {
+                streamHtml += currentStreamImage;
+            }
 
             streamHtml += (s.Language || 'Unknown language');
 
@@ -85,29 +108,34 @@
                 streamHtml += ' (Forced)';
             }
 
-            streamHtml += '<br/>';
+            streamHtml += '</h3><p>';
 
             streamHtml += (s.Codec || '').toUpperCase();
 
-            streamHtml += '</a></li>';
+            streamHtml += '</p></a></li>';
 
             return streamHtml;
 
         }).join('');
 
-        $('ul', elem).html(html).listview('refresh').trigger('create');
+        html += '</ul>';
+
+        $('.trackList', elem).html(html).trigger('create');
 
         elem.popup('open');
     }
 
     function bindEvents(page) {
 
-        $('.radioTabButton', page).on('change', function () {
+        $('.tabButton', page).on('click', function () {
 
-            var elem = $('.' + this.value, page);
+            var elem = $('.' + this.getAttribute('data-tab'), page);
             elem.siblings('.tabContent').hide();
 
             elem.show();
+
+            $('.tabButton', page).removeClass('ui-btn-active');
+            $(this).addClass('ui-btn-active');
         });
 
         $('.btnCommand,.btnToggleFullscreen', page).on('click', function () {
@@ -145,15 +173,19 @@
 
         $('.btnAudioTracks', page).on('click', function () {
 
-            if (currentPlayer && lastPlayerState) {
-                showAudioMenu(page, lastPlayerState.NowPlayingItem);
+            if (currentPlayer && lastPlayerState && lastPlayerState.PlayState) {
+
+                var currentIndex = lastPlayerState.PlayState.AudioStreamIndex;
+                showAudioMenu(page, lastPlayerState.NowPlayingItem, currentIndex);
             }
         });
 
         $('.btnSubtitles', page).on('click', function () {
 
-            if (currentPlayer && lastPlayerState) {
-                showSubtitleMenu(page, lastPlayerState.NowPlayingItem);
+            if (currentPlayer && lastPlayerState && lastPlayerState.PlayState) {
+
+                var currentIndex = lastPlayerState.PlayState.SubtitleStreamIndex;
+                showSubtitleMenu(page, lastPlayerState.NowPlayingItem, currentIndex);
             }
         });
 
@@ -268,6 +300,9 @@
         $('.btnAudioTracks', page).buttonEnabled(hasStreams(item, 'Audio') && supportedCommands.indexOf('SetAudioStreamIndex') != -1);
         $('.btnSubtitles', page).buttonEnabled(hasStreams(item, 'Subtitle') && supportedCommands.indexOf('SetSubtitleStreamIndex') != -1);
         $('.btnChapters', page).buttonEnabled(item && item.Chapters && item.Chapters.length);
+
+        $('.sendMessageElement', page).buttonEnabled(supportedCommands.indexOf('DisplayMessage') != -1);
+        $('.typeTextElement', page).buttonEnabled(supportedCommands.indexOf('SendString') != -1);
 
         $('.btnStop', page).buttonEnabled(item != null);
         $('.btnNextTrack', page).buttonEnabled(item != null);
@@ -442,8 +477,7 @@
 
         var page = this;
 
-        $('.radioTabButton', page).checked(false).checkboxradio('refresh');
-        $('.radioTabButton:first', page).checked(true).checkboxradio('refresh').trigger('change');
+        $('.tabButton:first', page).trigger('click');
 
         $(function () {
 
@@ -464,5 +498,48 @@
 
         lastPlayerState = null;
     });
+
+    window.NowPlayingPage = {
+
+        onMessageSubmit: function () {
+
+            var form = this;
+
+            MediaController.sendCommand({
+                Name: 'DisplayMessage',
+                Arguments: {
+
+                    Header: $('#txtMessageTitle', form).val(),
+                    Text: $('#txtMessageText', form).val()
+                }
+
+            }, currentPlayer);
+
+            $('input', form).val('');
+            Dashboard.alert('Message sent.');
+
+            return false;
+        },
+        
+        onSendStringSubmit: function() {
+            
+            var form = this;
+
+            MediaController.sendCommand({
+                Name: 'SendString',
+                Arguments: {
+
+                    String: $('#txtTypeText', form).val()
+                }
+
+            }, currentPlayer);
+
+            $('input', form).val('');
+            Dashboard.alert('Text sent.');
+
+            return false;
+        }
+
+    };
 
 })(window, document, jQuery, setTimeout, clearTimeout);

@@ -1,11 +1,11 @@
-﻿using MediaBrowser.Common.Events;
-using MediaBrowser.Common.Extensions;
+﻿using MediaBrowser.Common.Extensions;
 using MediaBrowser.Common.Net;
 using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Security;
 using MediaBrowser.Controller.Subtitles;
 using MediaBrowser.Model.Configuration;
 using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.Events;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Providers;
 using OpenSubtitlesHandler;
@@ -166,14 +166,7 @@ namespace MediaBrowser.Providers.Subtitles
         public async Task<IEnumerable<RemoteSubtitleInfo>> SearchSubtitles(SubtitleSearchRequest request, CancellationToken cancellationToken)
         {
             var imdbIdText = request.GetProviderId(MetadataProviders.Imdb);
-            long imdbId;
-
-            if (string.IsNullOrWhiteSpace(imdbIdText) ||
-                !long.TryParse(imdbIdText.TrimStart('t'), NumberStyles.Any, _usCulture, out imdbId))
-            {
-                _logger.Debug("Imdb id missing");
-                return new List<RemoteSubtitleInfo>();
-            }
+            long imdbId = 0;
 
             switch (request.ContentType)
             {
@@ -188,6 +181,11 @@ namespace MediaBrowser.Providers.Subtitles
                     if (string.IsNullOrEmpty(request.Name))
                     {
                         _logger.Debug("Movie name missing");
+                        return new List<RemoteSubtitleInfo>();
+                    }
+                    if (string.IsNullOrWhiteSpace(imdbIdText) || !long.TryParse(imdbIdText.TrimStart('t'), NumberStyles.Any, _usCulture, out imdbId))
+                    {
+                        _logger.Debug("Imdb id missing");
                         return new List<RemoteSubtitleInfo>();
                     }
                     break;
@@ -208,17 +206,26 @@ namespace MediaBrowser.Providers.Subtitles
             var hash = Utilities.ComputeHash(request.MediaPath);
             var fileInfo = new FileInfo(request.MediaPath);
             var movieByteSize = fileInfo.Length;
-
+            var searchImdbId = request.ContentType == SubtitleMediaType.Movie ? imdbId.ToString(_usCulture) : "";
             var subtitleSearchParameters = request.ContentType == SubtitleMediaType.Episode
-                ? new SubtitleSearchParameters(subLanguageId, request.SeriesName, request.ParentIndexNumber.Value.ToString(_usCulture), request.IndexNumber.Value.ToString(_usCulture))
-                : new SubtitleSearchParameters(subLanguageId, request.Name);
-
+                ? new List<SubtitleSearchParameters> {
+                                                         new SubtitleSearchParameters(subLanguageId, 
+                                                             query: request.SeriesName,
+                                                             season: request.ParentIndexNumber.Value.ToString(_usCulture),
+                                                             episode: request.IndexNumber.Value.ToString(_usCulture))
+                                                     }
+                : new List<SubtitleSearchParameters> {
+                                                         new SubtitleSearchParameters(subLanguageId, imdbid: searchImdbId),
+                                                         new SubtitleSearchParameters(subLanguageId, query: request.Name, imdbid: searchImdbId)
+                                                     };
             var parms = new List<SubtitleSearchParameters> {
-                                                               new SubtitleSearchParameters(subLanguageId, hash, movieByteSize),
-                                                               subtitleSearchParameters
+                                                               new SubtitleSearchParameters( subLanguageId, 
+                                                                   movieHash: hash, 
+                                                                   movieByteSize: movieByteSize, 
+                                                                   imdbid: searchImdbId ),
                                                            };
-
-            var result = OpenSubtitles.SearchSubtitles(parms.ToArray());
+            parms.AddRange(subtitleSearchParameters);
+            var result = await OpenSubtitles.SearchSubtitlesAsync(parms.ToArray(), cancellationToken).ConfigureAwait(false);
             if (!(result is MethodResponseSubtitleSearch))
             {
                 _logger.Debug("Invalid response type");
@@ -228,8 +235,10 @@ namespace MediaBrowser.Providers.Subtitles
             Predicate<SubtitleSearchResult> mediaFilter =
                 x =>
                     request.ContentType == SubtitleMediaType.Episode
-                        ? int.Parse(x.SeriesSeason, _usCulture) == request.ParentIndexNumber && int.Parse(x.SeriesEpisode, _usCulture) == request.IndexNumber
-                        : long.Parse(x.IDMovieImdb, _usCulture) == imdbId;
+                        ? !string.IsNullOrEmpty(x.SeriesSeason) && !string.IsNullOrEmpty(x.SeriesEpisode) &&
+                          int.Parse(x.SeriesSeason, _usCulture) == request.ParentIndexNumber &&
+                          int.Parse(x.SeriesEpisode, _usCulture) == request.IndexNumber
+                        : !string.IsNullOrEmpty(x.IDMovieImdb) && long.Parse(x.IDMovieImdb, _usCulture) == imdbId;
 
             var results = ((MethodResponseSubtitleSearch)result).Results;
 
