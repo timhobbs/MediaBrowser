@@ -61,6 +61,8 @@
     <Compile Include="ApiClient\SessionUpdatesEventArgs.cs" />
     <Compile Include="Channels\ChannelItemQuery.cs" />
     <Compile Include="Channels\ChannelQuery.cs" />
+    <Compile Include="Chapters\RemoteChapterInfo.cs" />
+    <Compile Include="Chapters\RemoteChapterResult.cs" />
     <Compile Include="Configuration\TvFileOrganizationOptions.cs" />
     <Compile Include="Configuration\BaseApplicationConfiguration.cs" />
     <Compile Include="Configuration\DlnaOptions.cs" />
@@ -170,6 +172,7 @@
     <Compile Include="Logging\NullLogger.cs" />
     <Compile Include="MediaInfo\AudioCodec.cs" />
     <Compile Include="MediaInfo\Container.cs" />
+    <Compile Include="MediaInfo\MediaStreamSelector.cs" />
     <Compile Include="MediaInfo\SubtitleFormat.cs" />
     <Compile Include="MediaInfo\TransportStreamTimestamp.cs" />
     <Compile Include="MediaInfo\VideoCodec.cs" />
