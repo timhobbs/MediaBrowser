@@ -124,7 +124,6 @@ namespace MediaBrowser.Controller.Entities
         protected override Task ValidateChildrenInternal(IProgress<double> progress, CancellationToken cancellationToken, bool recursive, bool refreshChildMetadata, MetadataRefreshOptions refreshOptions, IDirectoryService directoryService)
         {
             CreateResolveArgs(directoryService);
-            ResetDynamicChildren();
 
             return NullTaskResult;
         }
@@ -150,15 +149,13 @@ namespace MediaBrowser.Controller.Entities
                 .ToList();
         }
 
-        private IEnumerable<BaseItem> _actualChildren;
-
         /// <summary>
         /// Our children are actually just references to the ones in the physical root...
         /// </summary>
         /// <value>The actual children.</value>
         protected override IEnumerable<BaseItem> ActualChildren
         {
-            get { return _actualChildren ?? (_actualChildren = GetActualChildren()); }
+            get { return GetActualChildren(); }
         }
 
         private IEnumerable<BaseItem> GetActualChildren()
@@ -169,11 +166,6 @@ namespace MediaBrowser.Controller.Entities
                 .Where(i => i.Path != null && PhysicalLocations.Contains(i.Path, StringComparer.OrdinalIgnoreCase))
                 .SelectMany(c => c.Children)
                 .ToList();
-        }
-
-        public void ResetDynamicChildren()
-        {
-            _actualChildren = null;
         }
     }
 }
