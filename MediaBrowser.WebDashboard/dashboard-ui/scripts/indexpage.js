@@ -103,6 +103,91 @@
         });
     }
 
+    function createMediaLinks(options) {
+
+        var html = "";
+
+        var items = options.items;
+
+        console.log("options", options);
+
+        // "My Library" backgrounds
+        for (var i = 0, length = items.length; i < length; i++) {
+
+            var item = items[i];
+            var background = "#333";
+            var backgroundSize = "45px 45px";
+            var backgroundPosition = "20px center";
+
+            switch (item.CollectionType) {
+                case "movies":
+                    imgUrl = "css/images/items/folders/movies.png";
+                    break;
+                case "music":
+                    imgUrl = "css/images/items/folders/music.png";
+                    break;
+                case "photos":
+                    imgUrl = "css/images/items/folders/photos.png";
+                    break;
+                case "tvshows":
+                    imgUrl = "css/images/items/folders/tv.png";
+                    break;
+                case "games":
+                    imgUrl = "css/images/items/folders/games.png";
+                    break;
+                case "trailers":
+                    imgUrl = "css/images/items/folders/games.png";
+                    break;
+                case "homevideos":
+                    imgUrl = "css/images/items/folders/homevideos.png";
+                    break;
+                case "musicvideos":
+                    imgUrl = "css/images/items/folders/musicvideos.png";
+                    break;
+                case "boxsets":
+                default:
+                    imgUrl = "css/images/items/folders/folder.png";
+                    break;
+            }
+
+            var cssClass = "posterItem";
+            cssClass += ' ' + options.shape + 'PosterItem';
+
+            var mediaSourceCount = item.MediaSourceCount || 1;
+
+            var href = options.linkItem === false ? '#' : LibraryBrowser.getHref(item, options.context);
+
+            html += '<a data-itemid="' + item.Id + '" class="' + cssClass + '" data-mediasourcecount="' + mediaSourceCount + '" href="' + href + '">';
+
+            var style = "";
+
+            if (imgUrl) {
+                style += 'background-image:url(\'' + imgUrl + '\');';
+            }
+
+            var imageCssClass = 'posterItemImage';
+
+            html += '<div class="' + imageCssClass + '" style="' + style + '">';
+            html += '</div>';
+
+            var name = LibraryBrowser.getPosterViewDisplayName(item, options.displayAsSpecial);
+
+            if (options.showTitle) {
+                html += "<div class='posterItemDefaultText'>";
+                html += name;
+                html += "</div>";
+            }
+
+            cssClass = options.centerText ? "posterItemText posterItemTextCentered" : "posterItemText";
+
+            html += "</a>";
+        }
+
+        console.log("html", html);
+
+        return html;
+    }
+
     $(document).on('pagebeforeshow', "#indexPage", function () {
 
         var screenWidth = $(window).width();
@@ -119,13 +204,13 @@
 
         ApiClient.getItems(Dashboard.getCurrentUserId(), options).done(function (result) {
 
-            $('.myLibrary', page).html(LibraryBrowser.getPosterViewHtml({
+            $('.myLibrary', page).html(createMediaLinks({
                 items: result.Items,
-                shape: 'smallBackdrop',
+                shape: 'myLibrary',
                 showTitle: true,
                 centerText: true
 
-            })).createPosterItemMenus();
+            }));
 
         });
 
