@@ -1,0 +1,99 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>${TitleMediaBrowser}</title>
+</head>
+<body>
+    <div id="webClientPreferencesPage" data-role="page" class="page libraryPage userPreferencesPage" data-theme="b">
+        <div class="libraryViewNav">
+            <a href="#" class="lnkDisplayPreferences">${TabDisplay}</a>
+            <a href="#" class="lnkLanguagePreferences">${TabLanguages}</a>
+            <a href="#" class="ui-btn-active lnkWebClientPreferences">${TabWebClient}</a>
+        </div>
+
+        <br />
+        <br />
+        <form class="webClientPreferencesForm" style="margin: 0 auto;">
+
+            <div class="detailSectionHeader" style="margin: 0 .5em;">
+                ${HeaderAllDevices}
+            </div>
+
+            <br />
+            <ul data-role="listview" class="ulForm">
+                <li>
+                    <label for="selectHomeSection1">${LabelHomePageSection1}</label>
+                    <select id="selectHomeSection1" data-mini="true">
+                        <option value="">${OptionAuto}</option>
+                        <option value="librarybuttons">${OptionLibraryButtons}</option>
+                        <option value="librarytiles">${OptionLibraryTiles}</option>
+                        <option value="resume">${OptionResumablemedia}</option>
+                        <option value="latestmedia">${OptionLatestMedia}</option>
+                    </select>
+                </li>
+                <li>
+                    <label for="selectHomeSection2">${LabelHomePageSection2}</label>
+                    <select id="selectHomeSection2" data-mini="true">
+                        <option value="">${OptionAuto}</option>
+                        <option value="librarybuttons">${OptionLibraryButtons}</option>
+                        <option value="librarytiles">${OptionLibraryTiles}</option>
+                        <option value="resume">${OptionResumablemedia}</option>
+                        <option value="latestmedia">${OptionLatestMedia}</option>
+                    </select>
+                </li>
+                <li>
+                    <label for="selectHomeSection3">${LabelHomePageSection3}</label>
+                    <select id="selectHomeSection3" data-mini="true">
+                        <option value="">${OptionAuto}</option>
+                        <option value="librarybuttons">${OptionLibraryButtons}</option>
+                        <option value="librarytiles">${OptionLibraryTiles}</option>
+                        <option value="resume">${OptionResumablemedia}</option>
+                        <option value="latestmedia">${OptionLatestMedia}</option>
+                    </select>
+                </li>
+            </ul>
+
+            <div class="detailSectionHeader" style="margin: 0 .5em;">
+                ${HeaderThisDevice}
+            </div>
+            <br />
+            <ul data-role="listview" class="ulForm">
+                <li>
+                    <label for="selectThemeSong">${LabelEnableThemeSongs}</label>
+                    <select id="selectThemeSong" data-mini="true">
+                        <option value="">${OptionAuto}</option>
+                        <option value="1">${OptionYes}</option>
+                        <option value="0">${OptionNo}</option>
+                    </select>
+                    <div class="fieldDescription">${LabelEnableThemeSongsHelp}</div>
+                </li>
+                <li>
+                    <label for="selectBackdrop">${LabelEnableBackdrops}</label>
+                    <select id="selectBackdrop" data-mini="true">
+                        <option value="">${OptionAuto}</option>
+                        <option value="1">${OptionYes}</option>
+                        <option value="0">${OptionNo}</option>
+                    </select>
+                    <div class="fieldDescription">${LabelEnableBackdropsHelp}</div>
+                </li>
+            </ul>
+
+
+            <ul data-role="listview" class="ulForm">
+                <li>
+                    <button type="submit" data-theme="a" data-icon="check" data-mini="true">
+                        ${ButtonOk}
+                    </button>
+                    <button type="button" onclick="history.back();" data-icon="delete" data-mini="true">
+                        ${ButtonCancel}
+                    </button>
+                </li>
+            </ul>
+        </form>
+        <script type="text/javascript">
+            $('.webClientPreferencesForm').off('submit', WebClientPreferencesPage.onSubmit).on('submit', WebClientPreferencesPage.onSubmit);
+        </script>
+    </div>
+</body>
+</html>

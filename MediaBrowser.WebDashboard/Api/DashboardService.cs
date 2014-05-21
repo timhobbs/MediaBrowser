@@ -580,6 +580,9 @@ namespace MediaBrowser.WebDashboard.Api
                                 "livetvsuggested.js",
                                 "livetvstatus.js",
                                 "livetvtimers.js",
+
+                                "localsettings.js",
+
                                 "loginpage.js",
                                 "logpage.js",
                                 "medialibrarypage.js",
@@ -600,6 +603,11 @@ namespace MediaBrowser.WebDashboard.Api
                                 "musicgenres.js",
                                 "musicrecommended.js",
                                 "musicvideos.js",
+
+                                "mypreferencesdisplay.js",
+                                "mypreferenceslanguages.js",
+                                "mypreferenceswebclient.js",
+
                                 "notifications.js",
                                 "notificationsetting.js",
                                 "notificationsettings.js",
@@ -626,7 +634,6 @@ namespace MediaBrowser.WebDashboard.Api
                                 "userpassword.js",
                                 "userimagepage.js",
                                 "userprofilespage.js",
-                                "usersettings.js",
                                 "userparentalcontrol.js",
                                 "wizardfinishpage.js",
                                 "wizardimagesettings.js",
