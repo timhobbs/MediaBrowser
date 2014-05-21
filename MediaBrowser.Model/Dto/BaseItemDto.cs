@@ -134,6 +134,13 @@ namespace MediaBrowser.Model.Dto
         public string CustomRating { get; set; }
 
         /// <summary>
+        /// Gets or sets the channel identifier.
+        /// </summary>
+        /// <value>The channel identifier.</value>
+        public string ChannelId { get; set; }
+        public string ChannelName { get; set; }
+
+        /// <summary>
         /// Gets or sets the overview.
         /// </summary>
         /// <value>The overview.</value>

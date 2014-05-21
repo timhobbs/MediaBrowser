@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<Profile xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Name>MediaMonkey</Name>
+  <Identification>
+    <FriendlyName>MediaMonkey</FriendlyName>
+    <Headers>
+      <HttpHeaderInfo name="User-Agent" value="MediaMonkey" match="Substring" />
+    </Headers>
+  </Identification>
+  <FriendlyName>Media Browser</FriendlyName>
+  <Manufacturer>Media Browser</Manufacturer>
+  <ManufacturerUrl>http://mediabrowser.tv/</ManufacturerUrl>
+  <ModelName>Media Browser</ModelName>
+  <ModelDescription>Media Browser</ModelDescription>
+  <ModelNumber>Media Browser</ModelNumber>
+  <ModelUrl>http://mediabrowser.tv/</ModelUrl>
+  <IgnoreTranscodeByteRangeRequests>false</IgnoreTranscodeByteRangeRequests>
+  <EnableAlbumArtInDidl>false</EnableAlbumArtInDidl>
+  <SupportedMediaTypes>Audio</SupportedMediaTypes>
+  <AlbumArtPn>JPEG_SM</AlbumArtPn>
+  <MaxAlbumArtWidth>512</MaxAlbumArtWidth>
+  <MaxAlbumArtHeight>512</MaxAlbumArtHeight>
+  <MaxIconWidth xsi:nil="true" />
+  <MaxIconHeight xsi:nil="true" />
+  <MaxBitrate xsi:nil="true" />
+  <XDlnaDoc>DMS-1.50</XDlnaDoc>
+  <ProtocolInfo>DLNA</ProtocolInfo>
+  <TimelineOffsetSeconds>0</TimelineOffsetSeconds>
+  <RequiresPlainVideoItems>false</RequiresPlainVideoItems>
+  <RequiresPlainFolders>false</RequiresPlainFolders>
+  <XmlRootAttributes />
+  <DirectPlayProfiles>
+    <DirectPlayProfile container="mp3" audioCodec="mp2,mp3" type="Audio" />
+    <DirectPlayProfile container="mp4" audioCodec="mp4" type="Audio" />
+    <DirectPlayProfile container="aac,wav" type="Audio" />
+    <DirectPlayProfile container="flac" audioCodec="flac" type="Audio" />
+    <DirectPlayProfile container="asf" audioCodec="wmav2,wmapro,wmavoice" type="Audio" />
+    <DirectPlayProfile container="ogg" audioCodec="vorbis" type="Audio" />
+  </DirectPlayProfiles>
+  <TranscodingProfiles>
+    <TranscodingProfile container="mp3" type="Audio" audioCodec="mp3" estimateContentLength="false" enableMpegtsM2TsMode="false" transcodeSeekInfo="Auto" />
+    <TranscodingProfile container="ts" type="Video" videoCodec="h264" audioCodec="aac" estimateContentLength="false" enableMpegtsM2TsMode="false" transcodeSeekInfo="Auto" videoProfile="baseline" />
+  </TranscodingProfiles>
+  <ContainerProfiles />
+  <CodecProfiles />
+  <ResponseProfiles />
+</Profile>

@@ -69,13 +69,10 @@
       <Link>Properties\SharedVersion.cs</Link>
     </Compile>
     <Compile Include="Channels\ChannelCategoryItem.cs" />
-    <Compile Include="Channels\ChannelInfo.cs" />
     <Compile Include="Channels\ChannelItemInfo.cs" />
     <Compile Include="Channels\ChannelItemResult.cs" />
     <Compile Include="Channels\ChannelItemType.cs" />
-    <Compile Include="Channels\ChannelMediaContentType.cs" />
     <Compile Include="Channels\ChannelMediaInfo.cs" />
-    <Compile Include="Channels\ChannelMediaType.cs" />
     <Compile Include="Channels\ChannelSearchInfo.cs" />
     <Compile Include="Channels\IChannel.cs" />
     <Compile Include="Channels\IChannelFactory.cs" />
@@ -95,9 +92,11 @@
     <Compile Include="Dlna\ControlResponse.cs" />
     <Compile Include="Dlna\DlnaIconResponse.cs" />
     <Compile Include="Dlna\EventSubscriptionResponse.cs" />
+    <Compile Include="Dlna\IConnectionManager.cs" />
     <Compile Include="Dlna\IContentDirectory.cs" />
     <Compile Include="Dlna\IDlnaManager.cs" />
     <Compile Include="Dlna\IEventManager.cs" />
+    <Compile Include="Dlna\IUpnpService.cs" />
     <Compile Include="Drawing\IImageProcessor.cs" />
     <Compile Include="Drawing\ImageFormat.cs" />
     <Compile Include="Drawing\ImageProcessingOptions.cs" />

@@ -74,6 +74,7 @@ namespace MediaBrowser.Dlna
                 new LinksysDMA2100Profile(),
                 new LgTvProfile(),
                 new Foobar2000Profile(),
+                new MediaMonkeyProfile(),
                 new DefaultProfile()
             };
 
@@ -497,7 +498,7 @@ namespace MediaBrowser.Dlna
             var profile = GetProfile(headers) ??
                           GetDefaultProfile();
 
-            return new DescriptionXmlBuilder(profile, serverUuId).GetXml();
+            return new DescriptionXmlBuilder(profile, serverUuId, "").GetXml();
         }
 
         public DlnaIconResponse GetIcon(string filename)

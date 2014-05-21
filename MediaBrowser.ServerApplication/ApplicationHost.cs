@@ -35,6 +35,8 @@ using MediaBrowser.Controller.Sorting;
 using MediaBrowser.Controller.Subtitles;
 using MediaBrowser.Controller.Themes;
 using MediaBrowser.Dlna;
+using MediaBrowser.Dlna.ConnectionManager;
+using MediaBrowser.Dlna.ContentDirectory;
 using MediaBrowser.Dlna.Eventing;
 using MediaBrowser.Dlna.Main;
 using MediaBrowser.Dlna.Server;
@@ -493,10 +495,10 @@ namespace MediaBrowser.ServerApplication
             ImageProcessor = new ImageProcessor(LogManager.GetLogger("ImageProcessor"), ServerConfigurationManager.ApplicationPaths, FileSystemManager, JsonSerializer, MediaEncoder);
             RegisterSingleInstance(ImageProcessor);
 
-            DtoService = new DtoService(Logger, LibraryManager, UserManager, UserDataManager, ItemRepository, ImageProcessor, ServerConfigurationManager, FileSystemManager, ProviderManager);
+            DtoService = new DtoService(Logger, LibraryManager, UserManager, UserDataManager, ItemRepository, ImageProcessor, ServerConfigurationManager, FileSystemManager, ProviderManager, () => ChannelManager);
             RegisterSingleInstance(DtoService);
 
-            SessionManager = new SessionManager(UserDataManager, ServerConfigurationManager, Logger, UserRepository, LibraryManager, UserManager, musicManager, DtoService, ImageProcessor, ItemRepository);
+            SessionManager = new SessionManager(UserDataManager, ServerConfigurationManager, Logger, UserRepository, LibraryManager, UserManager, musicManager, DtoService, ImageProcessor, ItemRepository, JsonSerializer, this, HttpClient);
             RegisterSingleInstance(SessionManager);
 
             var newsService = new Server.Implementations.News.NewsService(ApplicationPaths, JsonSerializer);
@@ -520,11 +522,11 @@ namespace MediaBrowser.ServerApplication
             var dlnaManager = new DlnaManager(XmlSerializer, FileSystemManager, ApplicationPaths, LogManager.GetLogger("Dlna"), JsonSerializer);
             RegisterSingleInstance<IDlnaManager>(dlnaManager);
 
-            var dlnaEventManager = new EventManager(LogManager, HttpClient);
-            RegisterSingleInstance<IEventManager>(dlnaEventManager);
-
-            var contentDirectory = new ContentDirectory(dlnaManager, UserDataManager, ImageProcessor, DtoService, LibraryManager, LogManager, ServerConfigurationManager, UserManager, dlnaEventManager);
+            var contentDirectory = new ContentDirectory(dlnaManager, UserDataManager, ImageProcessor, DtoService, LibraryManager, ServerConfigurationManager, UserManager, LogManager.GetLogger("UpnpContentDirectory"), HttpClient);
             RegisterSingleInstance<IContentDirectory>(contentDirectory);
+
+            var connectionManager = new ConnectionManager(dlnaManager, ServerConfigurationManager, LogManager.GetLogger("UpnpConnectionManager"), HttpClient);
+            RegisterSingleInstance<IConnectionManager>(connectionManager);
 
             var collectionManager = new CollectionManager(LibraryManager, FileSystemManager, LibraryMonitor);
             RegisterSingleInstance<ICollectionManager>(collectionManager);
@@ -537,7 +539,7 @@ namespace MediaBrowser.ServerApplication
 
             RegisterSingleInstance<IEncryptionManager>(new EncryptionManager());
 
-            SubtitleManager = new SubtitleManager(LogManager.GetLogger("SubtitleManager"), FileSystemManager, LibraryMonitor);
+            SubtitleManager = new SubtitleManager(LogManager.GetLogger("SubtitleManager"), FileSystemManager, LibraryMonitor, LibraryManager, ItemRepository);
             RegisterSingleInstance(SubtitleManager);
 
             var displayPreferencesTask = Task.Run(async () => await ConfigureDisplayPreferencesRepositories().ConfigureAwait(false));

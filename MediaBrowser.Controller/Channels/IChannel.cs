@@ -1,5 +1,6 @@
 ﻿using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Providers;
+using MediaBrowser.Model.Channels;
 using MediaBrowser.Model.Entities;
 using System.Collections.Generic;
 using System.Threading;
@@ -14,6 +15,12 @@ namespace MediaBrowser.Controller.Channels
         /// </summary>
         /// <value>The name.</value>
         string Name { get; }
+
+        /// <summary>
+        /// Gets the data version.
+        /// </summary>
+        /// <value>The data version.</value>
+        string DataVersion { get; }
 
         /// <summary>
         /// Gets the channel information.
@@ -58,5 +65,16 @@ namespace MediaBrowser.Controller.Channels
         /// </summary>
         /// <returns>IEnumerable{ImageType}.</returns>
         IEnumerable<ImageType> GetSupportedChannelImages();
+    }
+
+    public interface IRequiresMediaInfoCallback
+    {
+        /// <summary>
+        /// Gets the channel item media information.
+        /// </summary>
+        /// <param name="id">The identifier.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>Task{IEnumerable{ChannelMediaInfo}}.</returns>
+        Task<IEnumerable<ChannelMediaInfo>> GetChannelItemMediaInfo(string id, CancellationToken cancellationToken);
     }
 }

@@ -1,5 +1,8 @@
-﻿using MediaBrowser.Common.Net;
-using MediaBrowser.Controller;
+﻿using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Linq;
+using System.Net;
+using MediaBrowser.Common.Net;
 using MediaBrowser.Controller.Session;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Net;
@@ -16,23 +19,18 @@ namespace MediaBrowser.Server.Implementations.Session
     {
         private readonly IHttpClient _httpClient;
         private readonly IJsonSerializer _json;
-        private readonly IServerApplicationHost _appHost;
 
         public SessionInfo Session { get; private set; }
 
-        //var postUrl = string.Format("http://{0}/mediabrowser/message", session.RemoteEndPoint);
-        
         private readonly string _postUrl;
 
-        public HttpSessionController(IHttpClient httpClient, 
-            IJsonSerializer json, 
-            IServerApplicationHost appHost, 
-            SessionInfo session, 
+        public HttpSessionController(IHttpClient httpClient,
+            IJsonSerializer json,
+            SessionInfo session,
             string postUrl)
         {
             _httpClient = httpClient;
             _json = json;
-            _appHost = appHost;
             Session = session;
             _postUrl = postUrl;
         }
@@ -45,6 +43,11 @@ namespace MediaBrowser.Server.Implementations.Session
             }
         }
 
+        public bool SupportsMediaControl
+        {
+            get { return true; }
+        }
+
         private Task SendMessage(object obj, CancellationToken cancellationToken)
         {
             var json = _json.SerializeToString(obj);
@@ -55,6 +58,22 @@ namespace MediaBrowser.Server.Implementations.Session
                 CancellationToken = cancellationToken,
                 RequestContent = json,
                 RequestContentType = "application/json"
+            });
+        }
+
+        private Task SendMessage(string name, CancellationToken cancellationToken)
+        {
+            return SendMessage(name, new Dictionary<string, string>(), cancellationToken);
+        }
+
+        private Task SendMessage(string name, Dictionary<string, string> args, CancellationToken cancellationToken)
+        {
+            var url = _postUrl + "/" + name + ToQueryString(args);
+
+            return _httpClient.Post(new HttpRequestOptions
+            {
+                Url = url,
+                CancellationToken = cancellationToken
             });
         }
 
@@ -75,22 +94,25 @@ namespace MediaBrowser.Server.Implementations.Session
 
         public Task SendPlayCommand(PlayRequest command, CancellationToken cancellationToken)
         {
-            return SendMessage(new WebSocketMessage<PlayRequest>
-            {
-                MessageType = "Play",
-                Data = command
+            return Task.FromResult(true);
+            //return SendMessage(new WebSocketMessage<PlayRequest>
+            //{
+            //    MessageType = "Play",
+            //    Data = command
 
-            }, cancellationToken);
+            //}, cancellationToken);
         }
 
         public Task SendPlaystateCommand(PlaystateRequest command, CancellationToken cancellationToken)
         {
-            return SendMessage(new WebSocketMessage<PlaystateRequest>
-            {
-                MessageType = "Playstate",
-                Data = command
+            var args = new Dictionary<string, string>();
 
-            }, cancellationToken);
+            if (command.Command == PlaystateCommand.Seek)
+            {
+
+            }
+
+            return SendMessage(command.Command.ToString(), cancellationToken);
         }
 
         public Task SendLibraryUpdateInfo(LibraryUpdateInfo info, CancellationToken cancellationToken)
@@ -98,14 +120,9 @@ namespace MediaBrowser.Server.Implementations.Session
             return Task.FromResult(true);
         }
 
-        public Task SendRestartRequiredNotification(CancellationToken cancellationToken)
+        public Task SendRestartRequiredNotification(SystemInfo info, CancellationToken cancellationToken)
         {
-            return SendMessage(new WebSocketMessage<SystemInfo>
-            {
-                MessageType = "RestartRequired",
-                Data = _appHost.GetSystemInfo()
-
-            }, cancellationToken);
+            return SendMessage("RestartRequired", cancellationToken);
         }
 
         public Task SendUserDataChangeInfo(UserDataChangeInfo info, CancellationToken cancellationToken)
@@ -115,32 +132,33 @@ namespace MediaBrowser.Server.Implementations.Session
 
         public Task SendServerShutdownNotification(CancellationToken cancellationToken)
         {
-            return SendMessage(new WebSocketMessage<string>
-            {
-                MessageType = "ServerShuttingDown",
-                Data = string.Empty
-
-            }, cancellationToken);
+            return SendMessage("ServerShuttingDown", cancellationToken);
         }
 
         public Task SendServerRestartNotification(CancellationToken cancellationToken)
         {
-            return SendMessage(new WebSocketMessage<string>
-            {
-                MessageType = "ServerRestarting",
-                Data = string.Empty
-
-            }, cancellationToken);
+            return SendMessage("ServerRestarting", cancellationToken);
         }
 
         public Task SendGeneralCommand(GeneralCommand command, CancellationToken cancellationToken)
         {
-            return SendMessage(new WebSocketMessage<GeneralCommand>
-            {
-                MessageType = "GeneralCommand",
-                Data = command
+            return SendMessage(command.Name, command.Arguments, cancellationToken);
+        }
 
-            }, cancellationToken);
+        private string ToQueryString(Dictionary<string, string> nvc)
+        {
+            var array = (from item in nvc
+                         select string.Format("{0}={1}", WebUtility.UrlEncode(item.Key), WebUtility.UrlEncode(item.Value)))
+                .ToArray();
+
+            var args = string.Join("&", array);
+
+            if (string.IsNullOrEmpty(args))
+            {
+                return args;
+            }
+
+            return "?" + args;
         }
     }
 }

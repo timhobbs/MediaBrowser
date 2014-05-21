@@ -17,6 +17,13 @@ namespace MediaBrowser.Controller.Channels
         void AddParts(IEnumerable<IChannel> channels, IEnumerable<IChannelFactory> factories);
 
         /// <summary>
+        /// Gets the channel.
+        /// </summary>
+        /// <param name="id">The identifier.</param>
+        /// <returns>Channel.</returns>
+        Channel GetChannel(string id);
+
+        /// <summary>
         /// Gets the channels.
         /// </summary>
         /// <param name="query">The query.</param>
@@ -31,5 +38,13 @@ namespace MediaBrowser.Controller.Channels
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>Task{QueryResult{BaseItemDto}}.</returns>
         Task<QueryResult<BaseItemDto>> GetChannelItems(ChannelItemQuery query, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Gets the channel item media sources.
+        /// </summary>
+        /// <param name="id">The identifier.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>Task{IEnumerable{ChannelMediaInfo}}.</returns>
+        Task<IEnumerable<ChannelMediaInfo>> GetChannelItemMediaSources(string id, CancellationToken cancellationToken);
     }
 }
