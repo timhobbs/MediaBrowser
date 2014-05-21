@@ -109,8 +109,6 @@
 
         var items = options.items;
 
-        console.log("options", options);
-
         // "My Library" backgrounds
         for (var i = 0, length = items.length; i < length; i++) {
 
@@ -182,8 +180,6 @@
 
             html += "</a>";
         }
-
-        console.log("html", html);
 
         return html;
     }
