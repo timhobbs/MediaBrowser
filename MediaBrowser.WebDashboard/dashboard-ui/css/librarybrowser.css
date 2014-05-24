@@ -17,7 +17,7 @@
 }
 
 .backdropPage {
-    background-color: rgba(0, 0, 0, .85)!important;
+    background-color: rgba(15, 15,15, .92)!important;
 }
 
 .backdropContainer {
@@ -38,7 +38,7 @@
 
 .libraryPage > .ui-content {
     padding-top: 10px;
-    padding-bottom: 50px;
+    padding-bottom: 70px;
 }
 
 .libraryPage .currentUsername {
@@ -66,6 +66,10 @@
 
 .squareEhsContent {
     max-width: 750px;
+}
+
+.homePageSection + .homePageSection {
+    margin-top: 3em;
 }
 
 @media all and (min-width: 1000px) {
