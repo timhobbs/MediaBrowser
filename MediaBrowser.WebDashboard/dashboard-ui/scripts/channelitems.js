@@ -1,15 +1,31 @@
 ﻿(function ($, document) {
 
+    var maxPageSize;
+    
     // The base query options
     var query = {
 
-        SortBy: "SortName",
+        SortBy: "",
         SortOrder: "Ascending",
         StartIndex: 0
     };
+    
+    function getPageSizes() {
+
+        var sizes = [];
+
+        if (!maxPageSize || maxPageSize >= 10) sizes.push(10);
+        if (!maxPageSize || maxPageSize >= 20) sizes.push(20);
+        if (!maxPageSize || maxPageSize >= 30) sizes.push(30);
+        if (!maxPageSize || maxPageSize >= 40) sizes.push(40);
+        if (!maxPageSize || maxPageSize >= 50) sizes.push(50);
+        if (!maxPageSize || maxPageSize >= 100) sizes.push(100);
+        
+        return sizes;
+    }
 
     function getSavedQueryId() {
-        return 'channels-' + getParameterByName('id') + (getParameterByName('folderId') || '');
+        return 'channels-1-' + getParameterByName('id') + (getParameterByName('folderId') || '');
     }
 
     function showLoadingMessage(page) {
@@ -21,6 +37,57 @@
         $('#popupDialog', page).popup('close');
     }
 
+    function reloadFeatures(page) {
+
+        var channelId = getParameterByName('id');
+
+        $.getJSON(ApiClient.getUrl("Channels/" + channelId + "/Features", query)).done(function (features) {
+
+            if (features.CanFilter) {
+
+                $('.btnFilter', page).show();
+
+            } else {
+                $('.btnFilter', page).hide();
+            }
+
+            if (features.SupportsSortOrderToggle) {
+
+                $('.sortOrderToggle', page).show();
+            } else {
+                $('.sortOrderToggle', page).hide();
+            }
+
+            maxPageSize = features.MaxPageSize;
+
+            updateSortOrders(page, features.DefaultSortFields);
+            
+            reloadItems(page);
+        });
+    }
+
+    function updateSortOrders(page, fields) {
+
+        updateSortOrder(page, fields, 'Name');
+        updateSortOrder(page, fields, 'CommunityRating');
+        updateSortOrder(page, fields, 'PremiereDate');
+        updateSortOrder(page, fields, 'PlayCount');
+        updateSortOrder(page, fields, 'Runtime');
+        updateSortOrder(page, fields, 'DateCreated');
+    }
+
+    function updateSortOrder(page, fields, name) {
+        
+        var cssClass = "sortby" + name;
+
+        if (fields.indexOf(name) == -1) {
+
+            $('.' + cssClass, page).hide();
+        } else {
+            $('.' + cssClass, page).show();
+        }
+    }
+
     function reloadItems(page) {
 
         showLoadingMessage(page);
@@ -29,7 +96,6 @@
         var folderId = getParameterByName('folderId');
 
         query.UserId = Dashboard.getCurrentUserId();
-
 
         if (folderId) {
 
@@ -49,7 +115,7 @@
         }
 
         query.folderId = folderId;
-        query.Limit = 50;
+        
         $.getJSON(ApiClient.getUrl("Channels/" + channelId + "/Items", query)).done(function (result) {
 
             // Scroll back up so they can see the results from the beginning
@@ -57,7 +123,7 @@
 
             var html = '';
 
-            $('.listTopPaging', page).html(LibraryBrowser.getPagingHtml(query, result.TotalRecordCount, true)).trigger('create');
+            $('.listTopPaging', page).html(LibraryBrowser.getPagingHtml(query, result.TotalRecordCount, false, getPageSizes())).trigger('create');
 
             updateFilterControls(page);
 
@@ -70,7 +136,7 @@
                 coverImage: true
             });
 
-            html += LibraryBrowser.getPagingHtml(query, result.TotalRecordCount);
+            html += LibraryBrowser.getPagingHtml(query, result.TotalRecordCount, false, getPageSizes());
 
             $('#items', page).html(html).trigger('create').createPosterItemMenus();
 
@@ -189,7 +255,7 @@
 
         LibraryBrowser.loadSavedQueryValues(getSavedQueryId(), query);
 
-        reloadItems(page);
+        reloadFeatures(page);
 
         updateFilterControls(page);
     });

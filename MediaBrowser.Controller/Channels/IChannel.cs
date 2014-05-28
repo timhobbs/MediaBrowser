@@ -1,6 +1,5 @@
 ﻿using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Providers;
-using MediaBrowser.Model.Channels;
 using MediaBrowser.Model.Entities;
 using System.Collections.Generic;
 using System.Threading;
@@ -23,10 +22,16 @@ namespace MediaBrowser.Controller.Channels
         string DataVersion { get; }
 
         /// <summary>
+        /// Gets the home page URL.
+        /// </summary>
+        /// <value>The home page URL.</value>
+        string HomePageUrl { get; }
+
+        /// <summary>
         /// Gets the channel information.
         /// </summary>
-        /// <returns>ChannelInfo.</returns>
-        ChannelInfo GetChannelInfo();
+        /// <returns>ChannelFeatures.</returns>
+        InternalChannelFeatures GetChannelFeatures();
 
         /// <summary>
         /// Determines whether [is enabled for] [the specified user].

@@ -68,9 +68,13 @@
                 var index = getRandom(0, images.length - 1);
                 var item = images[index];
 
-                var imgUrl = ApiClient.getImageUrl(item.id, {
+                var screenWidth = $(window).width();
+
+                var imgUrl = ApiClient.getScaledImageUrl(item.id, {
                     type: "Backdrop",
-                    tag: item.tag
+                    tag: item.tag,
+                    maxWidth: screenWidth,
+                    quality: 80
                 });
 
                 getElement().css('backgroundImage', 'url(\'' + imgUrl + '\')');

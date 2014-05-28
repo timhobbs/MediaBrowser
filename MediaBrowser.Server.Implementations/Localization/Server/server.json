@@ -785,5 +785,9 @@
 	"HeaderLiveTv": "Live TV",
 	"HeaderReports": "Reports",
 	"HeaderMetadataManager": "Metadata Manager",
-	"HeaderPreferences": "Preferences"
+	"HeaderPreferences": "Preferences",
+	"MessageLoadingChannels": "Loading channel content...",
+	"ButtonMarkRead": "Mark Read",
+	"OptionDefaultSort": "Default",
+	"OptionCommunityMostWatchedSort": "Most Watched"
 }
