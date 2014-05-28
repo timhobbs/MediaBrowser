@@ -62,7 +62,6 @@
                 else if (document.webkitCancelFullScreen) {
                     document.webkitCancelFullScreen();
                 }
-                $('#videoPlayer').removeClass('fullscreenVideo');
             } else {
                 requestFullScreen(document.body);
             }
@@ -70,7 +69,6 @@
 
         self.resetEnhancements = function () {
             $("#mediaPlayer").hide();
-            $('#videoPlayer').removeClass('fullscreenVideo');
             $("#videoControls").removeClass("inactive");
             $("video").remove();
             $("html").css("cursor", "default");
@@ -84,8 +82,6 @@
             } else if (document.webkitExitFullscreen) {
                 document.webkitExitFullscreen();
             }
-
-            $('#videoPlayer').removeClass('fullscreenVideo');
 
             fullscreenExited = true;
         };
@@ -314,8 +310,6 @@
 
             var player = $("#videoPlayer");
 
-            player.addClass("fullscreenVideo");
-
             remoteFullscreen = true;
 
         }
@@ -323,8 +317,6 @@
         function exitFullScreenToWindow() {
 
             var player = $("#videoPlayer");
-
-            player.removeClass("fullscreenVideo");
 
             remoteFullscreen = false;
 
@@ -984,7 +976,6 @@
 
             $(document).on("keyup.enhancePlayer", function (e) {
                 if (fullscreenExited) {
-                    videoPlayer.removeClass("fullscreenVideo");
                     fullscreenExited = false;
                     return;
                 }
