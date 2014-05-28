@@ -19,7 +19,7 @@ namespace MediaBrowser.Common.Implementations.Security
             _httpClient = httpClient;
         }
 
-        public Task ReportUsage(CancellationToken cancellationToken)
+        public Task ReportServerUsage(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -36,5 +36,28 @@ namespace MediaBrowser.Common.Implementations.Security
 
             return _httpClient.Post(Constants.Constants.MbAdminUrl + "service/registration/ping", data, cancellationToken);
         }
+
+        public Task ReportAppUsage(ClientInfo app, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var data = new Dictionary<string, string>
+            {
+                { "feature", app.AppName ?? "Unknown App" }, 
+                { "mac", app.DeviceId ?? _networkManager.GetMacAddress() }, 
+                { "ver", app.AppVersion ?? "Unknown" }, 
+                { "platform", app.DeviceName }, 
+            };
+
+            return _httpClient.Post(Constants.Constants.MbAdminUrl + "service/registration/ping", data, cancellationToken);
+        }
+    }
+
+    public class ClientInfo
+    {
+        public string AppName { get; set; }
+        public string AppVersion { get; set; }
+        public string DeviceName { get; set; }
+        public string DeviceId { get; set; }
     }
 }

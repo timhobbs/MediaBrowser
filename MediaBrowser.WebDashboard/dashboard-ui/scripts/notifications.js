@@ -45,9 +45,8 @@
 
             html += '</p>';
 
-            html += '<p style="display:none;" class="btnMarkReadContainer"><button class="btnMarkRead" type="button" data-icon="check" data-mini="true" data-theme="b">Mark these read</button></p>';
-
-            html += '<p class="btnNotificationListContainer"><button class="btnNotificationList" type="button" data-icon="check" data-mini="true" data-theme="b">View Notifications</button></p>';
+            html += '<div class="btnNotificationListContainer"><a data-role="button" href="notificationlist.html" data-icon="action" data-mini="true">View Notifications</a></div>';
+            html += '<div style="display:none;" class="btnMarkReadContainer"><button class="btnMarkRead" type="button" data-icon="check" data-mini="true" data-theme="b">Mark these read</button></div>';
 
             html += '</div>';
 
@@ -72,12 +71,6 @@
                     $('.notificationsFlyout').popup("close");
 
                 });
-
-            }).on("click", ".btnNotificationList", function(e) {
-
-                e.preventDefault();
-
-                Dashboard.navigate("notificationlist.html");
 
             });
 
