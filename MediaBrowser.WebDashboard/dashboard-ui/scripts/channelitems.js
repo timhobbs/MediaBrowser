@@ -116,58 +116,55 @@
 
         query.folderId = folderId;
 
-        $.getJSON(ApiClient.getUrl("Channels/" + channelId + "/Features", query)).done(function (result) {
+        // Make sure we don't try to submit a request for more than the max the api can handle
+        query.Limit = Math.min(query.Limit, maxPageSize);
 
-            if (query.Limit > result.MaxPageSize) query.Limit = result.MaxPageSize;
+        $.getJSON(ApiClient.getUrl("Channels/" + channelId + "/Items", query)).done(function (result) {
 
-            $.getJSON(ApiClient.getUrl("Channels/" + channelId + "/Items", query)).done(function (result) {
+            // Scroll back up so they can see the results from the beginning
+            $(document).scrollTop(0);
 
-                // Scroll back up so they can see the results from the beginning
-                $(document).scrollTop(0);
+            var html = '';
 
-                var html = '';
+            $('.listTopPaging', page).html(LibraryBrowser.getPagingHtml(query, result.TotalRecordCount, false, getPageSizes())).trigger('create');
 
-                $('.listTopPaging', page).html(LibraryBrowser.getPagingHtml(query, result.TotalRecordCount, false, getPageSizes())).trigger('create');
+            updateFilterControls(page);
 
-                updateFilterControls(page);
-
-                html = LibraryBrowser.getPosterViewHtml({
-                    items: result.Items,
-                    shape: "auto",
-                    context: 'channels',
-                    showTitle: true,
-                    centerText: true,
-                    coverImage: true
-                });
-
-                html += LibraryBrowser.getPagingHtml(query, result.TotalRecordCount, false, getPageSizes());
-
-                $('#items', page).html(html).trigger('create').createPosterItemMenus();
-
-                $('.btnNextPage', page).on('click', function () {
-                    query.StartIndex += query.Limit;
-                    reloadItems(page);
-                });
-
-                $('.btnPreviousPage', page).on('click', function () {
-                    query.StartIndex -= query.Limit;
-                    reloadItems(page);
-                });
-
-                $('.selectPageSize', page).on('change', function () {
-                    query.Limit = parseInt(this.value);
-                    query.StartIndex = 0;
-                    reloadItems(page);
-                });
-
-                LibraryBrowser.saveQueryValues(getSavedQueryId(), query);
-
-
-            }).always(function () {
-
-                hideLoadingMessage(page);
+            html = LibraryBrowser.getPosterViewHtml({
+                items: result.Items,
+                shape: "auto",
+                context: 'channels',
+                showTitle: true,
+                centerText: true,
+                coverImage: true
             });
 
+            html += LibraryBrowser.getPagingHtml(query, result.TotalRecordCount, false, getPageSizes());
+
+            $('#items', page).html(html).trigger('create').createPosterItemMenus();
+
+            $('.btnNextPage', page).on('click', function () {
+                query.StartIndex += query.Limit;
+                reloadItems(page);
+            });
+
+            $('.btnPreviousPage', page).on('click', function () {
+                query.StartIndex -= query.Limit;
+                reloadItems(page);
+            });
+
+            $('.selectPageSize', page).on('change', function () {
+                query.Limit = parseInt(this.value);
+                query.StartIndex = 0;
+                reloadItems(page);
+            });
+
+            LibraryBrowser.saveQueryValues(getSavedQueryId(), query);
+
+
+        }).always(function () {
+
+            hideLoadingMessage(page);
         });
         
     }
