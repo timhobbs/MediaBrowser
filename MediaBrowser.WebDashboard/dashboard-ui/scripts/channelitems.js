@@ -1,7 +1,7 @@
 ﻿(function ($, document) {
 
     var maxPageSize;
-    
+
     // The base query options
     var query = {
 
@@ -9,7 +9,7 @@
         SortOrder: "Ascending",
         StartIndex: 0
     };
-    
+
     function getPageSizes() {
 
         var sizes = [];
@@ -20,7 +20,7 @@
         if (!maxPageSize || maxPageSize >= 40) sizes.push(40);
         if (!maxPageSize || maxPageSize >= 50) sizes.push(50);
         if (!maxPageSize || maxPageSize >= 100) sizes.push(100);
-        
+
         return sizes;
     }
 
@@ -60,8 +60,12 @@
 
             maxPageSize = features.MaxPageSize;
 
+            if (maxPageSize) {
+                query.Limit = Math.min(maxPageSize, query.Limit || maxPageSize);
+            }
+
             updateSortOrders(page, features.DefaultSortFields);
-            
+
             reloadItems(page);
         });
     }
@@ -77,7 +81,7 @@
     }
 
     function updateSortOrder(page, fields, name) {
-        
+
         var cssClass = "sortby" + name;
 
         if (fields.indexOf(name) == -1) {
@@ -115,9 +119,6 @@
         }
 
         query.folderId = folderId;
-
-        // Make sure we don't try to submit a request for more than the max the api can handle
-        query.Limit = Math.min(query.Limit, maxPageSize);
 
         $.getJSON(ApiClient.getUrl("Channels/" + channelId + "/Items", query)).done(function (result) {
 
@@ -166,7 +167,6 @@
 
             hideLoadingMessage(page);
         });
-        
     }
 
     function updateFilterControls(page) {
