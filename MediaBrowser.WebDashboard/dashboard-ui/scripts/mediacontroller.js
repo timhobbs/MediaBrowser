@@ -52,7 +52,7 @@
         var currentPlayer;
         var currentTargetInfo;
         var players = [];
-        
+
         var keys = new bindKeys(self);
 
         $(window).on("keydown", keys.keyBinding);
@@ -451,7 +451,7 @@
 
         html += '</fieldset>';
 
-        html += '<p class="fieldDescription">All plays will be sent to the selected player.</p>';
+        html += '<p class="fieldDescription">' + Globalize.translate('LabelAllPlaysSentToPlayer') + '</p>';
 
         checkedHtml = enableMirrorMode ? ' checked="checked"' : '';
         html += '<div style="margin-top:1.5em;" class="fldMirrorMode"><label for="chkEnableMirrorMode">Enable display mirroring</label><input type="checkbox" class="chkEnableMirrorMode" id="chkEnableMirrorMode" data-mini="true"' + checkedHtml + ' /></div>';
@@ -589,7 +589,7 @@
         var tooltip;
         var slideVol = null;
 
-        self.keyBinding = function(e) {
+        self.keyBinding = function (e) {
 
             if (bypass()) return;
 
@@ -601,7 +601,7 @@
             }
         };
 
-        self.keyPrevent = function(e) {
+        self.keyPrevent = function (e) {
 
             if (bypass()) return;
 
@@ -614,9 +614,9 @@
 
         keyResult[32] = function () { // spacebar
 
-            controller.getPlayerState().then(function (result) {
+            var player = controller.getCurrentPlayer();
 
-                    var state = result.PlayState;
+            player.getPlayerState().done(function (result) {
 
                     if (!state) return;
 
@@ -716,7 +716,7 @@
             } catch (err) {}
         };
 
-        var bypass = function() {
+        var bypass = function () {
             // Get active elem to see what type it is
             var active = document.activeElement;
             if (!active) return false;
