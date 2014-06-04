@@ -261,13 +261,13 @@
 
         var maxBitrate = 12000000;
 
-        var subtitleStreamIndex;
+        this.subtitleStreamIndex;
 
         if (subtitleStreams.length > 0) {
-            subtitleStreamIndex = subtitleStreams[0].Index;
+            this.subtitleStreamIndex = subtitleStreams[0].Index;
         }
 
-        var mediaInfo = getMediaSourceInfo(user, item, maxBitrate, mediaSourceId, audioStreamIndex, subtitleStreamIndex);
+        var mediaInfo = getMediaSourceInfo(user, item, maxBitrate, mediaSourceId, audioStreamIndex, this.subtitleStreamIndex);
 
         var streamUrl = getStreamUrl(item, mediaInfo, startTimeTicks, maxBitrate);
 
@@ -602,7 +602,7 @@
         this.timer = setInterval(this.incrementMediaTimeHandler, this.timerStep);
     };
 
-    //var castPlayer = new CastPlayer();
+    var castPlayer = new CastPlayer();
 
     function getCodecLimits() {
 
@@ -782,7 +782,12 @@
 
         })[0];
 
+        this.directStream = false;
+
         if (source) {
+
+            this.directStream = true;
+
             return {
                 mediaSource: source,
                 isStatic: true,
@@ -1109,7 +1114,7 @@
                     var audioStream = item.MediaSources[0].MediaStreams.filter(function (i) {
                         return i.Type == "Audio";
                     });
-                    var audioStreamIndex = item.MediaSources[0].MediaStreams.indexOf(audioStream[0]);
+                    this.audioStreamIndex = item.MediaSources[0].MediaStreams.indexOf(audioStream[0]);
 
                     var subtitleStreams = item.MediaSources[0].MediaStreams.filter(function (d) {
                         return d.Codec == "vtt";
@@ -1117,7 +1122,7 @@
 
                     console.log("options", options, audioStreamIndex, subtitleStreams);
 
-                    castPlayer.loadMedia(user, item, options.startPositionTicks, item.Id, audioStreamIndex, subtitleStreams);
+                    castPlayer.loadMedia(user, item, options.startPositionTicks, item.Id, this.audioStreamIndex, subtitleStreams);
                 });
             } else {
                 var userId = Dashboard.getCurrentUserId();
@@ -1430,17 +1435,17 @@
                     PositionTicks: self.positionTicks,
                     VolumeLevel: castPlayer.currentVolume * 100,
                     IsPaused: self.isPaused,
-                    IsMuted: self.isMuted
+                    IsMuted: self.isMuted,
                     
                     // TODO: Implement
-                    // AudioStreamIndex: null,
-                    // SubtitleStreamIndex: null,
-                    // PlayMethod: 'DirectStream' or 'Transcode'
+                    AudioStreamIndex: this.audioStreamIndex,
+                    SubtitleStreamIndex: this.subtitleStreamIndex,
+                    PlayMethod: this.directStream ? 'DirectStream' : 'Transcode'
                 }
             };
 
             // TODO: Implement
-            var isPlaying = false;
+            var isPlaying = self.isPaused == false;
             
             if (isPlaying) {
 
@@ -1453,7 +1458,9 @@
                 };
 
                 var nowPlayingItem = state.NowPlayingItem;
-                
+
+                console.log("state", state);
+
                 // TODO: Fill in these properties using chromecast mediainfo and/or custom data
                 //nowPlayingItem.Id = item.Id;
                 //nowPlayingItem.MediaType = item.MediaType;
@@ -1475,16 +1482,16 @@
         };
     }
 
-    //MediaController.registerPlayer(new chromecastPlayer());
+    MediaController.registerPlayer(new chromecastPlayer());
 
-    //$(MediaController).on('playerchange', function () {
+    $(MediaController).on('playerchange', function () {
 
-    //    if (MediaController.getPlayerInfo().name == PlayerName) {
+        if (MediaController.getPlayerInfo().name == PlayerName) {
 
-    //        if (castPlayer.deviceState != DEVICE_STATE.ACTIVE && castPlayer.isInitialized) {
-    //            castPlayer.launchApp();
-    //        }
-    //    }
-    //});
+            if (castPlayer.deviceState != DEVICE_STATE.ACTIVE && castPlayer.isInitialized) {
+                castPlayer.launchApp();
+            }
+        }
+    });
 
 })(window, window.chrome, console);
