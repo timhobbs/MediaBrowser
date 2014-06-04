@@ -304,6 +304,10 @@
             return localStorage.getItem("volume") || 0.5;
         };
 
+        self.playlist = function() {
+            return currentPlayer.playlist || [];
+        };
+
         self.sendCommand = function (cmd, player) {
 
             player = player || self.getLocalPlayer();
