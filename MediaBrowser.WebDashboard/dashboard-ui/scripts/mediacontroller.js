@@ -300,10 +300,6 @@
             currentPlayer.shuffle(id);
         };
 
-        self.getVolume = function() {
-            return localStorage.getItem("volume") || 0.5;
-        };
-
         self.playlist = function() {
             return currentPlayer.playlist || [];
         };
@@ -355,6 +351,10 @@
                         break;
                     }
             }
+        };
+
+        self.getVolume = function () {
+            return localStorage.getItem("volume") || 0.5;
         };
     }
 
