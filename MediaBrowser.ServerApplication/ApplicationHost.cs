@@ -10,6 +10,7 @@ using MediaBrowser.Common.Net;
 using MediaBrowser.Common.Progress;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Channels;
+using MediaBrowser.Controller.Chapters;
 using MediaBrowser.Controller.Collections;
 using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Dlna;
@@ -43,6 +44,7 @@ using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.MediaInfo;
 using MediaBrowser.Model.System;
 using MediaBrowser.Model.Updates;
+using MediaBrowser.Providers.Chapters;
 using MediaBrowser.Providers.Manager;
 using MediaBrowser.Providers.Subtitles;
 using MediaBrowser.Server.Implementations;
@@ -196,6 +198,9 @@ namespace MediaBrowser.ServerApplication
 
         private INotificationManager NotificationManager { get; set; }
         private ISubtitleManager SubtitleManager { get; set; }
+        private IChapterManager ChapterManager { get; set; }
+
+        private IUserViewManager UserViewManager { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ApplicationHost"/> class.
@@ -506,11 +511,7 @@ namespace MediaBrowser.ServerApplication
 
             progress.Report(15);
 
-            EncodingManager = new EncodingManager(ServerConfigurationManager, FileSystemManager, Logger, ItemRepository,
-                MediaEncoder);
-            RegisterSingleInstance(EncodingManager);
-
-            ChannelManager = new ChannelManager(UserManager, DtoService, LibraryManager, Logger, ServerConfigurationManager, FileSystemManager, UserDataManager, JsonSerializer);
+            ChannelManager = new ChannelManager(UserManager, DtoService, LibraryManager, Logger, ServerConfigurationManager, FileSystemManager, UserDataManager, JsonSerializer, LocalizationManager);
             RegisterSingleInstance(ChannelManager);
 
             var appThemeManager = new AppThemeManager(ApplicationPaths, FileSystemManager, JsonSerializer, Logger);
@@ -528,8 +529,11 @@ namespace MediaBrowser.ServerApplication
             var collectionManager = new CollectionManager(LibraryManager, FileSystemManager, LibraryMonitor);
             RegisterSingleInstance<ICollectionManager>(collectionManager);
 
-            LiveTvManager = new LiveTvManager(ServerConfigurationManager, FileSystemManager, Logger, ItemRepository, ImageProcessor, UserDataManager, DtoService, UserManager, LibraryManager, TaskManager, JsonSerializer);
+            LiveTvManager = new LiveTvManager(ServerConfigurationManager, FileSystemManager, Logger, ItemRepository, ImageProcessor, UserDataManager, DtoService, UserManager, LibraryManager, TaskManager, JsonSerializer, LocalizationManager);
             RegisterSingleInstance(LiveTvManager);
+
+            UserViewManager = new UserViewManager(LibraryManager, LocalizationManager, FileSystemManager, UserManager, ChannelManager, LiveTvManager);
+            RegisterSingleInstance(UserViewManager);
 
             NotificationManager = new NotificationManager(LogManager, UserManager, ServerConfigurationManager);
             RegisterSingleInstance(NotificationManager);
@@ -538,6 +542,13 @@ namespace MediaBrowser.ServerApplication
 
             SubtitleManager = new SubtitleManager(LogManager.GetLogger("SubtitleManager"), FileSystemManager, LibraryMonitor, LibraryManager, ItemRepository);
             RegisterSingleInstance(SubtitleManager);
+
+            ChapterManager = new ChapterManager(LibraryManager, LogManager.GetLogger("ChapterManager"), ServerConfigurationManager, ItemRepository);
+            RegisterSingleInstance(ChapterManager);
+
+            EncodingManager = new EncodingManager(ServerConfigurationManager, FileSystemManager, Logger,
+                MediaEncoder, ChapterManager);
+            RegisterSingleInstance(EncodingManager);
 
             var displayPreferencesTask = Task.Run(async () => await ConfigureDisplayPreferencesRepositories().ConfigureAwait(false));
             var itemsTask = Task.Run(async () => await ConfigureItemRepositories().ConfigureAwait(false));
@@ -720,7 +731,8 @@ namespace MediaBrowser.ServerApplication
             LiveTvManager.AddParts(GetExports<ILiveTvService>());
 
             SubtitleManager.AddParts(GetExports<ISubtitleProvider>());
-            
+            ChapterManager.AddParts(GetExports<IChapterProvider>());
+       
             SessionManager.AddParts(GetExports<ISessionControllerFactory>());
 
             ChannelManager.AddParts(GetExports<IChannel>(), GetExports<IChannelFactory>());

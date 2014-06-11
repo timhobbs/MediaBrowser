@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace MediaBrowser.Controller.Channels
 {
@@ -7,8 +6,11 @@ namespace MediaBrowser.Controller.Channels
     {
         public List<ChannelItemInfo> Items { get; set; }
 
-        public TimeSpan CacheLength { get; set; }
-
         public int? TotalRecordCount { get; set; }
+
+        public ChannelItemResult()
+        {
+            Items = new List<ChannelItemInfo>();
+        }
     }
 }

@@ -163,6 +163,9 @@ namespace MediaBrowser.Api.Playback
             }
         }
 
+        public string OutputFilePath { get; set; }
+        public string OutputVideoCodec { get; set; }
+        public string OutputAudioCodec { get; set; }
         public int? OutputAudioChannels;
         public int? OutputAudioSampleRate;
         public int? OutputAudioBitrate;
@@ -201,6 +204,11 @@ namespace MediaBrowser.Api.Playback
                     return Convert.ToInt32(newSize.Width);
                 }
 
+                if (VideoRequest == null)
+                {
+                    return null;
+                }
+
                 return VideoRequest.MaxWidth ?? VideoRequest.Width;
             }
         }
@@ -224,6 +232,11 @@ namespace MediaBrowser.Api.Playback
                         VideoRequest.MaxHeight);
 
                     return Convert.ToInt32(newSize.Height);
+                }
+
+                if (VideoRequest == null)
+                {
+                    return null;
                 }
 
                 return VideoRequest.MaxHeight ?? VideoRequest.Height;

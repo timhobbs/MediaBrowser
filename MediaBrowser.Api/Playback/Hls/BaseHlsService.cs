@@ -39,9 +39,8 @@ namespace MediaBrowser.Api.Playback.Hls
         /// Gets the video arguments.
         /// </summary>
         /// <param name="state">The state.</param>
-        /// <param name="performSubtitleConversion">if set to <c>true</c> [perform subtitle conversion].</param>
         /// <returns>System.String.</returns>
-        protected abstract string GetVideoArguments(StreamState state, bool performSubtitleConversion);
+        protected abstract string GetVideoArguments(StreamState state);
 
         /// <summary>
         /// Gets the segment file extension.
@@ -86,7 +85,7 @@ namespace MediaBrowser.Api.Playback.Hls
 
             var state = GetState(request, cancellationTokenSource.Token).Result;
 
-            var playlist = GetOutputFilePath(state);
+            var playlist = state.OutputFilePath;
 
             if (File.Exists(playlist))
             {
@@ -272,9 +271,9 @@ namespace MediaBrowser.Api.Playback.Hls
         /// </summary>
         /// <param name="outputPath">The output path.</param>
         /// <param name="state">The state.</param>
-        /// <param name="performSubtitleConversions">if set to <c>true</c> [perform subtitle conversions].</param>
+        /// <param name="isEncoding">if set to <c>true</c> [is encoding].</param>
         /// <returns>System.String.</returns>
-        protected override string GetCommandLineArguments(string outputPath, StreamState state, bool performSubtitleConversions)
+        protected override string GetCommandLineArguments(string outputPath, StreamState state, bool isEncoding)
         {
             var hlsVideoRequest = state.VideoRequest as GetHlsVideoStream;
 
@@ -289,7 +288,7 @@ namespace MediaBrowser.Api.Playback.Hls
             var inputModifier = GetInputModifier(state);
 
             // If performSubtitleConversions is true we're actually starting ffmpeg
-            var startNumberParam = performSubtitleConversions ? GetStartNumber(state).ToString(UsCulture) : "0";
+            var startNumberParam = isEncoding ? GetStartNumber(state).ToString(UsCulture) : "0";
 
             var args = string.Format("{0} {1} -i {2} -map_metadata -1 -threads {3} {4} {5} -sc_threshold 0 {6} -hls_time {7} -start_number {8} -hls_list_size {9} -y \"{10}\"",
                 itsOffset,
@@ -297,7 +296,7 @@ namespace MediaBrowser.Api.Playback.Hls
                 GetInputArgument(state),
                 threads,
                 GetMapArgs(state),
-                GetVideoArguments(state, performSubtitleConversions),
+                GetVideoArguments(state),
                 GetAudioArguments(state),
                 state.SegmentLength.ToString(UsCulture),
                 startNumberParam,
@@ -307,7 +306,7 @@ namespace MediaBrowser.Api.Playback.Hls
 
             if (hlsVideoRequest != null)
             {
-                if (hlsVideoRequest.AppendBaselineStream && state.IsInputVideo)
+                if (hlsVideoRequest.AppendBaselineStream)
                 {
                     var lowBitratePath = Path.Combine(Path.GetDirectoryName(outputPath), Path.GetFileNameWithoutExtension(outputPath) + "-low.m3u8");
 

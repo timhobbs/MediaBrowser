@@ -255,8 +255,13 @@
                 console.log('Transcoding because bitrate is too high');
                 return false;
             }
-
+            
             var extension = (mediaSource.Container || '').toLowerCase();
+
+            // m4v's with high profile failing in chrome
+            if (videoStream && videoStream.Profile == 'High' && extension == 'm4v') {
+                return false;
+            }
 
             if (extension == 'm4v') {
                 return $.browser.chrome;
@@ -1200,7 +1205,8 @@
                 audioChannels: 2,
                 audioBitrate: 128000,
                 StartTimeTicks: startPositionTicks,
-                mediaSourceId: mediaSource.Id
+                mediaSourceId: mediaSource.Id,
+                deviceId: ApiClient.deviceId()
             };
 
             var sourceContainer = (mediaSource.Container || '').toLowerCase();

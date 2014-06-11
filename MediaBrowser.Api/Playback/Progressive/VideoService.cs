@@ -1,4 +1,3 @@
-using System.Threading;
 using MediaBrowser.Common.IO;
 using MediaBrowser.Common.Net;
 using MediaBrowser.Controller.Channels;
@@ -14,6 +13,7 @@ using MediaBrowser.Model.IO;
 using ServiceStack;
 using System;
 using System.IO;
+using System.Threading;
 
 namespace MediaBrowser.Api.Playback.Progressive
 {
@@ -90,12 +90,12 @@ namespace MediaBrowser.Api.Playback.Progressive
         /// </summary>
         /// <param name="outputPath">The output path.</param>
         /// <param name="state">The state.</param>
-        /// <param name="performSubtitleConversions">if set to <c>true</c> [perform subtitle conversions].</param>
+        /// <param name="isEncoding">if set to <c>true</c> [is encoding].</param>
         /// <returns>System.String.</returns>
-        protected override string GetCommandLineArguments(string outputPath, StreamState state, bool performSubtitleConversions)
+        protected override string GetCommandLineArguments(string outputPath, StreamState state, bool isEncoding)
         {
             // Get the output codec name
-            var videoCodec = GetVideoCodec(state.VideoRequest);
+            var videoCodec = state.OutputVideoCodec;
 
             var format = string.Empty;
             var keyFrame = string.Empty;
@@ -114,7 +114,7 @@ namespace MediaBrowser.Api.Playback.Progressive
                 GetInputArgument(state),
                 keyFrame,
                 GetMapArgs(state),
-                GetVideoArguments(state, videoCodec, performSubtitleConversions),
+                GetVideoArguments(state, videoCodec),
                 threads,
                 GetAudioArguments(state),
                 format,
@@ -127,9 +127,8 @@ namespace MediaBrowser.Api.Playback.Progressive
         /// </summary>
         /// <param name="state">The state.</param>
         /// <param name="codec">The video codec.</param>
-        /// <param name="performSubtitleConversion">if set to <c>true</c> [perform subtitle conversion].</param>
         /// <returns>System.String.</returns>
-        private string GetVideoArguments(StreamState state, string codec, bool performSubtitleConversion)
+        private string GetVideoArguments(StreamState state, string codec)
         {
             var args = "-vcodec " + codec;
 
@@ -157,7 +156,7 @@ namespace MediaBrowser.Api.Playback.Progressive
             {
                 if (request.Width.HasValue || request.Height.HasValue || request.MaxHeight.HasValue || request.MaxWidth.HasValue)
                 {
-                    args += GetOutputSizeParam(state, codec, performSubtitleConversion, CancellationToken.None);
+                    args += GetOutputSizeParam(state, codec, CancellationToken.None);
                 }
             }
 
@@ -190,10 +189,8 @@ namespace MediaBrowser.Api.Playback.Progressive
                 return string.Empty;
             }
 
-            var request = state.Request;
-
             // Get the output codec name
-            var codec = GetAudioCodec(request);
+            var codec = state.OutputAudioCodec;
 
             if (codec.Equals("copy", StringComparison.OrdinalIgnoreCase))
             {

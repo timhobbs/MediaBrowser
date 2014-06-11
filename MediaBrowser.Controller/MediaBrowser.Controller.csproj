@@ -73,6 +73,7 @@
     <Compile Include="Channels\ChannelItemResult.cs" />
     <Compile Include="Channels\ChannelItemType.cs" />
     <Compile Include="Channels\ChannelMediaInfo.cs" />
+    <Compile Include="Channels\ChannelParentalRating.cs" />
     <Compile Include="Channels\ChannelSearchInfo.cs" />
     <Compile Include="Channels\IChannel.cs" />
     <Compile Include="Channels\IChannelFactory.cs" />
@@ -82,9 +83,15 @@
     <Compile Include="Channels\ChannelVideoItem.cs" />
     <Compile Include="Channels\Channel.cs" />
     <Compile Include="Channels\IChannelMediaItem.cs" />
+    <Compile Include="Channels\IHasCacheKey.cs" />
+    <Compile Include="Channels\IIndexableChannel.cs" />
+    <Compile Include="Channels\InternalAllChannelMediaQuery.cs" />
     <Compile Include="Channels\InternalChannelFeatures.cs" />
     <Compile Include="Channels\InternalChannelItemQuery.cs" />
+    <Compile Include="Channels\IRequiresMediaInfoCallback.cs" />
+    <Compile Include="Channels\ISearchableChannel.cs" />
     <Compile Include="Chapters\ChapterSearchRequest.cs" />
+    <Compile Include="Chapters\IChapterManager.cs" />
     <Compile Include="Chapters\IChapterProvider.cs" />
     <Compile Include="Chapters\ChapterResponse.cs" />
     <Compile Include="Collections\CollectionCreationOptions.cs" />
@@ -154,6 +161,7 @@
     <Compile Include="Library\IntroInfo.cs" />
     <Compile Include="Library\ItemUpdateType.cs" />
     <Compile Include="Library\IUserDataManager.cs" />
+    <Compile Include="Library\IUserViewManager.cs" />
     <Compile Include="Library\LibraryManagerExtensions.cs" />
     <Compile Include="Library\PlaybackStopEventArgs.cs" />
     <Compile Include="Library\UserDataSaveEventArgs.cs" />
@@ -184,6 +192,7 @@
     <Compile Include="MediaEncoding\ImageEncodingOptions.cs" />
     <Compile Include="MediaEncoding\IMediaEncoder.cs" />
     <Compile Include="MediaEncoding\InternalMediaInfoResult.cs" />
+    <Compile Include="MediaEncoding\ISubtitleEncoder.cs" />
     <Compile Include="MediaEncoding\VideoEncodingOptions.cs" />
     <Compile Include="Net\IHasResultFactory.cs" />
     <Compile Include="Net\IHttpResultFactory.cs" />

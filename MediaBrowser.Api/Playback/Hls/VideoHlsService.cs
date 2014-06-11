@@ -118,7 +118,7 @@ namespace MediaBrowser.Api.Playback.Hls
         /// <returns>System.String.</returns>
         protected override string GetAudioArguments(StreamState state)
         {
-            var codec = GetAudioCodec(state.Request);
+            var codec = state.OutputAudioCodec;
 
             if (codec.Equals("copy", StringComparison.OrdinalIgnoreCase))
             {
@@ -155,12 +155,10 @@ namespace MediaBrowser.Api.Playback.Hls
         /// Gets the video arguments.
         /// </summary>
         /// <param name="state">The state.</param>
-        /// <param name="performSubtitleConversion">if set to <c>true</c> [perform subtitle conversion].</param>
         /// <returns>System.String.</returns>
-        protected override string GetVideoArguments(StreamState state, 
-            bool performSubtitleConversion)
+        protected override string GetVideoArguments(StreamState state)
         {
-            var codec = GetVideoCodec(state.VideoRequest);
+            var codec = state.OutputVideoCodec;
 
             // See if we can save come cpu cycles by avoiding encoding
             if (codec.Equals("copy", StringComparison.OrdinalIgnoreCase))
@@ -181,7 +179,7 @@ namespace MediaBrowser.Api.Playback.Hls
             {
                 if (state.VideoRequest.Width.HasValue || state.VideoRequest.Height.HasValue || state.VideoRequest.MaxHeight.HasValue || state.VideoRequest.MaxWidth.HasValue)
                 {
-                    args += GetOutputSizeParam(state, codec, performSubtitleConversion, CancellationToken.None);
+                    args += GetOutputSizeParam(state, codec, CancellationToken.None);
                 }
             }
 

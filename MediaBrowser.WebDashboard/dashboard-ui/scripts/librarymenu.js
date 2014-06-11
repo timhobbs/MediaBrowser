@@ -64,15 +64,9 @@
         html += '<div class="libraryMenuOptions">';
         html += '</div>';
 
-        html += '<div class="libraryMenuDivider secondaryDivider" style="display:none;"></div>';
-
-        html += '<a class="viewMenuLink viewMenuTextLink lnkMediaFolder channelsViewMenu channelsMenuOption" style="display:none;" data-itemid="channels" href="channels.html">Channels</a>';
-
-        html += '<a class="viewMenuLink viewMenuTextLink lnkMediaFolder tvshowsViewMenu liveTvMenuOption" style="display:none;" data-itemid="livetv" href="livetvsuggested.html">Live TV</a>';
-
         html += '<div class="adminMenuOptions">';
         html += '<div class="libraryMenuDivider"></div>';
-        html += '<a class="viewMenuLink viewMenuTextLink lnkMediaFolder dashboardViewMenu" data-itemid="dashboard" href="dashboard.html">Dashboard</a>';
+        //html += '<a class="viewMenuLink viewMenuTextLink lnkMediaFolder dashboardViewMenu" data-itemid="dashboard" href="dashboard.html">Dashboard</a>';
         html += '<a class="viewMenuLink viewMenuTextLink lnkMediaFolder editorViewMenu" data-itemid="editor" href="edititemmetadata.html">Metadata Manager</a>';
         html += '<a class="viewMenuLink viewMenuTextLink lnkMediaFolder reportsViewMenu" data-itemid="reports" href="reports.html">Reports</a>';
         html += '</div>';
@@ -105,7 +99,16 @@
 
                 var viewMenuCssClass = (i.CollectionType || 'general') + 'ViewMenu';
 
-                return '<a data-itemid="' + i.Id + '" class="lnkMediaFolder viewMenuLink viewMenuTextLink ' + viewMenuCssClass + '" href="' + getItemHref(i) + '">' + i.Name + '</a>';
+                var itemId = i.Id;
+                
+                if (i.CollectionType == "channels") {
+                    itemId = "channels";
+                }
+                else if (i.CollectionType == "livetv") {
+                    itemId = "livetv";
+                }
+
+                return '<a data-itemid="' + itemId + '" class="lnkMediaFolder viewMenuLink viewMenuTextLink ' + viewMenuCssClass + '" href="' + getItemHref(i) + '">' + i.Name + '</a>';
 
             }).join('');
 
@@ -118,31 +121,6 @@
             });
         });
 
-        ApiClient.getLiveTvInfo().done(function (liveTvInfo) {
-
-            var showLiveTv = liveTvInfo.EnabledUsers.indexOf(userId) != -1;
-
-            if (showLiveTv) {
-                $('.liveTvMenuOption').show();
-                $('.secondaryDivider').show();
-            }
-        });
-
-        $.getJSON(ApiClient.getUrl("Channels", {
-            userId: userId,
-
-            // We just want the total record count
-            limit: 0
-
-        })).done(function (response) {
-
-            if (response.TotalRecordCount) {
-                $('.channelsMenuOption').show();
-                $('.secondaryDivider').show();
-            }
-
-        });
-
         Dashboard.getCurrentUser().done(function (user) {
 
             if (user.Configuration.IsAdministrator) {
@@ -153,7 +131,7 @@
         });
     }
 
-    function getLibraryMenu(user, channelCount, items, liveTvInfo) {
+    function getLibraryMenu() {
 
         var panel = $('#libraryPanel');
 
@@ -168,7 +146,7 @@
             html += '<a class="lnkMediaFolder viewMenuLink viewMenuTextLink homeViewMenu" href="index.html">Home</a>';
             html += '<div class="libraryMenuDivider"></div>';
 
-            html += getViewsHtml(user, channelCount, items, liveTvInfo);
+            html += getViewsHtml();
             html += '</div>';
 
             html += '</div>';
@@ -364,7 +342,7 @@ $.fn.createHoverTouch = function () {
         timerId = setTimeout(function () {
 
             $(elem).trigger('hovertouch');
-        }, 200);
+        }, 300);
     }
 
     function stopTimer(elem) {
@@ -378,6 +356,7 @@ $.fn.createHoverTouch = function () {
     return $(this).on('mouseenter', function () {
 
         if (preventHover === true) {
+            preventHover = false;
             return;
         }
 
