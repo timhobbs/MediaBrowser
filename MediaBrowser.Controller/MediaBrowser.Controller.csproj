@@ -128,7 +128,6 @@
     <Compile Include="Entities\IHasImages.cs" />
     <Compile Include="Entities\IHasKeywords.cs" />
     <Compile Include="Entities\IHasMediaSources.cs" />
-    <Compile Include="Entities\IHasMediaStreams.cs" />
     <Compile Include="Entities\IHasMetascore.cs" />
     <Compile Include="Entities\IHasPreferredMetadataLanguage.cs" />
     <Compile Include="Entities\IHasProductionLocations.cs" />
@@ -226,6 +225,8 @@
     <Compile Include="Security\IEncryptionManager.cs" />
     <Compile Include="Subtitles\ISubtitleManager.cs" />
     <Compile Include="Subtitles\ISubtitleProvider.cs" />
+    <Compile Include="Providers\ItemIdentifier.cs" />
+    <Compile Include="Providers\ItemIdentities.cs" />
     <Compile Include="Providers\ItemLookupInfo.cs" />
     <Compile Include="Providers\MetadataRefreshOptions.cs" />
     <Compile Include="Providers\NameParser.cs" />

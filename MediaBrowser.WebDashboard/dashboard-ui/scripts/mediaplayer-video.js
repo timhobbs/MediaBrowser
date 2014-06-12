@@ -14,8 +14,6 @@
 
         var self = mediaPlayer;
 
-        var currentItem;
-        var currentMediaSource;
         var timeout;
         var video;
         var initialVolume;
@@ -27,10 +25,22 @@
         var isPositionSliderActive;
         var currentTimeElement;
 
+        self.currentSubtitleStreamIndex = null;
+
         self.initVideoPlayer = function () {
             video = playVideo(item, mediaSource, startPosition);
 
             return video;
+        };
+
+        self.getCurrentSubtitleStream = function () {
+            return self.getSubtitleStream(self.currentSubtitleStreamIndex);
+        };
+
+        self.getSubtitleStream = function (index) {
+            return self.currentMediaSource.MediaStreams.filter(function (s) {
+                return s.Type == 'Subtitle' && s.Index == index;
+            })[0];
         };
 
         self.remoteFullscreen = function () {
@@ -148,7 +158,62 @@
         };
 
         self.setSubtitleStreamIndex = function (index) {
-            self.changeStream(self.getCurrentTicks(), { SubtitleStreamIndex: index });
+
+            if (!self.supportsTextTracks()) {
+                self.changeStream(self.getCurrentTicks(), { SubtitleStreamIndex: index });
+                self.currentSubtitleStreamIndex = index;
+                return;
+            }
+
+            var currentStream = self.getCurrentSubtitleStream();
+
+            var newStream = self.getSubtitleStream(index);
+
+            if (!currentStream && !newStream) return;
+
+            var selectedTrackElementIndex = -1;
+
+            if (currentStream && !newStream) {
+
+                if (!currentStream.IsTextSubtitleStream) {
+
+                    // Need to change the transcoded stream to remove subs
+                    self.changeStream(self.getCurrentTicks(), { SubtitleStreamIndex: -1 });
+                }
+            }
+            else if (!currentStream && newStream) {
+
+                if (newStream.IsTextSubtitleStream) {
+                    selectedTrackElementIndex = index;
+                } else {
+
+                    // Need to change the transcoded stream to add subs
+                    self.changeStream(self.getCurrentTicks(), { SubtitleStreamIndex: index });
+                }
+            }
+
+            self.setCurrentTrackElement(selectedTrackElementIndex);
+            self.currentSubtitleStreamIndex = index;
+        };
+
+        self.setCurrentTrackElement = function (index) {
+
+            var textStreams = self.currentMediaSource.MediaStreams.filter(function (s) {
+                return s.Type == 'Subtitle' && s.IsTextSubtitleStream;
+            });
+
+            var allTracks = video.textTracks; // get list of tracks
+
+            for (var i = 0; i < allTracks.length; i++) {
+
+                var trackIndex = textStreams[i].Index;
+
+                if (trackIndex == index) {
+                    allTracks[i].mode = "showing"; // show this track
+                } else {
+                    allTracks[i].mode = "disabled"; // hide all other tracks
+                }
+            }
         };
 
         $(document).on('webkitfullscreenchange mozfullscreenchange fullscreenchange', function (e) {
@@ -173,7 +238,7 @@
 
             var newPercent = parseInt(this.value);
 
-            var newPositionTicks = (newPercent / 100) * currentMediaSource.RunTimeTicks;
+            var newPositionTicks = (newPercent / 100) * self.currentMediaSource.RunTimeTicks;
 
             self.changeStream(Math.floor(newPositionTicks));
         }
@@ -373,7 +438,7 @@
 
             var currentTicks = self.getCurrentTicks();
 
-            var chapters = currentItem.Chapters || [];
+            var chapters = self.currentItem.Chapters || [];
 
             for (var i = 0, length = chapters.length; i < length; i++) {
 
@@ -398,7 +463,7 @@
 
                 if (chapter.ImageTag) {
 
-                    imgUrl = ApiClient.getScaledImageUrl(currentItem.Id, {
+                    imgUrl = ApiClient.getScaledImageUrl(self.currentItem.Id, {
                         maxWidth: 100,
                         tag: chapter.ImageTag,
                         type: "Chapter",
@@ -428,7 +493,7 @@
 
         function getAudioTracksHtml() {
 
-            var streams = currentMediaSource.MediaStreams.filter(function (currentStream) {
+            var streams = self.currentMediaSource.MediaStreams.filter(function (currentStream) {
                 return currentStream.Type == "Audio";
             });
 
@@ -496,11 +561,11 @@
 
         function getSubtitleTracksHtml() {
 
-            var streams = currentMediaSource.MediaStreams.filter(function (currentStream) {
+            var streams = self.currentMediaSource.MediaStreams.filter(function (currentStream) {
                 return currentStream.Type == "Subtitle";
             });
 
-            var currentIndex = getParameterByName('SubtitleStreamIndex', video.currentSrc) || -1;
+            var currentIndex = self.currentSubtitleStreamIndex || -1;
 
             var html = '';
 
@@ -578,7 +643,7 @@
 
             var currentAudioStreamIndex = getParameterByName('AudioStreamIndex', video.currentSrc);
 
-            var options = getVideoQualityOptions(currentMediaSource.MediaStreams, currentAudioStreamIndex, transcodingExtension);
+            var options = getVideoQualityOptions(self.currentMediaSource.MediaStreams, currentAudioStreamIndex, transcodingExtension);
 
             if (isStatic) {
                 options[0].name = "Direct";
@@ -656,7 +721,7 @@
                 options.push({ name: '720p - 4Mbps', maxWidth: 1280, bitrate: 4000000 });
                 options.push({ name: '720p - 3Mbps', maxWidth: 1280, bitrate: 3000000 });
                 options.push({ name: '720p - 2Mbps', maxWidth: 1280, bitrate: 2000000 });
-                
+
                 // The extra 1 is because they're keyed off the bitrate value
                 options.push({ name: '720p - 1Mbps', maxWidth: 1280, bitrate: 1000001 });
             }
@@ -692,15 +757,27 @@
 
             var mediaStreams = mediaSource.MediaStreams || [];
 
+            var subtitleStreams = mediaStreams.filter(function (s) {
+                return s.Type == 'Subtitle';
+            });
+
+            var selectedSubtitleStream = subtitleStreams.filter(function (s) {
+                return s.Index == mediaSource.DefaultSubtitleStreamIndex;
+
+            })[0];
+
             var baseParams = {
                 audioChannels: 2,
                 StartTimeTicks: startPosition,
-                SubtitleStreamIndex: mediaSource.DefaultSubtitleStreamIndex,
                 AudioStreamIndex: mediaSource.DefaultAudioStreamIndex,
                 deviceId: ApiClient.deviceId(),
                 Static: false,
                 mediaSourceId: mediaSource.Id
             };
+
+            if (selectedSubtitleStream && (!selectedSubtitleStream.IsTextSubtitleStream || !self.supportsTextTracks())) {
+                baseParams.SubtitleStreamIndex = mediaSource.DefaultSubtitleStreamIndex;
+            }
 
             var mp4Quality = getVideoQualityOptions(mediaStreams).filter(function (opt) {
                 return opt.selected;
@@ -802,12 +879,21 @@
 
             html += '<source type="video/mp4" src="' + mp4VideoUrl + '" />';
 
-            for (var i = 0; i < vttSubtitleStreams.length; i++) {
-                var vtt = vttSubtitleStreams[i];
-                var url = ApiClient.getUrl('videos/' + item.Id + '/subtitles/' + vtt.Index);
-                var lang = "en";
+            if (self.supportsTextTracks()) {
+                var textStreams = subtitleStreams.filter(function (s) {
+                    return s.IsTextSubtitleStream;
+                });
 
-                html += '<track src="' + url + '" kind="subtitle" srclang="' + lang + '" />';
+                for (var i = 0, length = textStreams.length; i < length; i++) {
+
+                    var textStream = textStreams[i];
+                    var textStreamUrl = ApiClient.getUrl('Videos/' + item.Id + '/' + mediaSource.Id + '/Subtitles/' + textStream.Index + '/Stream.vtt', {
+                    });
+
+                    var defaultAttribute = i.Index == mediaSource.DefaultSubtitleStreamIndex ? ' default' : '';
+
+                    html += '<track kind="subtitles" src="' + textStreamUrl + '" srclang="' + (textStream.Language || 'und') + '"' + defaultAttribute + '>';
+                }
             }
 
             html += '</video>';
@@ -826,17 +912,15 @@
 
             $('#video-qualityButton', videoControls).show();
 
-            if (mediaStreams.filter(function (i) {
-                return i.Type == "Audio";
+            if (mediaStreams.filter(function (s) {
+                return s.Type == "Audio";
             }).length) {
                 $('#video-audioTracksButton', videoControls).show();
             } else {
                 $('#video-audioTracksButton', videoControls).hide();
             }
 
-            if (mediaStreams.filter(function (i) {
-                return i.Type == "Subtitle";
-            }).length) {
+            if (subtitleStreams.length) {
                 $('#video-subtitleButton', videoControls).show().prop("disabled", false);
             } else {
                 $('#video-subtitleButton', videoControls).hide().prop("disabled", true);;
@@ -1001,8 +1085,7 @@
 
             fullscreenExited = false;
 
-            currentItem = item;
-            currentMediaSource = mediaSource;
+            self.currentSubtitleStreamIndex = mediaSource.DefaultSubtitleStreamIndex;
 
             return video[0];
         }

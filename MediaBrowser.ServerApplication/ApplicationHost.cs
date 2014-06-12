@@ -40,6 +40,7 @@ using MediaBrowser.Dlna.ContentDirectory;
 using MediaBrowser.Dlna.Main;
 using MediaBrowser.MediaEncoding.BdInfo;
 using MediaBrowser.MediaEncoding.Encoder;
+using MediaBrowser.MediaEncoding.Subtitles;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.MediaInfo;
 using MediaBrowser.Model.System;
@@ -497,7 +498,7 @@ namespace MediaBrowser.ServerApplication
             ImageProcessor = new ImageProcessor(LogManager.GetLogger("ImageProcessor"), ServerConfigurationManager.ApplicationPaths, FileSystemManager, JsonSerializer, MediaEncoder);
             RegisterSingleInstance(ImageProcessor);
 
-            DtoService = new DtoService(Logger, LibraryManager, UserManager, UserDataManager, ItemRepository, ImageProcessor, ServerConfigurationManager, FileSystemManager, ProviderManager, () => ChannelManager);
+            DtoService = new DtoService(Logger, LibraryManager, UserDataManager, ItemRepository, ImageProcessor, ServerConfigurationManager, FileSystemManager, ProviderManager, () => ChannelManager);
             RegisterSingleInstance(DtoService);
 
             SessionManager = new SessionManager(UserDataManager, ServerConfigurationManager, Logger, UserRepository, LibraryManager, UserManager, musicManager, DtoService, ImageProcessor, ItemRepository, JsonSerializer, this, HttpClient);
@@ -549,6 +550,8 @@ namespace MediaBrowser.ServerApplication
             EncodingManager = new EncodingManager(ServerConfigurationManager, FileSystemManager, Logger,
                 MediaEncoder, ChapterManager);
             RegisterSingleInstance(EncodingManager);
+
+            RegisterSingleInstance<ISubtitleEncoder>(new SubtitleEncoder(LibraryManager, LogManager.GetLogger("SubtitleEncoder"), ApplicationPaths, FileSystemManager, MediaEncoder));
 
             var displayPreferencesTask = Task.Run(async () => await ConfigureDisplayPreferencesRepositories().ConfigureAwait(false));
             var itemsTask = Task.Run(async () => await ConfigureItemRepositories().ConfigureAwait(false));
@@ -719,10 +722,14 @@ namespace MediaBrowser.ServerApplication
                                     GetExports<IBaseItemComparer>(),
                                     GetExports<ILibraryPostScanTask>());
 
-            ProviderManager.AddParts(GetExports<IImageProvider>(), GetExports<IMetadataService>(), GetExports<IMetadataProvider>(),
-                                    GetExports<IMetadataSaver>(),
-                                    GetExports<IImageSaver>(),
-                                    GetExports<IExternalId>());
+            ProviderManager.AddParts(GetExports<IImageProvider>(),
+                                     GetExports<IMetadataService>(),
+                                     GetExports<IItemIdentityProvider>(),
+                                     GetExports<IItemIdentityConverter>(),
+                                     GetExports<IMetadataProvider>(),
+                                     GetExports<IMetadataSaver>(),
+                                     GetExports<IImageSaver>(),
+                                     GetExports<IExternalId>());
 
             SeriesOrderManager.AddParts(GetExports<ISeriesOrderProvider>());
 
@@ -732,7 +739,7 @@ namespace MediaBrowser.ServerApplication
 
             SubtitleManager.AddParts(GetExports<ISubtitleProvider>());
             ChapterManager.AddParts(GetExports<IChapterProvider>());
-       
+
             SessionManager.AddParts(GetExports<ISessionControllerFactory>());
 
             ChannelManager.AddParts(GetExports<IChannel>(), GetExports<IChannelFactory>());
