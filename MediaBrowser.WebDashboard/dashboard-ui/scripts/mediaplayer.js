@@ -225,7 +225,7 @@
             }
 
             // For now, until perfected
-            return false;
+            return true;
         };
 
         self.canPlayVideoDirect = function (mediaSource, videoStream, audioStream, subtitleStream, maxWidth, bitrate) {
