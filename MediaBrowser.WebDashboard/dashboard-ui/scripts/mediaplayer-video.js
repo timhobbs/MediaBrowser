@@ -190,6 +190,8 @@
                     // Need to change the transcoded stream to add subs
                     self.changeStream(self.getCurrentTicks(), { SubtitleStreamIndex: index });
                 }
+            } else {
+                selectedTrackElementIndex = index;
             }
 
             self.setCurrentTrackElement(selectedTrackElementIndex);
@@ -890,9 +892,17 @@
                     var textStreamUrl = ApiClient.getUrl('Videos/' + item.Id + '/' + mediaSource.Id + '/Subtitles/' + textStream.Index + '/Stream.vtt', {
                     });
 
-                    var defaultAttribute = i.Index == mediaSource.DefaultSubtitleStreamIndex ? ' default' : '';
+                    var lang = (textStream.Language || 'und');
 
-                    html += '<track kind="subtitles" src="' + textStreamUrl + '" srclang="' + (textStream.Language || 'und') + '"' + defaultAttribute + '>';
+                    var defaultIndex = mediaSource.DefaultSubtitleStreamIndex ? mediaSource.DefaultSubtitleStreamIndex : -1;
+
+                    // If there is not default stream and this is an "undefined" language, just assume it is the default
+                    // It is better to assume we should show a text track since it is so easy to turn it off
+                    if (defaultIndex == -1 && lang == "und") defaultIndex = i;
+
+                    var defaultAttribute = i == defaultIndex  ? ' default' : '';
+
+                    html += '<track kind="subtitles" src="' + textStreamUrl + '" srclang="' + lang + '"' + defaultAttribute + '>';
                 }
             }
 
