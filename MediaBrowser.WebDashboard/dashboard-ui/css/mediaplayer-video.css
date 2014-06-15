@@ -451,11 +451,15 @@
 }
 
 ::cue {
-    -webkit-stroke-width: 2px;
-    -webkit-stroke-color: #000;
+    -webkit-text-stroke: 2px black;
     -webkit-fill-color: #ffdd00;
     color: #ffdd00;
     font: 1.1em sans-serif;
     background-color: transparent;
     text-shadow: 0 0 10px #000;
+    text-shadow:
+        -1px -1px 0 #000,  
+        1px -1px 0 #000,
+        -1px 1px 0 #000,
+        1px 1px 0 #000;
 }
