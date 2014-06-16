@@ -159,7 +159,7 @@
 
         self.setSubtitleStreamIndex = function (index) {
 
-            if (!self.supportsTextTracks()) {
+            if (!self.supportsTextTracks() || !self.isStatic) {
                 self.changeStream(self.getCurrentTicks(), { SubtitleStreamIndex: index });
                 self.currentSubtitleStreamIndex = index;
                 return;
@@ -822,6 +822,8 @@
 
             var isStatic = mp4Quality.isStatic;
 
+            self.isStatic = isStatic;
+
             self.startTimeTicksOffset = isStatic ? 0 : startPosition || 0;
 
             var seekParam = isStatic && startPosition ? '#t=' + (startPosition / 10000000) : '';
@@ -905,7 +907,7 @@
 
             html += '<source type="video/mp4" src="' + mp4VideoUrl + '" />';
 
-            if (self.supportsTextTracks()) {
+            if (self.supportsTextTracks() && isStatic) {
                 var textStreams = subtitleStreams.filter(function (s) {
                     return s.IsTextSubtitleStream;
                 });
