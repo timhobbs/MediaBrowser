@@ -1,0 +1,28 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>${TitleMediaBrowser}</title>
+</head>
+<body>
+    <div id="channelsLatestPage" data-role="page" class="page libraryPage channelsPage" data-theme="b" data-contextname="${HeaderChannels}">
+
+        <div class="libraryViewNav scopedLibraryViewNav">
+            <a href="#" class="ui-btn-active">${TabLatest}</a>
+            <a href="channels.html">${TabChannels}</a>
+        </div>
+
+        <div data-role="content">
+            <table class="ehsContent homeEhsContent">
+                <tr>
+                    <td>
+                        <div>
+                            <h1 class="listHeader firstListHeader">${HeaderLatestChannelItems}</h1>
+                        </div>
+                        <div id="items" class="itemsContainer"></div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

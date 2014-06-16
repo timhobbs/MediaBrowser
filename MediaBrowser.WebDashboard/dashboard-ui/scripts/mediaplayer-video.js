@@ -232,6 +232,10 @@
 
         self.updateTextStreamUrls = function (startPositionTicks) {
 
+            if (!self.supportsTextTracks()) {
+                return;
+            }
+
             $('track', video).each(function () {
 
                 var currentSrc = this.src;
@@ -239,6 +243,7 @@
                 currentSrc = replaceQueryString(currentSrc, 'startPositionTicks', startPositionTicks);
 
                 this.src = currentSrc;
+
             });
         };
 

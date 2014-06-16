@@ -231,11 +231,12 @@
 
         self.supportsTextTracks = function () {
 
-            // Does not support changing tracks via mode property
-            if ($.browser.mozilla) {
+            // When seeking with transcoding, there repointing the track element
+            // to a new url (via src) doesn't seem to work.
+            if ($.browser.chrome) {
                 return false;
             }
-
+            
             if (supportsTextTracks == null) {
 
                 supportsTextTracks = document.createElement('video').textTracks != null;
@@ -287,9 +288,9 @@
 
             var extension = (mediaSource.Container || '').toLowerCase();
 
-            // m4v's with high profile failing in chrome
-            if (videoStream && videoStream.Profile == 'High' && extension == 'm4v') {
-                return false;
+            // m4v's and mp4's with high profile failing in chrome
+            if (videoStream && videoStream.Profile == 'High') {
+                //return false;
             }
 
             if (extension == 'm4v') {
