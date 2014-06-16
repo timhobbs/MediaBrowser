@@ -489,6 +489,7 @@ namespace MediaBrowser.Api.Playback
             if (state.SubtitleStream != null && state.SubtitleStream.IsTextSubtitleStream)
             {
                 assSubtitleParam = GetTextSubtitleParam(state, cancellationToken);
+
                 copyTsParam = " -copyts";
             }
 

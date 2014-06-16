@@ -19,6 +19,7 @@
         self.playlist = [];
         self.isLocalPlayer = true;
         self.isDefaultPlayer = true;
+        
         self.name = 'Html5 Player';
 
         self.getTargets = function () {
@@ -41,7 +42,14 @@
         };
 
         self.getCurrentTicks = function (mediaElement) {
-            return Math.floor(10000000 * (mediaElement || currentMediaElement).currentTime) + self.startTimeTicksOffset;
+
+            var playerTime = Math.floor(10000000 * (mediaElement || currentMediaElement).currentTime);
+
+            //if (!self.isCopyingTimestamps) {
+                playerTime += self.startTimeTicksOffset;
+            //}
+
+            return playerTime;
         };
 
         self.clearPauseStop = function () {
@@ -174,6 +182,8 @@
                         element.src = currentSrc;
 
                     });
+
+                    self.updateTextStreamUrls(ticks || 0);
                 } else {
                     self.startTimeTicksOffset = ticks;
                     element.src = currentSrc;
@@ -217,6 +227,8 @@
             $(self).trigger('positionchange', [state]);
         };
 
+        var supportsTextTracks;
+
         self.supportsTextTracks = function () {
 
             // Does not support changing tracks via mode property
@@ -224,8 +236,13 @@
                 return false;
             }
 
-            // For now, until perfected
-            return true;
+            if (supportsTextTracks == null) {
+
+                supportsTextTracks = document.createElement('video').textTracks != null;
+            }
+
+            // For now, until ready
+            return supportsTextTracks;
         };
 
         self.canPlayVideoDirect = function (mediaSource, videoStream, audioStream, subtitleStream, maxWidth, bitrate) {
@@ -391,7 +408,7 @@
 
                 self.currentItem = item;
                 self.currentMediaSource = getOptimalMediaSource(item.MediaType, item.MediaSources);
-
+                
                 mediaElement = playAudio(item, self.currentMediaSource, startPosition);
 
                 self.currentDurationTicks = self.currentMediaSource.RunTimeTicks;

@@ -190,8 +190,20 @@
                     // Need to change the transcoded stream to add subs
                     self.changeStream(self.getCurrentTicks(), { SubtitleStreamIndex: index });
                 }
-            } else {
-                selectedTrackElementIndex = index;
+            }
+            else if (currentStream && newStream) {
+
+                if (newStream.IsTextSubtitleStream) {
+                    selectedTrackElementIndex = index;
+
+                    if (!currentStream.IsTextSubtitleStream) {
+                        self.changeStream(self.getCurrentTicks(), { SubtitleStreamIndex: -1 });
+                    }
+                } else {
+
+                    // Need to change the transcoded stream to add subs
+                    self.changeStream(self.getCurrentTicks(), { SubtitleStreamIndex: index });
+                }
             }
 
             self.setCurrentTrackElement(selectedTrackElementIndex);
@@ -216,6 +228,18 @@
                     allTracks[i].mode = "disabled"; // hide all other tracks
                 }
             }
+        };
+
+        self.updateTextStreamUrls = function (startPositionTicks) {
+
+            $('track', video).each(function () {
+
+                var currentSrc = this.src;
+
+                currentSrc = replaceQueryString(currentSrc, 'startPositionTicks', startPositionTicks);
+
+                this.src = currentSrc;
+            });
         };
 
         $(document).on('webkitfullscreenchange mozfullscreenchange fullscreenchange', function (e) {
@@ -890,6 +914,7 @@
 
                     var textStream = textStreams[i];
                     var textStreamUrl = ApiClient.getUrl('Videos/' + item.Id + '/' + mediaSource.Id + '/Subtitles/' + textStream.Index + '/Stream.vtt', {
+                        startPositionTicks: (startPosition || 0)
                     });
 
                     var lang = (textStream.Language || 'und');

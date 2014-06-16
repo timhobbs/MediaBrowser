@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 namespace MediaBrowser.MediaEncoding.Subtitles
@@ -19,7 +20,11 @@ namespace MediaBrowser.MediaEncoding.Subtitles
                     cancellationToken.ThrowIfCancellationRequested();
 
                     writer.WriteLine(@"{0:hh\:mm\:ss\.fff} --> {1:hh\:mm\:ss\.fff}", TimeSpan.FromTicks(trackEvent.StartPositionTicks), TimeSpan.FromTicks(trackEvent.EndPositionTicks));
-                    writer.WriteLine(trackEvent.Text.Replace("<br />", "\r\n"));
+
+                    var text = trackEvent.Text;
+                    text = Regex.Replace(text, @"\\N", "\r\n", RegexOptions.IgnoreCase);
+
+                    writer.WriteLine(text);
                     writer.WriteLine(string.Empty);
                 }
             }
