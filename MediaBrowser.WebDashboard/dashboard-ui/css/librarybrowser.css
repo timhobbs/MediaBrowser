@@ -31,14 +31,13 @@
     background-size: cover;
 }
 
-
 .libraryPage .header {
     padding-bottom: 0;
 }
 
 .libraryPage > .ui-content {
     padding-top: 10px;
-    padding-bottom: 70px;
+    padding-bottom: 120px;
 }
 
 .libraryPage .currentUsername {
@@ -75,6 +74,17 @@
     margin-top: 1em;
 }
 
+@media all and (min-width: 900px) {
+
+    .ehsContent {
+        max-width: 880px;
+    }
+
+    .squareEhsContent {
+        max-width: 750px;
+    }
+}
+
 @media all and (min-width: 1000px) {
 
     .ehsContent {
@@ -82,7 +92,7 @@
     }
 
     .squareEhsContent {
-        max-width: 750px;
+        max-width: 900px;
     }
 }
 

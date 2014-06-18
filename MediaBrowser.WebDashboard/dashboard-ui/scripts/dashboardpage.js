@@ -50,14 +50,15 @@
 
             Dashboard.updateSystemInfo(systemInfo);
 
-            $('#appVersionNumber', page).html('Version ' + systemInfo.Version);
+            $('#appVersionNumber', page).html(Globalize.translate('LabelVersionNumber').replace('{0}', systemInfo.Version));
 
             var port = systemInfo.HttpServerPortNumber;
 
             if (port == systemInfo.WebSocketPortNumber) {
-                $('#ports', page).html('Running on port <b>' + port + '</b>');
+                
+                $('#ports', page).html(Globalize.translate('LabelRunningOnPort').replace('{0}', '<b>' + port + '</b>'));
             } else {
-                $('#ports', page).html('Running on ports <b>' + port + '</b> and <b>' + systemInfo.WebSocketPortNumber + '</b>');
+                $('#ports', page).html(Globalize.translate('LabelRunningOnPorts').replace('{0}', '<b>' + port + '</b>').replace('{1}', '<b>' + systemInfo.WebSocketPortNumber + '</b>'));
             }
 
             if (systemInfo.CanSelfRestart) {
@@ -340,13 +341,13 @@
         html += '<div>';
 
         if (session.PlayState.PlayMethod == 'Transcode') {
-            html += 'Transcoding';
+            html += Globalize.translate('LabelPlayMethodTranscoding');
         }
         else if (session.PlayState.PlayMethod == 'DirectStream') {
-            html += 'Direct Streaming';
+            html += Globalize.translate('LabelPlayMethodDirectStream');
         }
         else if (session.PlayState.PlayMethod == 'DirectPlay') {
-            html += 'Direct Playing';
+            html += Globalize.translate('LabelPlayMethodDirectPlay');
         }
 
         html += '</div>';
@@ -376,11 +377,11 @@
 
             if (session.TranscodingInfo.VideoCodec) {
 
-                html += '<div>Video: ' + session.TranscodingInfo.VideoCodec + '</div>';
+                html += '<div>' + Globalize.translate('LabelVideoCodec').replace('{0}', session.TranscodingInfo.VideoCodec) + '</div>';
             }
             if (session.TranscodingInfo.AudioCodec && session.TranscodingInfo.AudioCodec != session.TranscodingInfo.Container) {
 
-                html += '<div>Audio: ' + session.TranscodingInfo.AudioCodec + '</div>';
+                html += '<div>' + Globalize.translate('LabelAudioCodec').replace('{0}', session.TranscodingInfo.AudioCodec) + '</div>';
             }
 
         }
@@ -466,21 +467,6 @@
             html: text,
             image: imgUrl
         };
-
-        //var playstate = session.PlayState;
-
-        //if (playstate) {
-
-        //    if (playstate.PlayMethod == 'DirectPlay') {
-        //        return 'Direct playing';
-        //    }
-        //    if (playstate.PlayMethod == 'DirectStream') {
-        //        return 'Direct streaming';
-        //    }
-        //    if (playstate.PlayMethod == 'Transcode') {
-        //        text = text + '<div class="sessionPlayMethod">Transcoding</div>';
-        //    }
-        //}
     },
 
     getUsersHtml: function (session) {
@@ -722,10 +708,10 @@
 
                 html += "<span style='color:#009F00;margin-left:5px;margin-right:5px;'>" + progress + "%</span>";
 
-                html += '<button type="button" data-icon="stop" data-iconpos="notext" data-inline="true" data-mini="true" onclick="DashboardPage.stopTask(\'' + task.Id + '\');">Stop</button>';
+                html += '<button type="button" data-icon="stop" data-iconpos="notext" data-inline="true" data-mini="true" onclick="DashboardPage.stopTask(\'' + task.Id + '\');">' + Globalize.translate('ButtonStop') + '</button>';
             }
             else if (task.State == "Cancelling") {
-                html += '<span style="color:#cc0000;">Stopping</span>';
+                html += '<span style="color:#cc0000;">' + Globalize.translate('LabelStopping') + '</span>';
             }
 
             html += '</p>';
@@ -745,7 +731,9 @@
 
             var externalUrl = systemInfo.WanAddress + "/mediabrowser";
 
-            $('.externalUrl', page).html('Remote access: <a href="' + externalUrl + '" target="_blank">' + externalUrl + '</a>').show().trigger('create');
+            var remoteAccessHtml = Globalize.translate('LabelRemoteAccessUrl').replace('{0}', '<a href="' + externalUrl + '" target="_blank">' + externalUrl + '</a>');
+
+            $('.externalUrl', page).html(remoteAccessHtml).show().trigger('create');
         } else {
             $('.externalUrl', page).hide();
         }
@@ -776,7 +764,7 @@
 
                     $('#pUpdateNow', page).show();
 
-                    $('#newVersionNumber', page).html("Version " + version.versionStr + " is now available for download.");
+                    $('#newVersionNumber', page).html(Globalize.translate('VersionXIsAvailableForDownload').replace('{0}', version.versionStr));
                 }
 
             }).fail(function () {
@@ -845,9 +833,9 @@
 
                 var update = updates[i];
 
-                html += '<p><strong>A new version of ' + update.name + ' is available!</strong></p>';
+                html += '<p><strong>' + Globalize.translate('NewVersionOfSomethingAvailable').replace('{0}', update.name) + '</strong></p>';
 
-                html += '<button type="button" data-icon="arrow-d" data-theme="b" onclick="DashboardPage.installPluginUpdate(this);" data-name="' + update.name + '" data-guid="' + update.guid + '" data-version="' + update.versionStr + '" data-classification="' + update.classification + '">Update Now</button>';
+                html += '<button type="button" data-icon="arrow-d" data-theme="b" onclick="DashboardPage.installPluginUpdate(this);" data-name="' + update.name + '" data-guid="' + update.guid + '" data-version="' + update.versionStr + '" data-classification="' + update.classification + '">' + Globalize.translate('ButtonUpdateNow') + '</button>';
             }
 
             elem.html(html).trigger('create');
@@ -912,7 +900,7 @@
 
     restart: function () {
 
-        Dashboard.confirm("Are you sure you wish to restart Media Browser Server?", "Restart", function (result) {
+        Dashboard.confirm(Globalize.translate('MessageConfirmRestart'), Globalize.translate('HeaderRestart'), function (result) {
 
             if (result) {
                 $('#btnRestartServer').buttonEnabled(false);
@@ -925,7 +913,7 @@
 
     shutdown: function () {
 
-        Dashboard.confirm("Are you sure you wish to shutdown Media Browser Server?", "Shutdown", function (result) {
+        Dashboard.confirm(Globalize.translate('MessageConfirmShutdown'), Globalize.translate('HeaderShutdown'), function (result) {
 
             if (result) {
                 $('#btnRestartServer').buttonEnabled(false);

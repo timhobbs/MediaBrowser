@@ -350,6 +350,35 @@
                 idleHandler(this);
 
             });
+
+            var trackChange = false;
+
+            var tooltip = $('<div id="slider-tooltip"></div>');
+
+            $("#videoControls .positionSliderContainer .slider").on("change", function (e) {
+                if (!trackChange) return;
+
+                var pct = $(this).val();
+
+                var time = self.currentDurationTicks * (Number(pct) * .01);
+
+                var tooltext = Dashboard.getDisplayTime(time);
+
+                tooltip.text(tooltext);
+
+                console.log("slidin", pct, self.currentDurationTicks, time);
+
+            }).on("slidestart", function (e) {
+                trackChange = true;
+
+                var handle = $("#videoControls .positionSliderContainer .ui-slider-handle");
+
+                handle.after(tooltip);
+            }).on("slidestop", function (e) {
+                trackChange = false;
+
+                tooltip.remove();
+            });
         });
 
         function idleHandler() {

@@ -1,12 +1,15 @@
 ﻿using MediaBrowser.Controller.Entities;
 using MediaBrowser.Model.Configuration;
+using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.LiveTv;
 using System.Collections.Generic;
 using System.Linq;
+using MediaBrowser.Model.MediaInfo;
 
 namespace MediaBrowser.Controller.LiveTv
 {
-    public class LiveTvChannel : BaseItem, IItemByName
+    public class LiveTvChannel : BaseItem, IItemByName, IHasMediaSources
     {
         /// <summary>
         /// Gets the user data key.
@@ -113,6 +116,28 @@ namespace MediaBrowser.Controller.LiveTv
         public IEnumerable<BaseItem> GetTaggedItems(IEnumerable<BaseItem> inputItems)
         {
             return new List<BaseItem>();
+        }
+
+        public IEnumerable<MediaSourceInfo> GetMediaSources(bool enablePathSubstitution)
+        {
+            var list = new List<MediaSourceInfo>();
+
+            var locationType = LocationType;
+
+            var info = new MediaSourceInfo
+            {
+                Id = Id.ToString("N"),
+                Protocol = locationType == LocationType.Remote ? MediaProtocol.Http : MediaProtocol.File,
+                MediaStreams = new List<MediaStream>(),
+                Name = Name,
+                Path = Path,
+                RunTimeTicks = RunTimeTicks,
+                Type = MediaSourceType.Default
+            };
+
+            list.Add(info);
+
+            return list;
         }
     }
 }
