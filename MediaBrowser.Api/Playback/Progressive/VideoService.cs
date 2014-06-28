@@ -140,6 +140,7 @@ namespace MediaBrowser.Api.Playback.Progressive
             // See if we can save come cpu cycles by avoiding encoding
             if (codec.Equals("copy", StringComparison.OrdinalIgnoreCase))
             {
+                // TODO: Switch to  -bsf dump_extra ?
                 return state.VideoStream != null && IsH264(state.VideoStream) ? args + " -bsf h264_mp4toannexb" : args;
             }
 
@@ -149,15 +150,10 @@ namespace MediaBrowser.Api.Playback.Progressive
 
             var hasGraphicalSubs = state.SubtitleStream != null && !state.SubtitleStream.IsTextSubtitleStream;
 
-            var request = state.VideoRequest;
-
             // Add resolution params, if specified
             if (!hasGraphicalSubs)
             {
-                if (request.Width.HasValue || request.Height.HasValue || request.MaxHeight.HasValue || request.MaxWidth.HasValue)
-                {
-                    args += GetOutputSizeParam(state, codec, CancellationToken.None);
-                }
+                args += GetOutputSizeParam(state, codec, CancellationToken.None);
             }
 
             var qualityParam = GetVideoQualityParam(state, codec, false);
@@ -214,7 +210,7 @@ namespace MediaBrowser.Api.Playback.Progressive
                 args += " -ab " + bitrate.Value.ToString(UsCulture);
             }
 
-            args += " " + GetAudioFilterParam(state, true);
+            args += " " + GetAudioFilterParam(state, false);
 
             return args;
         }

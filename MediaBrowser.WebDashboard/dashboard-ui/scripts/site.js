@@ -42,7 +42,7 @@ var Dashboard = {
         //$.mobile.listview.prototype.options.dividerTheme = "b";
 
         //$.mobile.popup.prototype.options.theme = "c";
-        //$.mobile.popup.prototype.options.transition = "none";
+        $.mobile.popup.prototype.options.transition = "fade";
         $.mobile.defaultPageTransition = "none";
         //$.mobile.collapsible.prototype.options.contentTheme = "a";
     },
@@ -59,29 +59,12 @@ var Dashboard = {
         return Dashboard.getUserPromise;
     },
 
-    validateCurrentUser: function (page) {
+    validateCurrentUser: function () {
 
         Dashboard.getUserPromise = null;
 
         if (Dashboard.getCurrentUserId()) {
             Dashboard.getCurrentUser();
-        }
-
-        page = page || $.mobile.activePage;
-
-        var header = $('.header', page);
-
-        if (header.length) {
-            // Re-render the header
-            header.remove();
-
-            if (Dashboard.getUserPromise) {
-                Dashboard.getUserPromise.done(function (user) {
-                    Dashboard.ensureHeader(page, user);
-                });
-            } else {
-                Dashboard.ensureHeader(page);
-            }
         }
     },
 
@@ -248,7 +231,7 @@ var Dashboard = {
         var html = '<span style="margin-right: 1em;">Please restart to finish updating.</span>';
 
         if (systemInfo.CanSelfRestart) {
-            html += '<button type="button" data-icon="refresh" onclick="$(this).buttonEnabled(false);Dashboard.restartServer();" data-theme="b" data-inline="true" data-mini="true">Restart Server</button>';
+            html += '<button type="button" data-icon="refresh" onclick="$(this).buttonEnabled(false);Dashboard.restartServer();" data-theme="b" data-inline="true" data-mini="true">Restart</button>';
         }
 
         Dashboard.showFooterNotification({ id: "serverRestartWarning", html: html, forceShow: true, allowHide: false });
@@ -381,7 +364,7 @@ var Dashboard = {
 
         $('.confirmFlyout').popup("close").remove();
 
-        var html = '<div data-role="popup" data-transition="slidefade" class="confirmFlyout" style="max-width:500px;" data-theme="a">';
+        var html = '<div data-role="popup" class="confirmFlyout" style="max-width:500px;" data-theme="a">';
 
         html += '<div class="ui-bar-a" style="text-align:center;">';
         html += '<h3>' + title + '</h3>';
@@ -544,21 +527,21 @@ var Dashboard = {
         Dashboard.validateCurrentUser();
     },
 
-    ensureHeader: function (page, user) {
+    ensureHeader: function (page) {
 
-        if (!page.hasClass('libraryPage') && !$('.headerButtons', page).length) {
+        if (page.hasClass('standalonePage')) {
 
-            Dashboard.renderHeader(page, user);
+            Dashboard.renderHeader(page);
         }
     },
 
-    renderHeader: function (page, user) {
-
-        var headerHtml = '';
+    renderHeader: function (page) {
 
         var header = $('.header', page);
 
         if (!header.length) {
+            var headerHtml = '';
+
             headerHtml += '<div class="header">';
 
             headerHtml += '<a class="logo" href="index.html">';
@@ -570,67 +553,9 @@ var Dashboard = {
 
             headerHtml += '</a>';
 
-            if (page.hasClass('type-interior')) {
-                headerHtml += '<div>';
-                headerHtml += '<button type="button" data-icon="bars" data-inline="true" data-iconpos="notext" class="ui-alt-icon" onclick="Dashboard.showDashboardMenu();">Menu</button>';
-                headerHtml += '</div>';
-            }
-
             headerHtml += '</div>';
             page.prepend(headerHtml);
-
-            header = $('.header', page).trigger('create');
         }
-
-        var imageColor = "black";
-
-        headerHtml = '';
-        headerHtml += '<div class="headerButtons">';
-
-        if (user && !page.hasClass('wizardPage')) {
-
-            headerHtml += '<a class="imageLink btnCurrentUser" href="#" onclick="Dashboard.showUserFlyout(this);"><span class="currentUsername" style="font-weight:normal;">' + user.Name + '</span>';
-
-            if (user.PrimaryImageTag) {
-
-                var url = ApiClient.getUserImageUrl(user.Id, {
-                    width: 28,
-                    tag: user.PrimaryImageTag,
-                    type: "Primary"
-                });
-
-                headerHtml += '<img src="' + url + '" />';
-            } else {
-                headerHtml += '<img src="css/images/currentuserdefault' + imageColor + '.png" />';
-            }
-            headerHtml += '</a>';
-
-            if (user.Configuration.IsAdministrator) {
-
-                var href = window.location.toString().toLowerCase().indexOf('dashboard.html') == -1 ? 'dashboard.html' : '#';
-
-                headerHtml += '<a class="imageLink btnTools" href="' + href + '" data-role="button" data-icon="gear" data-inline="true" data-iconpos="notext">Tools</a>';
-            }
-
-        }
-
-        headerHtml += '</div>';
-
-        header.append(headerHtml).trigger('create');
-
-        if (!$('.supporterIcon', header).length) {
-
-            Dashboard.getPluginSecurityInfo().done(function (pluginSecurityInfo) {
-
-                if (pluginSecurityInfo.IsMBSupporter) {
-                    $('<a class="imageLink supporterIcon" href="supporter.html" title="Thank you for supporting Media Browser."><img src="css/images/supporter/supporterbadge.png" /></a>').insertBefore($('.btnTools', header));
-                } else {
-                    $('<a class="imageLink supporterIcon" href="supporter.html" title="Become a Media Browser supporter!"><img src="css/images/supporter/nonsupporterbadge.png" /></a>').insertBefore($('.btnTools', header));
-                }
-            });
-        }
-
-        $(Dashboard).trigger('interiorheaderrendered', [header, user]);
     },
 
     ensureToolsMenu: function (page, user) {
@@ -645,11 +570,8 @@ var Dashboard = {
 
             var html = '<div class="content-secondary ui-bar-a toolsSidebar">';
 
-            html += '<p class="libraryPanelHeader" style="margin: 30px 0 20px 25px;"><a href="index.html" class="imageLink"><img src="css/images/mblogoicon.png" style="height:28px;" /><span>MEDIA</span><span class="mediaBrowserAccent">BROWSER</span></a></p>';
-
-            if (user.Configuration.IsAdministrator) {
-                html += '<div style="position:absolute;top:20px;right:20px;"><a data-role="button" data-theme="b" data-icon="edit" data-iconpos="notext" href="edititemmetadata.html" title="Metadata Manager">Metadata Manager</a></div>';
-            }
+            //html += '<p class="libraryPanelHeader" style="margin: 25px 0 20px 20px;"><a href="index.html" class="imageLink"><img src="css/images/mblogoicon.png" style="height:28px;" /><span>MEDIA</span><span class="mediaBrowserAccent">BROWSER</span></a></p>';
+            html += '<br/>';
 
             html += '<div class="sidebarLinks">';
 
@@ -688,7 +610,7 @@ var Dashboard = {
 
             html += '<div data-role="panel" id="dashboardPanel" class="dashboardPanel" data-position="left" data-display="overlay" data-position-fixed="true" data-theme="b">';
 
-            html += '<p class="libraryPanelHeader" style="margin: 20px 0 20px 15px;"><a href="index.html" class="imageLink"><img src="css/images/mblogoicon.png" /><span>MEDIA</span><span class="mediaBrowserAccent">BROWSER</span></a></p>';
+            html += '<p class="libraryPanelHeader" style="margin: 15px 0 15px 15px;"><a href="index.html" class="imageLink"><img src="css/images/mblogoicon.png" /><span>MEDIA</span><span class="mediaBrowserAccent">BROWSER</span></a></p>';
 
             for (i = 0, length = links.length; i < length; i++) {
 
@@ -717,13 +639,6 @@ var Dashboard = {
 
             $(page).append(html).trigger('create');
         }
-    },
-
-    showDashboardMenu: function () {
-
-        var page = $.mobile.activePage;
-
-        $("#dashboardPanel", page).panel("open");
     },
 
     getToolsMenuLinks: function (page) {
@@ -906,7 +821,7 @@ var Dashboard = {
         else if (msg.MessageType === "RestartRequired") {
             Dashboard.updateSystemInfo(msg.Data);
         }
-        else if (msg.MessageType === "UserUpdated") {
+        else if (msg.MessageType === "UserUpdated" || msg.MessageType === "UserConfigurationUpdated") {
             Dashboard.validateCurrentUser();
 
             var user = msg.Data;
@@ -949,15 +864,6 @@ var Dashboard = {
                 if (currentUser.Configuration.IsAdministrator) {
                     Dashboard.showPackageInstallNotification(msg.Data, "progress");
                     Dashboard.refreshSystemInfoFromServer();
-                }
-            });
-        }
-        else if (msg.MessageType === "ScheduledTaskEnded") {
-
-            Dashboard.getCurrentUser().done(function (currentUser) {
-
-                if (currentUser.Configuration.IsAdministrator) {
-                    Dashboard.showTaskCompletionNotification(msg.Data);
                 }
             });
         }
@@ -1005,35 +911,6 @@ var Dashboard = {
 
         });
 
-    },
-
-    showTaskCompletionNotification: function (result) {
-
-        var html = '';
-
-        if (result.Status == "Completed") {
-            html += '<img src="css/images/notifications/done.png" class="notificationIcon" />';
-            return;
-        }
-        else if (result.Status == "Cancelled") {
-            html += '<img src="css/images/notifications/info.png" class="notificationIcon" />';
-            return;
-        }
-        else {
-            html += '<img src="css/images/notifications/error.png" class="notificationIcon" />';
-        }
-
-        html += '<span>';
-        html += result.Name + " " + result.Status;
-        html += '</span>';
-
-        var timeout = 0;
-
-        if (result.Status == 'Cancelled') {
-            timeout = 2000;
-        }
-
-        Dashboard.showFooterNotification({ html: html, id: result.Id, forceShow: true, timeout: timeout });
     },
 
     showPackageInstallNotification: function (installation, status) {
@@ -1160,7 +1037,7 @@ var Dashboard = {
             parent = $('.ui-content', page)[0];
         }
 
-        $(parent).prepend("<h2 class='pageTitle'>" + (document.title || "&nbsp;") + "</h2>");
+        $(parent).prepend("<h1 class='pageTitle'>" + (document.title || "&nbsp;") + "</h1>");
     },
 
     setPageTitle: function (title) {
@@ -1334,34 +1211,53 @@ $(function () {
 
     var videoPlayerHtml = '<div id="mediaPlayer" data-theme="b" class="ui-bar-b" style="display: none;">';
 
-    videoPlayerHtml += '<div id="videoBackdrop">';
+    videoPlayerHtml += '<div class="videoBackdrop">';
     videoPlayerHtml += '<div id="videoPlayer">';
-    videoPlayerHtml += '<div id="videoElement">';
 
+    videoPlayerHtml += '<div id="videoElement">';
     videoPlayerHtml += '<div id="play" class="status"></div>';
     videoPlayerHtml += '<div id="pause" class="status"></div>';
-
     videoPlayerHtml += '</div>';
 
+    videoPlayerHtml += '<div class="videoTopControls hiddenOnIdle">';
+    videoPlayerHtml += '<div class="videoTopControlsLogo"></div>';
+    videoPlayerHtml += '<div class="videoAdvancedControls">';
+
+    videoPlayerHtml += '<button class="imageButton mediaButton videoAudioButton" title="Audio tracks" type="button" data-icon="audiocd" data-iconpos="notext" data-inline="true">Audio Tracks</button>';
+    videoPlayerHtml += '<div data-role="popup" class="videoAudioPopup videoPlayerPopup" data-history="false" data-theme="b" data-corners="false"></div>';
+
+    videoPlayerHtml += '<button class="imageButton mediaButton videoSubtitleButton" title="Subtitles" type="button" data-icon="subtitles" data-iconpos="notext" data-inline="true">Subtitles</button>';
+    videoPlayerHtml += '<div data-role="popup" class="videoSubtitlePopup videoPlayerPopup" data-history="false" data-theme="b" data-corners="false"></div>';
+
+    videoPlayerHtml += '<button class="mediaButton videoChaptersButton" title="Scenes" type="button" data-icon="video" data-iconpos="notext" data-inline="true">Scenes</button>';
+    videoPlayerHtml += '<div data-role="popup" class="videoChaptersPopup videoPlayerPopup" data-history="false" data-theme="b" data-corners="false"></div>';
+
+    videoPlayerHtml += '<button class="mediaButton videoQualityButton" title="Quality" type="button" data-icon="gear" data-iconpos="notext" data-inline="true">Quality</button>';
+    videoPlayerHtml += '<div data-role="popup" class="videoQualityPopup videoPlayerPopup" data-history="false" data-theme="b" data-corners="false"></div>';
+
+    videoPlayerHtml += '<button class="mediaButton" title="Stop" type="button" onclick="MediaPlayer.stop();" data-icon="delete" data-iconpos="notext" data-inline="true">Stop</button>';
+
+    videoPlayerHtml += '</div>'; // videoAdvancedControls
+    videoPlayerHtml += '</div>'; // videoTopControls
+
     // Create controls
-    videoPlayerHtml += '<div id="videoControls" class="videoControls">';
+    videoPlayerHtml += '<div class="videoControls hiddenOnIdle">';
+
+    videoPlayerHtml += '<button id="video-previousTrackButton" class="mediaButton previousTrackButton" title="Previous Track" type="button" onclick="MediaPlayer.previousTrack();" data-icon="previous-track" data-iconpos="notext" data-inline="true">Previous Track</button>';
+    videoPlayerHtml += '<button id="video-playButton" class="mediaButton" title="Play" type="button" onclick="MediaPlayer.unpause();" data-icon="play" data-iconpos="notext" data-inline="true">Play</button>';
+    videoPlayerHtml += '<button id="video-pauseButton" class="mediaButton" title="Pause" type="button" onclick="MediaPlayer.pause();" data-icon="pause" data-iconpos="notext" data-inline="true">Pause</button>';
+    videoPlayerHtml += '<button id="video-nextTrackButton" class="mediaButton nextTrackButton" title="Next Track" type="button" onclick="MediaPlayer.nextTrack();" data-icon="next-track" data-iconpos="notext" data-inline="true">Next Track</button>';
 
     videoPlayerHtml += '<div class="positionSliderContainer sliderContainer">';
     videoPlayerHtml += '<input type="range" class="mediaSlider positionSlider slider" step=".001" min="0" max="100" value="0" style="display:none;" data-mini="true" data-theme="a" data-highlight="true" />';
     videoPlayerHtml += '</div>';
 
-    videoPlayerHtml += '<div id="video-basic-controls">';
-
-    videoPlayerHtml += '<button id="video-previousTrackButton" class="mediaButton previousTrackButton" title="Previous Track" type="button" onclick="MediaPlayer.previousTrack();" data-icon="previous-track" data-iconpos="notext" data-inline="true">Previous Track</button>';
-    videoPlayerHtml += '<button id="video-playButton" class="mediaButton" title="Play" type="button" onclick="MediaPlayer.unpause();" data-icon="play" data-iconpos="notext" data-inline="true">Play</button>';
-    videoPlayerHtml += '<button id="video-pauseButton" class="mediaButton" title="Pause" type="button" onclick="MediaPlayer.pause();" data-icon="pause" data-iconpos="notext" data-inline="true">Pause</button>';
-
-    videoPlayerHtml += '<button id="video-stopButton" class="mediaButton" title="Stop" type="button" onclick="MediaPlayer.stop();" data-icon="stop" data-iconpos="notext" data-inline="true">Stop</button>';
-    videoPlayerHtml += '<button id="video-nextTrackButton" class="mediaButton nextTrackButton" title="Next Track" type="button" onclick="MediaPlayer.nextTrack();" data-icon="next-track" data-iconpos="notext" data-inline="true">Next Track</button>';
-
     videoPlayerHtml += '<div class="currentTime"></div>';
+
+    videoPlayerHtml += '<div class="nowPlayingInfo hiddenOnIdle">';
     videoPlayerHtml += '<div class="nowPlayingImage"></div>';
     videoPlayerHtml += '<div class="nowPlayingText"></div>';
+    videoPlayerHtml += '</div>'; // nowPlayingInfo
 
     videoPlayerHtml += '<button id="video-muteButton" class="mediaButton muteButton" title="Mute" type="button" onclick="MediaPlayer.mute();" data-icon="audio" data-iconpos="notext" data-inline="true">Mute</button>';
     videoPlayerHtml += '<button id="video-unmuteButton" class="mediaButton unmuteButton" title="Unmute" type="button" onclick="MediaPlayer.unMute();" data-icon="volume-off" data-iconpos="notext" data-inline="true">Unmute</button>';
@@ -1370,24 +1266,7 @@ $(function () {
     videoPlayerHtml += '<input type="range" class="mediaSlider volumeSlider slider" step=".05" min="0" max="1" value="0" style="display:none;" data-mini="true" data-theme="a" data-highlight="true" />';
     videoPlayerHtml += '</div>';
 
-    videoPlayerHtml += '</div>'; // video-basic-controls
-    videoPlayerHtml += '<div id="video-advanced-controls">';
-
-    videoPlayerHtml += '<button onclick="MediaPlayer.showQualityFlyout();" id="video-qualityButton" class="mediaButton qualityButton" title="Quality" type="button" data-icon="gear" data-iconpos="notext" data-inline="true">Quality</button>';
-    videoPlayerHtml += '<div class="mediaFlyoutContainer"><div id="video-qualityFlyout" style="display:none;" class="mediaPlayerFlyout"></div></div>';
-
-    videoPlayerHtml += '<button onclick="MediaPlayer.showAudioTracksFlyout();" id="video-audioTracksButton" class="imageButton mediaButton audioTracksButton" title="Audio tracks" type="button" data-icon="audiocd" data-iconpos="notext" data-inline="true">Audio Tracks</button>';
-    videoPlayerHtml += '<div class="mediaFlyoutContainer"><div id="video-audioTracksFlyout" style="display:none;" class="mediaPlayerFlyout audioTracksFlyout"></div></div>';
-
-    videoPlayerHtml += '<button onclick="MediaPlayer.showSubtitleMenu();" id="video-subtitleButton" class="imageButton mediaButton subtitleButton" title="Subtitles" type="button" data-icon="subtitles" data-iconpos="notext" data-inline="true">Subtitles</button>';
-    videoPlayerHtml += '<div class="mediaFlyoutContainer"><div id="video-subtitleFlyout" style="display:none;" class="mediaPlayerFlyout subtitleFlyout"></div></div>';
-
-    videoPlayerHtml += '<button onclick="MediaPlayer.showChaptersFlyout();" id="video-chaptersButton" class="mediaButton chaptersButton" title="Scenes" type="button" data-icon="video" data-iconpos="notext" data-inline="true">Scenes</button>';
-    videoPlayerHtml += '<div class="mediaFlyoutContainer"><div id="video-chaptersFlyout" style="display:none;" class="mediaPlayerFlyout chaptersFlyout"></div></div>';
-
     videoPlayerHtml += '<button onclick="MediaPlayer.toggleFullscreen();" id="video-fullscreenButton" class="mediaButton fullscreenButton" title="Fullscreen" type="button" data-icon="expand" data-iconpos="notext" data-inline="true">Fullscreen</button>';
-
-    videoPlayerHtml += '</div>'; // video-advanced-controls
 
     videoPlayerHtml += '</div>'; // videoControls
 
@@ -1421,6 +1300,22 @@ $(function () {
     });
 });
 
+$.fn.openPopup = function () {
+
+    this.one('popupbeforeposition', function () {
+
+        //$("body").on("touchmove.popup", false);
+        //$('body').addClass('bodyWithPopupOpen');
+
+    }).one('popupafterclose', function () {
+        //$("body").off("touchmove.popup");
+
+        //$('body').removeClass('bodyWithPopupOpen');
+    });
+
+    return this.popup('open');
+};
+
 Dashboard.jQueryMobileInit();
 
 $(document).on('pagebeforeshow', ".page", function () {
@@ -1439,7 +1334,7 @@ $(document).on('pagebeforeshow', ".page", function () {
             }
 
             Dashboard.ensureToolsMenu(page, user);
-            Dashboard.ensureHeader(page, user);
+            Dashboard.ensureHeader(page);
             Dashboard.ensurePageTitle(page);
         });
     }

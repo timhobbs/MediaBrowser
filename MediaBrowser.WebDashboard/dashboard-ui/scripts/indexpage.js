@@ -98,24 +98,6 @@
         return html;
     }
 
-    function getDefaultSection(index) {
-
-        switch (index) {
-
-            case 0:
-                return 'smalllibrarytiles';
-            case 1:
-                return 'resume';
-            case 2:
-                return 'latestmedia';
-            case 3:
-                return 'latestchannelmedia';
-            default:
-                return '';
-        }
-
-    }
-
     function loadlibraryButtons(elem, userId, index) {
 
         getUserViews(userId).done(function (items) {
@@ -149,7 +131,7 @@
 
             SortBy: "DateCreated",
             SortOrder: "Descending",
-            Limit: screenWidth >= 2400 ? 30 : (screenWidth >= 1920 ? 20 : (screenWidth >= 1440 ? 10 : (screenWidth >= 800 ? 9 : 8))),
+            Limit: screenWidth >= 2400 ? 30 : (screenWidth >= 1920 ? 15 : (screenWidth >= 1440 ? 10 : (screenWidth >= 800 ? 9 : 8))),
             Recursive: true,
             Fields: "PrimaryImageAspectRatio",
             Filters: "IsUnplayed,IsNotFolder",
@@ -203,7 +185,7 @@
                 html += LibraryBrowser.getPosterViewHtml({
                     items: result.Items,
                     preferThumb: true,
-                    shape: 'auto',
+                    shape: 'autosmall',
                     showTitle: true,
                     centerText: true,
                     context: 'home',
@@ -224,7 +206,12 @@
 
             if (items.length) {
 
-                html += '<h1 class="listHeader">' + Globalize.translate('HeaderMyLibrary') + '</h1>';
+                var cssClass = index !== 0 ? 'listHeader' : 'listHeader firstListHeader';
+
+                html += '<div>';
+                html += '<h1 style="display:inline-block; vertical-align:middle;" class="' + cssClass + '">' + Globalize.translate('HeaderMyViews') + '</h1>';
+                html += '<a href="mypreferencesdisplay.html" data-role="button" data-icon="edit" data-mini="true" data-inline="true" data-iconpos="notext" class="sectionHeaderButton">d</a>';
+                html += '</div>';
 
                 html += '<div>';
                 html += LibraryBrowser.getPosterViewHtml({
@@ -321,32 +308,190 @@
         });
     }
 
+    function handleLibraryLinkNavigations(elem) {
+
+        $('a.posterItem', elem).on('click', function () {
+
+            var text = $('.posterItemText', this).html();
+
+            LibraryMenu.setText(text);
+        });
+    }
+
+    function loadLatestChannelItems(elem, userId, options) {
+
+        options = $.extend(options || {}, {
+
+            UserId: userId,
+            SupportsLatestItems: true
+        });
+
+        $.getJSON(ApiClient.getUrl("Channels", options)).done(function (result) {
+
+            var channels = result.Items;
+
+            var channelsHtml = channels.map(function (c) {
+
+                return '<div id="channel' + c.Id + '"></div>';
+
+            }).join('');
+
+            $(elem).html(channelsHtml);
+
+            for (var i = 0, length = channels.length; i < length; i++) {
+
+                var channel = channels[i];
+
+                loadLatestChannelItemsFromChannel(elem, channel, i);
+            }
+
+        });
+    }
+
+    function loadLatestChannelItemsFromChannel(page, channel, index) {
+
+        var screenWidth = $(window).width();
+
+        var options = {
+
+            Limit: screenWidth >= 1920 ? 7 : (screenWidth >= 1440 ? 5 : (screenWidth >= 800 ? 6 : 6)),
+            Fields: "PrimaryImageAspectRatio",
+            Filters: "IsUnplayed",
+            UserId: Dashboard.getCurrentUserId(),
+            ChannelIds: channel.Id
+        };
+
+        $.getJSON(ApiClient.getUrl("Channels/Items/Latest", options)).done(function (result) {
+
+            var html = '';
+
+            if (result.Items.length) {
+
+                var cssClass = index !== 0 ? 'listHeader' : 'listHeader firstListHeader';
+
+                html += '<div>';
+                var text = Globalize.translate('HeaderLatestFromChannel').replace('{0}', channel.Name);
+                html += '<h1 style="display:inline-block; vertical-align:middle;" class="' + cssClass + '">' + text + '</h1>';
+                html += '<a href="channelitems.html?context=channels&id=' + channel.Id + '" data-role="button" data-icon="arrow-r" data-mini="true" data-inline="true" data-iconpos="notext" class="sectionHeaderButton">d</a>';
+                html += '</div>';
+            }
+            html += LibraryBrowser.getPosterViewHtml({
+                items: result.Items,
+                shape: 'autosmall',
+                defaultShape: 'square',
+                showTitle: true,
+                centerText: true,
+                context: 'channels',
+                lazy: true
+            });
+
+            $('#channel' + channel.Id + '', page).html(html).trigger('create').createPosterItemMenus();
+        });
+    }
+
+    function loadLatestLiveTvRecordings(elem, userId, index) {
+
+        ApiClient.getLiveTvRecordings({
+
+            userId: userId,
+            limit: 9,
+            IsInProgress: false
+
+        }).done(function (result) {
+
+            var html = '';
+
+            if (result.Items.length) {
+
+                var cssClass = index !== 0 ? 'listHeader' : 'listHeader firstListHeader';
+
+                html += '<div>';
+                html += '<h1 style="display:inline-block; vertical-align:middle;" class="' + cssClass + '">' + Globalize.translate('HeaderLatestTvRecordings') + '</h1>';
+                html += '<a href="livetvrecordings.html?context=livetv" data-role="button" data-icon="arrow-r" data-mini="true" data-inline="true" data-iconpos="notext" class="sectionHeaderButton">d</a>';
+                html += '</div>';
+            }
+
+            var screenWidth = $(window).width();
+
+            html += LibraryBrowser.getPosterViewHtml({
+                items: result.Items,
+                shape: "autosmall",
+                showTitle: true,
+                showParentTitle: true,
+                overlayText: screenWidth >= 600,
+                coverImage: true,
+                lazy: true
+            });
+
+            elem.html(html).trigger('create').createPosterItemMenus();
+
+        });
+    }
+
+    window.Sections = {
+        loadRecentlyAdded: loadRecentlyAdded,
+        loadLatestChannelMedia: loadLatestChannelMedia,
+        loadLibraryTiles: loadLibraryTiles,
+        loadLibraryFolders: loadLibraryFolders,
+        loadResume: loadResume,
+        loadLatestChannelItems: loadLatestChannelItems,
+        loadLatestLiveTvRecordings: loadLatestLiveTvRecordings,
+        loadlibraryButtons: loadlibraryButtons
+    };
+
+})(jQuery, document, ApiClient);
+
+(function ($, document, apiClient) {
+
+    function getDefaultSection(index) {
+
+        switch (index) {
+
+            case 0:
+                return 'smalllibrarytiles';
+            case 1:
+                return 'resume';
+            case 2:
+                return '';
+            case 3:
+                return '';
+            default:
+                return '';
+        }
+
+    }
+
     function loadSection(page, userId, displayPreferences, index) {
 
         var section = displayPreferences.CustomPrefs['home' + index] || getDefaultSection(index);
 
         var elem = $('.section' + index, page);
-        
+
         if (section == 'latestmedia') {
-            loadRecentlyAdded(elem, userId);
+            Sections.loadRecentlyAdded(elem, userId);
         }
         else if (section == 'librarytiles') {
-            loadLibraryTiles(elem, userId, 'backdrop', index);
+            Sections.loadLibraryTiles(elem, userId, 'backdrop', index);
         }
         else if (section == 'smalllibrarytiles') {
-            loadLibraryTiles(elem, userId, 'miniBackdrop', index);
-        }
-        else if (section == 'resume') {
-            loadResume(elem, userId);
+            Sections.loadLibraryTiles(elem, userId, 'smallBackdrop', index);
         }
         else if (section == 'librarybuttons') {
-            loadlibraryButtons(elem, userId, index);
+            Sections.loadlibraryButtons(elem, userId, index);
+        }
+        else if (section == 'resume') {
+            Sections.loadResume(elem, userId);
+        }
 
-        } else if (section == 'folders') {
-            loadLibraryFolders(elem, userId, 'backdrop', index);
+        else if (section == 'latesttvrecordings') {
+            Sections.loadLatestLiveTvRecordings(elem, userId);
+        }
+
+        else if (section == 'folders') {
+            Sections.loadLibraryFolders(elem, userId, 'smallBackdrop', index);
 
         } else if (section == 'latestchannelmedia') {
-            loadLatestChannelMedia(elem, userId);
+            Sections.loadLatestChannelMedia(elem, userId);
 
         } else {
 
@@ -375,16 +520,6 @@
 
             loadSection(page, userId, displayPreferences, i);
         }
-    }
-
-    function handleLibraryLinkNavigations(elem) {
-
-        $('a', elem).on('click', function () {
-
-            var text = $('.posterItemText', this).html();
-
-            LibraryMenu.setText(text);
-        });
     }
 
     var homePageDismissValue = '2';

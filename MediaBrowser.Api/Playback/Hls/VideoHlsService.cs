@@ -1,19 +1,16 @@
-using System.Threading;
 using MediaBrowser.Common.IO;
-using MediaBrowser.Common.Net;
 using MediaBrowser.Controller.Channels;
 using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Dlna;
-using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.LiveTv;
 using MediaBrowser.Controller.MediaEncoding;
-using MediaBrowser.Controller.Persistence;
 using MediaBrowser.Model.IO;
 using ServiceStack;
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MediaBrowser.Api.Playback.Hls
@@ -127,26 +124,21 @@ namespace MediaBrowser.Api.Playback.Hls
 
             var args = "-codec:a:0 " + codec;
 
-            if (state.AudioStream != null)
+            var channels = state.OutputAudioChannels;
+
+            if (channels.HasValue)
             {
-                var channels = state.OutputAudioChannels;
-
-                if (channels.HasValue)
-                {
-                    args += " -ac " + channels.Value;
-                }
-
-                var bitrate = state.OutputAudioBitrate;
-
-                if (bitrate.HasValue)
-                {
-                    args += " -ab " + bitrate.Value.ToString(UsCulture);
-                }
-
-                args += " " + GetAudioFilterParam(state, true);
-
-                return args;
+                args += " -ac " + channels.Value;
             }
+
+            var bitrate = state.OutputAudioBitrate;
+
+            if (bitrate.HasValue)
+            {
+                args += " -ab " + bitrate.Value.ToString(UsCulture);
+            }
+
+            args += " " + GetAudioFilterParam(state, true);
 
             return args;
         }
@@ -163,12 +155,12 @@ namespace MediaBrowser.Api.Playback.Hls
             // See if we can save come cpu cycles by avoiding encoding
             if (codec.Equals("copy", StringComparison.OrdinalIgnoreCase))
             {
+                // TOOD: Switch to  -bsf dump_extra?
                 return IsH264(state.VideoStream) ? "-codec:v:0 copy -bsf h264_mp4toannexb" : "-codec:v:0 copy";
             }
 
-            var keyFrameArg = state.ReadInputAtNativeFramerate ?
-                " -force_key_frames expr:if(isnan(prev_forced_t),gte(t,.1),gte(t,prev_forced_t+1))" : 
-                " -force_key_frames expr:if(isnan(prev_forced_t),gte(t,.1),gte(t,prev_forced_t+5))";
+            var keyFrameArg = string.Format(" -force_key_frames expr:gte(t,n_forced*{0})",
+                state.SegmentLength.ToString(UsCulture));
 
             var hasGraphicalSubs = state.SubtitleStream != null && !state.SubtitleStream.IsTextSubtitleStream;
 
@@ -177,10 +169,7 @@ namespace MediaBrowser.Api.Playback.Hls
             // Add resolution params, if specified
             if (!hasGraphicalSubs)
             {
-                if (state.VideoRequest.Width.HasValue || state.VideoRequest.Height.HasValue || state.VideoRequest.MaxHeight.HasValue || state.VideoRequest.MaxWidth.HasValue)
-                {
-                    args += GetOutputSizeParam(state, codec, CancellationToken.None);
-                }
+                args += GetOutputSizeParam(state, codec, CancellationToken.None);
             }
 
             // This is for internal graphical subs

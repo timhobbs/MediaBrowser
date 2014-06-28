@@ -194,8 +194,19 @@ namespace MediaBrowser.Providers.MediaInfo
 
             }
 
-            // Several different forms of albumartist
-            audio.AlbumArtist = FFProbeHelpers.GetDictionaryValue(tags, "albumartist") ?? FFProbeHelpers.GetDictionaryValue(tags, "album artist") ?? FFProbeHelpers.GetDictionaryValue(tags, "album_artist");
+            var albumArtist = FFProbeHelpers.GetDictionaryValue(tags, "albumartist") ?? FFProbeHelpers.GetDictionaryValue(tags, "album artist") ?? FFProbeHelpers.GetDictionaryValue(tags, "album_artist");
+
+            if (string.IsNullOrWhiteSpace(albumArtist))
+            {
+                audio.AlbumArtists = new List<string>();
+            }
+            else
+            {
+                audio.AlbumArtists = SplitArtists(albumArtist)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+            }
 
             // Track number
             audio.IndexNumber = GetDictionaryDiscValue(tags, "track");
@@ -275,7 +286,6 @@ namespace MediaBrowser.Providers.MediaInfo
 
                 if (!string.Equals(originalVal, val, StringComparison.OrdinalIgnoreCase))
                 {
-                    // TODO: Preserve casing from original value
                     artistsFound.Add(whitelistArtist);
                 }
             }

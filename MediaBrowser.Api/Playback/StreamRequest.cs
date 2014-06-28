@@ -33,7 +33,7 @@ namespace MediaBrowser.Api.Playback
         /// <value>The start time ticks.</value>
         [ApiMember(Name = "StartTimeTicks", Description = "Optional. Specify a starting offset, in ticks. 1 tick = 10000 ms", IsRequired = false, DataType = "int", ParameterType = "query", Verb = "GET")]
         public long? StartTimeTicks { get; set; }
-
+        
         /// <summary>
         /// Gets or sets the audio bit rate.
         /// </summary>
@@ -141,10 +141,10 @@ namespace MediaBrowser.Api.Playback
         /// </summary>
         /// <value>The framerate.</value>
         [ApiMember(Name = "Framerate", Description = "Optional. A specific video framerate to encode to, e.g. 23.976. Generally this should be omitted unless the device has specific requirements.", IsRequired = false, DataType = "double", ParameterType = "query", Verb = "GET")]
-        public double? Framerate { get; set; }
+        public float? Framerate { get; set; }
 
         [ApiMember(Name = "MaxFramerate", Description = "Optional. A specific maximum video framerate to encode to, e.g. 23.976. Generally this should be omitted unless the device has specific requirements.", IsRequired = false, DataType = "double", ParameterType = "query", Verb = "GET")]
-        public double? MaxFramerate { get; set; }
+        public float? MaxFramerate { get; set; }
         
         /// <summary>
         /// Gets or sets the profile.

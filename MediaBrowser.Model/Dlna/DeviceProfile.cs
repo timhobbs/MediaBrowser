@@ -1,8 +1,6 @@
 ﻿using MediaBrowser.Model.Extensions;
 using MediaBrowser.Model.MediaInfo;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Xml.Serialization;
 
 namespace MediaBrowser.Model.Dlna
@@ -157,12 +155,12 @@ namespace MediaBrowser.Model.Dlna
                     continue;
                 }
 
-                if (!i.GetAudioCodecs().Contains(audioCodec ?? string.Empty))
+                if (!ListHelper.ContainsIgnoreCase(i.GetAudioCodecs(), audioCodec ?? string.Empty))
                 {
                     continue;
                 }
 
-                if (!StringHelper.EqualsIgnoreCase(videoCodec, i.VideoCodec))
+                if (!StringHelper.EqualsIgnoreCase(videoCodec, i.VideoCodec ?? string.Empty))
                 {
                     continue;
                 }
@@ -190,7 +188,7 @@ namespace MediaBrowser.Model.Dlna
                 }
 
                 List<string> audioCodecs = i.GetAudioCodecs();
-                if (audioCodecs.Count > 0 && !ListHelper.ContainsIgnoreCase(audioCodecs, audioCodec))
+                if (audioCodecs.Count > 0 && !ListHelper.ContainsIgnoreCase(audioCodecs, audioCodec ?? string.Empty))
                 {
                     continue;
                 }
@@ -267,9 +265,10 @@ namespace MediaBrowser.Model.Dlna
             int? videoBitrate,
             string videoProfile,
             double? videoLevel,
-            double? videoFramerate,
+            float? videoFramerate,
             int? packetLength,
-            TransportStreamTimestamp timestamp)
+            TransportStreamTimestamp timestamp,
+            bool? isAnamorphic)
         {
             container = (container ?? string.Empty).TrimStart('.');
 
@@ -281,19 +280,19 @@ namespace MediaBrowser.Model.Dlna
                 }
 
                 List<string> containers = i.GetContainers();
-                if (containers.Count > 0 && !ListHelper.ContainsIgnoreCase(containers, container))
+                if (containers.Count > 0 && !ListHelper.ContainsIgnoreCase(containers, container ?? string.Empty))
                 {
                     continue;
                 }
 
                 List<string> audioCodecs = i.GetAudioCodecs();
-                if (audioCodecs.Count > 0 && !ListHelper.ContainsIgnoreCase(audioCodecs, audioCodec))
+                if (audioCodecs.Count > 0 && !ListHelper.ContainsIgnoreCase(audioCodecs, audioCodec ?? string.Empty))
                 {
                     continue;
                 }
 
                 List<string> videoCodecs = i.GetVideoCodecs();
-                if (videoCodecs.Count > 0 && !ListHelper.ContainsIgnoreCase(videoCodecs, videoCodec))
+                if (videoCodecs.Count > 0 && !ListHelper.ContainsIgnoreCase(videoCodecs, videoCodec ?? string.Empty))
                 {
                     continue;
                 }
@@ -303,7 +302,7 @@ namespace MediaBrowser.Model.Dlna
                 var anyOff = false;
                 foreach (ProfileCondition c in i.Conditions)
                 {
-                    if (!conditionProcessor.IsVideoConditionSatisfied(c, audioBitrate, audioChannels, width, height, bitDepth, videoBitrate, videoProfile, videoLevel, videoFramerate, packetLength, timestamp))
+                    if (!conditionProcessor.IsVideoConditionSatisfied(c, audioBitrate, audioChannels, width, height, bitDepth, videoBitrate, videoProfile, videoLevel, videoFramerate, packetLength, timestamp, isAnamorphic))
                     {
                         anyOff = true;
                         break;

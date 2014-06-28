@@ -2,7 +2,6 @@
 using MediaBrowser.Controller.LiveTv;
 using MediaBrowser.Model.Dlna;
 using MediaBrowser.Model.Drawing;
-using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Logging;
@@ -86,9 +85,6 @@ namespace MediaBrowser.Api.Playback
 
         public bool DeInterlace { get; set; }
         public bool ReadInputAtNativeFramerate { get; set; }
-        public string InputFormat { get; set; }
-        public string InputVideoCodec { get; set; }
-        public string InputAudioCodec { get; set; }
 
         public TransportStreamTimestamp InputTimestamp { get; set; }
 
@@ -97,6 +93,10 @@ namespace MediaBrowser.Api.Playback
         public bool EstimateContentLength { get; set; }
         public bool EnableMpegtsM2TsMode { get; set; }
         public TranscodeSeekInfo TranscodeSeekInfo { get; set; }
+
+        public long? EncodingDurationTicks { get; set; }
+
+        public string ItemType { get; set; }
 
         public string GetMimeType(string outputPath)
         {
@@ -261,7 +261,7 @@ namespace MediaBrowser.Api.Playback
         /// <summary>
         /// Predicts the audio sample rate that will be in the output stream
         /// </summary>
-        public double? TargetFramerate
+        public float? TargetFramerate
         {
             get
             {
@@ -330,5 +330,17 @@ namespace MediaBrowser.Api.Playback
             }
         }
 
+        public bool? IsTargetAnamorphic
+        {
+            get
+            {
+                if (Request.Static)
+                {
+                    return VideoStream == null ? null : VideoStream.IsAnamorphic;
+                }
+
+                return false;
+            }
+        }
     }
 }

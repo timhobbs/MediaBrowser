@@ -356,7 +356,7 @@ namespace MediaBrowser.Server.Implementations.Session
 
         private string GetSessionKey(string clientType, string appVersion, string deviceId)
         {
-            return clientType + deviceId + appVersion;
+            return clientType + deviceId;
         }
 
         /// <summary>
@@ -1515,6 +1515,12 @@ namespace MediaBrowser.Server.Implementations.Session
         public void ClearTranscodingInfo(string deviceId)
         {
             ReportTranscodingInfo(deviceId, null);
+        }
+
+        public SessionInfo GetSession(string deviceId, string client, string version)
+        {
+            return Sessions.FirstOrDefault(i => string.Equals(i.DeviceId, deviceId) &&
+                string.Equals(i.Client, client));
         }
     }
 }

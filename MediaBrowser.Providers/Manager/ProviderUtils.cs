@@ -183,6 +183,7 @@ namespace MediaBrowser.Providers.Manager
             MergeAwards(source, target, lockedFields, replaceData);
             MergeTaglines(source, target, lockedFields, replaceData);
             MergeTrailers(source, target, lockedFields, replaceData);
+            MergeShortOverview(source, target, lockedFields, replaceData);
 
             if (mergeMetadataSettings)
             {
@@ -216,6 +217,20 @@ namespace MediaBrowser.Providers.Manager
             }
         }
 
+        private static void MergeShortOverview(BaseItem source, BaseItem target, List<MetadataFields> lockedFields, bool replaceData)
+        {
+            var sourceHasShortOverview = source as IHasShortOverview;
+            var targetHasShortOverview = target as IHasShortOverview;
+
+            if (sourceHasShortOverview != null && targetHasShortOverview != null)
+            {
+                if (replaceData || string.IsNullOrEmpty(targetHasShortOverview.ShortOverview))
+                {
+                    targetHasShortOverview.ShortOverview = sourceHasShortOverview.ShortOverview;
+                }
+            }
+        }
+
         private static void MergeAlbumArtist(BaseItem source, BaseItem target, List<MetadataFields> lockedFields, bool replaceData)
         {
             var sourceHasAlbumArtist = source as IHasAlbumArtist;
@@ -223,9 +238,9 @@ namespace MediaBrowser.Providers.Manager
 
             if (sourceHasAlbumArtist != null && targetHasAlbumArtist != null)
             {
-                if (replaceData || string.IsNullOrEmpty(targetHasAlbumArtist.AlbumArtist))
+                if (replaceData || targetHasAlbumArtist.AlbumArtists.Count > 0)
                 {
-                    targetHasAlbumArtist.AlbumArtist = sourceHasAlbumArtist.AlbumArtist;
+                    targetHasAlbumArtist.AlbumArtists = sourceHasAlbumArtist.AlbumArtists;
                 }
             }
         }

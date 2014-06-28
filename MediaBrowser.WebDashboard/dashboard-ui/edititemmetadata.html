@@ -131,6 +131,10 @@
                                 <label for="txtOverview">Overview:</label>
                                 <textarea id="txtOverview" data-mini="true"></textarea>
                             </div>
+                            <div data-role="fieldcontain" id="fldShortOverview" style="display: none;">
+                                <label for="txtShortOverview">Short overview:</label>
+                                <textarea id="txtShortOverview" data-mini="true"></textarea>
+                            </div>
                             <div data-role="fieldcontain" id="fldPremiereDate" style="display: none;">
                                 <label id="lblPremiereDate" for="txtPremiereDate">Release date:</label>
                                 <input type="date" id="txtPremiereDate" data-mini="true" />
@@ -375,7 +379,7 @@
                 </form>
             </div>
         </div>
-        <div data-role="popup" data-transition="slidefade" id="popupConfirmDelete" class="popup" data-theme="a">
+        <div data-role="popup" id="popupConfirmDelete" class="popup" data-theme="a">
 
             <div class="ui-bar-a" style="text-align: center; padding: 0 20px;">
                 <h3>Confirm Deletion</h3>
@@ -405,7 +409,7 @@
             </div>
 
         </div>
-        <div data-role="popup" data-transition="slidefade" class="popupIdentify popup" data-theme="a">
+        <div data-role="popup" class="popupIdentify popup" data-theme="a">
             <a href="#" data-rel="back" class="ui-btn ui-corner-all ui-shadow ui-btn-b ui-icon-delete ui-btn-icon-notext ui-btn-right">Close</a>
 
             <div class="ui-bar-a" style="text-align: center; padding: 0 20px; position: relative;">
@@ -452,7 +456,7 @@
 
         </div>
 
-        <div data-role="popup" data-transition="slidefade" id="popupEditPerson" class="popup" data-theme="a">
+        <div data-role="popup" id="popupEditPerson" class="popup" data-theme="a">
 
             <div class="ui-bar-a" style="text-align: center; padding: 0 20px;">
                 <h3 style="margin: .5em;">Person Info</h3>

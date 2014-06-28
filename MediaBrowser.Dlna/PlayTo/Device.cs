@@ -30,7 +30,7 @@ namespace MediaBrowser.Dlna.PlayTo
 
         public int Volume { get; set; }
 
-        public TimeSpan Duration { get; set; }
+        public TimeSpan? Duration { get; set; }
 
         private TimeSpan _position = TimeSpan.FromSeconds(0);
         public TimeSpan Position
@@ -270,7 +270,7 @@ namespace MediaBrowser.Dlna.PlayTo
 
         public async Task SetAvTransport(string url, string header, string metaData)
         {
-            //await SetStop().ConfigureAwait(false);
+            _logger.Debug("{0} - SetAvTransport Uri: {1} DlnaHeaders: {2}", Properties.Name, url, header);
 
             var command = AvCommands.ServiceActions.FirstOrDefault(c => c.Name == "SetAVTransportURI");
             if (command == null)
@@ -289,11 +289,21 @@ namespace MediaBrowser.Dlna.PlayTo
                 throw new InvalidOperationException("Unable to find service");
             }
 
-            await new SsdpHttpClient(_httpClient, _config).SendCommandAsync(Properties.BaseUrl, service, command.Name, AvCommands.BuildPost(command, service.ServiceType, url, dictionary), header)
+            var post = AvCommands.BuildPost(command, service.ServiceType, url, dictionary);
+            await new SsdpHttpClient(_httpClient, _config).SendCommandAsync(Properties.BaseUrl, service, command.Name, post, header)
                 .ConfigureAwait(false);
 
             await Task.Delay(50).ConfigureAwait(false);
-            await SetPlay().ConfigureAwait(false);
+
+            try
+            {
+                await SetPlay().ConfigureAwait(false);
+            }
+            catch
+            {
+                // Some devices will throw an error if you tell it to play when it's already playing
+                // Others won't
+            }
 
             RestartTimer();
         }
@@ -304,31 +314,6 @@ namespace MediaBrowser.Dlna.PlayTo
                 return String.Empty;
 
             return SecurityElement.Escape(value);
-        }
-
-        public async Task SetNextAvTransport(string value, string header, string metaData)
-        {
-            var command = AvCommands.ServiceActions.FirstOrDefault(c => c.Name == "SetNextAVTransportURI");
-            if (command == null)
-                return;
-
-            var dictionary = new Dictionary<string, string>
-            {
-                {"NextURI", value},
-                {"NextURIMetaData", CreateDidlMeta(metaData)}
-            };
-
-            var service = Properties.Services.FirstOrDefault(s => s.ServiceType == ServiceAvtransportType);
-
-            if (service == null)
-            {
-                throw new InvalidOperationException("Unable to find service");
-            }
-
-            await new SsdpHttpClient(_httpClient, _config).SendCommandAsync(Properties.BaseUrl, service, command.Name, AvCommands.BuildPost(command, service.ServiceType, value, dictionary), header)
-                .ConfigureAwait(false);
-
-            RestartTimer();
         }
 
         public async Task SetPlay()
@@ -595,12 +580,20 @@ namespace MediaBrowser.Dlna.PlayTo
             if (result == null || result.Document == null)
                 return new Tuple<bool, uBaseObject>(false, null);
 
+            var trackUriElem = result.Document.Descendants(uPnpNamespaces.AvTransport + "GetPositionInfoResponse").Select(i => i.Element("TrackURI")).FirstOrDefault(i => i != null);
+            var trackUri = trackUriElem == null ? null : trackUriElem.Value;
+
             var durationElem = result.Document.Descendants(uPnpNamespaces.AvTransport + "GetPositionInfoResponse").Select(i => i.Element("TrackDuration")).FirstOrDefault(i => i != null);
             var duration = durationElem == null ? null : durationElem.Value;
 
-            if (!string.IsNullOrWhiteSpace(duration) && !string.Equals(duration, "NOT_IMPLEMENTED", StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrWhiteSpace(duration) &&
+                !string.Equals(duration, "NOT_IMPLEMENTED", StringComparison.OrdinalIgnoreCase))
             {
                 Duration = TimeSpan.Parse(duration, UsCulture);
+            }
+            else
+            {
+                Duration = null;
             }
 
             var positionElem = result.Document.Descendants(uPnpNamespaces.AvTransport + "GetPositionInfoResponse").Select(i => i.Element("RelTime")).FirstOrDefault(i => i != null);
@@ -640,16 +633,23 @@ namespace MediaBrowser.Dlna.PlayTo
 
             var e = uPnpResponse.Element(uPnpNamespaces.items);
 
-            var uTrack = CreateUBaseObject(e);
+            var uTrack = CreateUBaseObject(e, trackUri);
 
             return new Tuple<bool, uBaseObject>(true, uTrack);
         }
 
-        private static uBaseObject CreateUBaseObject(XElement container)
+        private static uBaseObject CreateUBaseObject(XElement container, string trackUri)
         {
             if (container == null)
             {
                 throw new ArgumentNullException("container");
+            }
+
+            var url = container.GetValue(uPnpNamespaces.Res);
+
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                url = trackUri;
             }
 
             return new uBaseObject
@@ -659,7 +659,7 @@ namespace MediaBrowser.Dlna.PlayTo
                 Title = container.GetValue(uPnpNamespaces.title),
                 IconUrl = container.GetValue(uPnpNamespaces.Artwork),
                 SecondText = "",
-                Url = container.GetValue(uPnpNamespaces.Res),
+                Url = url,
                 ProtocolInfo = GetProtocolInfo(container),
                 MetaData = container.ToString()
             };
@@ -890,14 +890,16 @@ namespace MediaBrowser.Dlna.PlayTo
         public event EventHandler<PlaybackStartEventArgs> PlaybackStart;
         public event EventHandler<PlaybackProgressEventArgs> PlaybackProgress;
         public event EventHandler<PlaybackStoppedEventArgs> PlaybackStopped;
+        public event EventHandler<MediaChangedEventArgs> MediaChanged;
 
-        private uBaseObject _lastMediaInfo;
+        public uBaseObject CurrentMediaInfo { get; private set; }
+
         private void UpdateMediaInfo(uBaseObject mediaInfo, TRANSPORTSTATE state)
         {
             TransportState = state;
 
-            var previousMediaInfo = _lastMediaInfo;
-            _lastMediaInfo = mediaInfo;
+            var previousMediaInfo = CurrentMediaInfo;
+            CurrentMediaInfo = mediaInfo;
 
             if (previousMediaInfo == null && mediaInfo != null)
             {
@@ -905,6 +907,10 @@ namespace MediaBrowser.Dlna.PlayTo
                 {
                     OnPlaybackStart(mediaInfo);
                 }
+            }
+            else if (mediaInfo != null && previousMediaInfo != null && !mediaInfo.Equals(previousMediaInfo))
+            {
+                OnMediaChanged(previousMediaInfo, mediaInfo);
             }
             else if (mediaInfo == null && previousMediaInfo != null)
             {
@@ -945,6 +951,18 @@ namespace MediaBrowser.Dlna.PlayTo
                 PlaybackStopped.Invoke(this, new PlaybackStoppedEventArgs
                 {
                     MediaInfo = mediaInfo
+                });
+            }
+        }
+
+        private void OnMediaChanged(uBaseObject old, uBaseObject newMedia)
+        {
+            if (MediaChanged != null)
+            {
+                MediaChanged.Invoke(this, new MediaChangedEventArgs
+                {
+                    OldMediaInfo = old,
+                    NewMediaInfo = newMedia
                 });
             }
         }

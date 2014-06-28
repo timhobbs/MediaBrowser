@@ -1,7 +1,7 @@
 ﻿/* Now playing bar */
 .nowPlayingBar {
     padding: 6px 0 14px 0;
-    border-top: 2px solid green;
+    border-top: 1px solid green;
 }
 
 .nowPlayingBarImage {
@@ -27,6 +27,7 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+    text-align: left;
 }
 
 .nowPlayingDoubleText {
@@ -140,9 +141,13 @@ input[type="range"]::-ms-fill-upper {
         margin-bottom: 0;
     }
 
-        #nowPlayingBar .mediaButton:not(#playButton):not(#pauseButton) {
+        #nowPlayingBar .mediaButton:not(#playButton):not(#pauseButton):not(.remoteControlButton) {
             display: none;
         }
+
+    .remoteControlButton {
+        float: right;
+    }
 
     #nowPlayingBar #playButton, #nowPlayingBar #pauseButton {
         float: right;

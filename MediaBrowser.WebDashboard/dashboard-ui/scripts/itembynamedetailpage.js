@@ -5,6 +5,12 @@
 
     function getPromise() {
 
+        var id = getParameterByName('id');
+
+        if (id) {
+            return ApiClient.getItem(Dashboard.getCurrentUserId(), id);
+        }
+
         var name = getParameterByName('person');
 
         if (name) {
@@ -50,12 +56,21 @@
     function reload(page) {
 
         Dashboard.showLoadingMsg();
+        $('#btnEdit', page).attr('href', '#');
 
         getPromise().done(function (item) {
 
+            var context = getParameterByName('context');
+
+            var editQuery = '?id=' + item.Id;
+            if (context) {
+                editQuery += '&context=' + context;
+            }
+            $('#btnEdit', page).attr('href', 'edititemmetadata.html' + editQuery);
+
             currentItem = item;
 
-            renderHeader(page, item);
+            renderHeader(page, item, context);
 
             var name = item.Name;
 
@@ -63,13 +78,13 @@
 
             $('.itemName', page).html(name);
 
-            renderDetails(page, item);
-            renderTabs(page, item);
+            renderDetails(page, item, context);
+            renderTabs(page, item, context);
 
             $(page).trigger('displayingitem', [{
 
                 item: item,
-                context: getParameterByName('context')
+                context: context
             }]);
 
             Dashboard.getCurrentUser().done(function (user) {
@@ -80,7 +95,8 @@
                     $('#playButtonContainer', page).hide();
                 }
 
-                var editImagesHref = user.Configuration.IsAdministrator ? 'edititemimages.html' + getWindowLocationSearch() : null;
+                var editImagesHref = user.Configuration.IsAdministrator ? 'edititemimages.html' + editQuery : null;
+
                 $('#itemImage', page).html(LibraryBrowser.getDetailImageHtml(item, editImagesHref));
 
                 if (user.Configuration.IsAdministrator && item.LocationType !== "Offline") {
@@ -95,9 +111,7 @@
         });
     }
 
-    function renderHeader(page, item) {
-
-        var context = getParameterByName('context');
+    function renderHeader(page, item, context) {
 
         $('.itemTabs', page).hide();
 
@@ -139,7 +153,7 @@
         }
     }
 
-    function renderTabs(page, item) {
+    function renderTabs(page, item, context) {
 
         var html = '<fieldset data-role="controlgroup" data-type="horizontal" class="libraryTabs">';
 
@@ -199,7 +213,6 @@
 
         bindRadioEvents(page);
 
-        var context = getParameterByName('context');
         var selectedRadio = null;
 
         if (context) {
@@ -306,7 +319,7 @@
         });
     }
 
-    function renderDetails(page, item) {
+    function renderDetails(page, item, context) {
 
         LibraryBrowser.renderDetailPageBackdrop(page, item);
         LibraryBrowser.renderOverview($('.itemOverview', page), item);
@@ -314,7 +327,7 @@
         renderUserDataIcons(page, item);
         LibraryBrowser.renderLinks($('#itemLinks', page), item);
 
-        LibraryBrowser.renderGenres($('.itemGenres', page), item, getParameterByName('context'));
+        LibraryBrowser.renderGenres($('.itemGenres', page), item, context);
 
         if (item.Type == "Person" && item.PremiereDate) {
 
@@ -519,8 +532,6 @@
         var page = this;
 
         reload(page);
-
-        $('#btnEdit', page).attr('href', 'edititemmetadata.html' + getWindowLocationSearch());
 
     }).on('pagehide', "#itemByNameDetailPage", function () {
 

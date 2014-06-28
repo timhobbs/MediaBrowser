@@ -1,4 +1,5 @@
-﻿using MediaBrowser.Controller.Entities;
+﻿using System.Collections.Generic;
+using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
@@ -107,6 +108,12 @@ namespace MediaBrowser.Api
                 hasTags.Tags = request.Tags;
             }
 
+            var hasShortOverview = item as IHasShortOverview;
+            if (hasShortOverview != null)
+            {
+                hasShortOverview.ShortOverview = request.ShortOverview;
+            }
+
             var hasKeywords = item as IHasKeywords;
             if (hasKeywords != null)
             {
@@ -209,7 +216,7 @@ namespace MediaBrowser.Api
             if (song != null)
             {
                 song.Album = request.Album;
-                song.AlbumArtist = request.AlbumArtist;
+                song.AlbumArtists = string.IsNullOrWhiteSpace(request.AlbumArtist) ? new List<string>() : new List<string> { request.AlbumArtist };
                 song.Artists = request.Artists.ToList();
             }
 

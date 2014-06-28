@@ -311,6 +311,7 @@ namespace MediaBrowser.WebDashboard.Api
         /// Modifies the HTML by adding common meta tags, css and js.
         /// </summary>
         /// <param name="sourceStream">The source stream.</param>
+        /// <param name="userId">The user identifier.</param>
         /// <param name="localizationCulture">The localization culture.</param>
         /// <returns>Task{Stream}.</returns>
         private async Task<Stream> ModifyHtml(Stream sourceStream, string localizationCulture)
@@ -373,8 +374,7 @@ namespace MediaBrowser.WebDashboard.Api
             sb.Append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\">");
             sb.Append("<meta name=\"apple-mobile-web-app-capable\" content=\"yes\">");
             sb.Append("<meta name=\"mobile-web-app-capable\" content=\"yes\">");
-            //sb.Append("<meta name=\"application-name\" content=\"Media Browser\">");
-            //sb.Append("<meta name=\"msapplication-config\" content=\"config.xml\">");
+            sb.Append("<meta name=\"application-name\" content=\"Media Browser\">");
             //sb.Append("<meta name=\"apple-mobile-web-app-status-bar-style\" content=\"black-translucent\">");
 
             sb.Append("<link rel=\"icon\" sizes=\"114x114\" href=\"css/images/touchicon114.png\" />");
@@ -560,6 +560,7 @@ namespace MediaBrowser.WebDashboard.Api
                                 "gamespage.js",
                                 "gamegenrepage.js",
                                 "gamestudiospage.js",
+                                "homelatest.js",
                                 "indexpage.js",
                                 "itembynamedetailpage.js",
                                 "itemdetailpage.js",
@@ -667,7 +668,6 @@ namespace MediaBrowser.WebDashboard.Api
                                   {
                                       "site.css",
                                       "chromecast.css",
-                                      "contextmenu.css",
                                       "mediaplayer.css",
                                       "mediaplayer-video.css",
                                       "librarymenu.css",

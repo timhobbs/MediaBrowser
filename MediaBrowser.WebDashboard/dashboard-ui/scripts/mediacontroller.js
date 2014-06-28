@@ -300,7 +300,7 @@
             currentPlayer.shuffle(id);
         };
 
-        self.playlist = function() {
+        self.playlist = function () {
             return currentPlayer.playlist || [];
         };
 
@@ -443,7 +443,7 @@
 
             var mirror = (!target.isLocalPlayer && target.supportedCommands.indexOf('DisplayContent') != -1) ? 'true' : 'false';
 
-            html += '<input type="radio" class="radioSelectPlayerTarget" name="radioSelectPlayerTarget" data-mirror="' + mirror + '" data-commands="' + target.supportedCommands.join(',') + '" data-mediatypes="' + target.playableMediaTypes.join(',') + '" data-playername="' + target.playerName + '" data-targetid="' + target.id + '" data-targetname="' + target.name + '" id="' + id + '" value="' + target.id + '"' + checkedHtml + '>';
+            html += '<input type="radio" class="radioSelectPlayerTarget" name="radioSelectPlayerTarget" data-mirror="' + mirror + '" data-commands="' + target.supportedCommands.join(',') + '" data-mediatypes="' + target.playableMediaTypes.join(',') + '" data-playername="' + target.playerName + '" data-targetid="' + target.id + '" data-targetname="' + target.name + '" data-devicename="' + target.deviceName + '" id="' + id + '" value="' + target.id + '"' + checkedHtml + '>';
             html += '<label for="' + id + '" style="font-weight:normal;">' + target.name;
 
             if (target.appName) {
@@ -472,6 +472,9 @@
         var html = '<div data-role="panel" data-position="right" data-display="overlay" data-position-fixed="true" id="playerSelectionPanel" class="playerSelectionPanel" data-theme="b">';
 
         html += '<div class="players"></div>';
+
+        html += '<br/>';
+        html += '<p><a href="nowplaying.html" data-role="button" data-mini="true" data-icon="remote">' + Globalize.translate('ButtonRemoteControl') + '</a></p>';
 
         html += '</div>';
 
@@ -519,6 +522,7 @@
                 var playerName = this.getAttribute('data-playername');
                 var targetId = this.getAttribute('data-targetid');
                 var targetName = this.getAttribute('data-targetname');
+                var deviceName = this.getAttribute('data-deviceName');
                 var playableMediaTypes = this.getAttribute('data-mediatypes').split(',');
                 var supportedCommands = this.getAttribute('data-commands').split(',');
 
@@ -526,7 +530,8 @@
                     id: targetId,
                     name: targetName,
                     playableMediaTypes: playableMediaTypes,
-                    supportedCommands: supportedCommands
+                    supportedCommands: supportedCommands,
+                    deviceName: deviceName
 
                 });
             });

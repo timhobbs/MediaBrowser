@@ -45,10 +45,8 @@
 
         Dashboard.getCurrentUser().done(function (user) {
 
-            var imageHref = user.Configuration.IsAdministrator ? "edititemimages.html?id=" + item.Id : "";
-
-            $('#itemImage', page).html(LibraryBrowser.getDetailImageHtml(item, imageHref));
-
+            renderImage(page, item, user);
+            
             setInitialCollapsibleState(page, item, context, user);
             renderDetails(page, item, context);
             LibraryBrowser.renderDetailPageBackdrop(page, item);
@@ -140,6 +138,13 @@
 
         Dashboard.hideLoadingMsg();
     }
+    
+    function renderImage(page, item, user) {
+        
+        var imageHref = user.Configuration.IsAdministrator ? "edititemimages.html?id=" + item.Id : "";
+
+        $('#itemImage', page).html(LibraryBrowser.getDetailImageHtml(item, imageHref));
+    }
 
     function onWebSocketMessage(e, data) {
 
@@ -158,8 +163,14 @@
                 })[0];
 
                 if (userData) {
+
                     currentItem.UserData = userData;
                     renderUserDataIcons(page, currentItem);
+
+                    Dashboard.getCurrentUser().done(function (user) {
+
+                        renderImage(page, currentItem, user);
+                    });
                 }
             }
         }
@@ -879,6 +890,7 @@
     }
 
     function renderUserDataIcons(page, item) {
+        
         $('.userDataIcons', page).html(LibraryBrowser.getUserDataIconsHtml(item));
     }
 
@@ -1178,6 +1190,10 @@
             }
 
             if (type == "Video") {
+                if (stream.IsAnamorphic != null) {
+                    attributes.push(createAttribute("Anamorphic", (stream.IsAnamorphic ? 'Yes' : 'No')));
+                }
+                
                 attributes.push(createAttribute("Interlaced", (stream.IsInterlaced ? 'Yes' : 'No')));
             }
 
@@ -1336,7 +1352,7 @@
 
             var cast = casts[i];
 
-            html += '<a class="tileItem smallPosterTileItem" href="itembynamedetails.html?context=' + context + '&person=' + ApiClient.encodeName(cast.Name) + '">';
+            html += '<a class="tileItem smallPosterTileItem" href="itembynamedetails.html?context=' + context + '&id=' + cast.Id + '">';
 
             var imgUrl;
 

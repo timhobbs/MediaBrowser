@@ -54,12 +54,14 @@ namespace MediaBrowser.Model.Dlna
                 // Avoid implicitly captured closure
                 string mediaSourceId = options.MediaSourceId;
 
-                mediaSources = new List<MediaSourceInfo>();
+                var newMediaSources = new List<MediaSourceInfo>();
                 foreach (MediaSourceInfo i in mediaSources)
                 {
                     if (StringHelper.EqualsIgnoreCase(i.Id, mediaSourceId))
-                        mediaSources.Add(i);
+                        newMediaSources.Add(i);
                 }
+
+                mediaSources = newMediaSources;
             }
 
             List<StreamInfo> streams = new List<StreamInfo>();
@@ -321,6 +323,12 @@ namespace MediaBrowser.Model.Dlna
 
                     playlistItem.VideoBitrate = Math.Min(videoBitrate, currentValue);
                 }
+
+                // Hate to hard-code this, but it's still probably better than being subjected to encoder defaults
+                if (!playlistItem.VideoBitrate.HasValue)
+                {
+                    playlistItem.VideoBitrate = 5000000;
+                }
             }
 
             return playlistItem;
@@ -368,6 +376,7 @@ namespace MediaBrowser.Model.Dlna
             double? videoLevel = videoStream == null ? null : videoStream.Level;
             string videoProfile = videoStream == null ? null : videoStream.Profile;
             float? videoFramerate = videoStream == null ? null : videoStream.AverageFrameRate ?? videoStream.AverageFrameRate;
+            bool? isAnamorphic = videoStream == null ? null : videoStream.IsAnamorphic;
 
             int? audioBitrate = audioStream == null ? null : audioStream.BitRate;
             int? audioChannels = audioStream == null ? null : audioStream.Channels;
@@ -379,7 +388,7 @@ namespace MediaBrowser.Model.Dlna
             // Check container conditions
             foreach (ProfileCondition i in conditions)
             {
-                if (!conditionProcessor.IsVideoConditionSatisfied(i, audioBitrate, audioChannels, width, height, bitDepth, videoBitrate, videoProfile, videoLevel, videoFramerate, packetLength, timestamp))
+                if (!conditionProcessor.IsVideoConditionSatisfied(i, audioBitrate, audioChannels, width, height, bitDepth, videoBitrate, videoProfile, videoLevel, videoFramerate, packetLength, timestamp, isAnamorphic))
                 {
                     return null;
                 }
@@ -401,7 +410,7 @@ namespace MediaBrowser.Model.Dlna
 
             foreach (ProfileCondition i in conditions)
             {
-                if (!conditionProcessor.IsVideoConditionSatisfied(i, audioBitrate, audioChannels, width, height, bitDepth, videoBitrate, videoProfile, videoLevel, videoFramerate, packetLength, timestamp))
+                if (!conditionProcessor.IsVideoConditionSatisfied(i, audioBitrate, audioChannels, width, height, bitDepth, videoBitrate, videoProfile, videoLevel, videoFramerate, packetLength, timestamp, isAnamorphic))
                 {
                     return null;
                 }
@@ -518,6 +527,7 @@ namespace MediaBrowser.Model.Dlna
                             break;
                         }
                     case ProfileConditionValue.AudioProfile:
+                    case ProfileConditionValue.IsAnamorphic:
                     case ProfileConditionValue.Has64BitOffsets:
                     case ProfileConditionValue.PacketLength:
                     case ProfileConditionValue.VideoTimestamp:
@@ -551,8 +561,8 @@ namespace MediaBrowser.Model.Dlna
                         }
                     case ProfileConditionValue.VideoFramerate:
                         {
-                            double num;
-                            if (DoubleHelper.TryParseCultureInvariant(value, out num))
+                            float num;
+                            if (FloatHelper.TryParseCultureInvariant(value, out num))
                             {
                                 item.MaxFramerate = num;
                             }
