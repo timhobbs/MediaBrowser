@@ -631,8 +631,6 @@
 
                 if (!state) return;
 
-                console.log("state", state);
-
                 if (state.IsPaused) {
                     controller.unpause();
                 } else {
