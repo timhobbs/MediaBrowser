@@ -295,7 +295,7 @@
 
                 url = ApiClient.getScaledImageUrl(state.NowPlayingItem.LogoItemId, {
                     type: "Logo",
-                    height: 40,
+                    height: 42,
                     tag: state.NowPlayingItem.LogoImageTag
                 });
 
