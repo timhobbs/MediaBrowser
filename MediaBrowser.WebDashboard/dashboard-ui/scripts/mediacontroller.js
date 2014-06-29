@@ -627,14 +627,18 @@
 
             player.getPlayerState().done(function (result) {
 
-                    if (!state) return;
+                var state = result.PlayState;
 
-                    if (state.IsPaused) {
-                        controller.unpause();
-                    } else {
-                        controller.pause();
-                    }
-                });
+                if (!state) return;
+
+                console.log("state", state);
+
+                if (state.IsPaused) {
+                    controller.unpause();
+                } else {
+                    controller.pause();
+                }
+            });
         }
 
         keyResult[38] = function() { // up arrow
