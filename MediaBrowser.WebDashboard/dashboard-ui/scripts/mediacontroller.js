@@ -627,37 +627,37 @@
 
             player.getPlayerState().done(function (result) {
 
-                var state = result.PlayState;
+                var state = result;
 
-                if (!state) return;
-
-                if (state.IsPaused) {
-                    controller.unpause();
-                } else {
-                    controller.pause();
+                if (state.NowPlayingItem && state.PlayState) {
+                    if (state.PlayState.IsPaused) {
+                        player.unpause();
+                    } else {
+                        player.pause();
+                    }
                 }
             });
-        }
+        };
 
         keyResult[38] = function() { // up arrow
             controller.volumeUp();
             var vol = controller.getVolume();
             setVolume(vol);
-        }
+        };
 
         keyResult[40] = function() { // down arrow
             controller.volumeDown();
             var vol = controller.getVolume();
             setVolume(vol);
-        }
+        };
 
         keyResult[37] = function(e) { // left
             setPosition(37, e.shiftKey);
-        }
+        };
 
         keyResult[39] = function(e) { // right arrow
             setPosition(39, e.shiftKey);
-        }
+        };
 
         keyResult[81] = function(e) { // q
             var supported = checkSupport("GoToSettings");
