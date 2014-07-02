@@ -175,7 +175,7 @@
             UserId: userId
         };
 
-        $.getJSON(ApiClient.getUrl("Channels/Items/Latest", options)).done(function (result) {
+        ApiClient.getJSON(ApiClient.getUrl("Channels/Items/Latest", options)).done(function (result) {
 
             var html = '';
 
@@ -188,7 +188,6 @@
                     shape: 'autosmall',
                     showTitle: true,
                     centerText: true,
-                    context: 'home',
                     lazy: true
                 });
                 html += '</div>';
@@ -219,7 +218,9 @@
                     shape: shape,
                     showTitle: true,
                     centerText: true,
-                    lazy: true
+                    lazy: true,
+                    autoThumb: true,
+                    context: 'home'
                 });
                 html += '</div>';
             }
@@ -326,7 +327,7 @@
             SupportsLatestItems: true
         });
 
-        $.getJSON(ApiClient.getUrl("Channels", options)).done(function (result) {
+        ApiClient.getJSON(ApiClient.getUrl("Channels", options)).done(function (result) {
 
             var channels = result.Items;
 
@@ -361,7 +362,7 @@
             ChannelIds: channel.Id
         };
 
-        $.getJSON(ApiClient.getUrl("Channels/Items/Latest", options)).done(function (result) {
+        ApiClient.getJSON(ApiClient.getUrl("Channels/Items/Latest", options)).done(function (result) {
 
             var html = '';
 

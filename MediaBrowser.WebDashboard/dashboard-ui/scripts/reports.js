@@ -27,6 +27,7 @@
                         {},
                         { name: 'Series', sortField: 'SeriesSortName,SortName' },
                         { name: 'Season', sortField: 'SortName' },
+                        { name: 'Season Number', sortField: 'IndexNumber' },
                         { name: 'Date Added', sortField: 'DateCreated,SortName' }
                     ];
                 }
@@ -260,6 +261,7 @@
                         html += item.ParentIndexNumber == null ? '' : item.ParentIndexNumber;
                         break;
                     }
+                case 'Season Number':
                 case 'Track':
                     {
                         html += item.IndexNumber == null ? '' : item.IndexNumber;
@@ -575,7 +577,7 @@
         var url = ApiClient.getUrl("Items", query);
         var reportType = $('#selectView', page).val();
 
-        $.getJSON(url).done(function (result) {
+        ApiClient.getJSON(url).done(function (result) {
 
             renderItems(page, result, reportType);
 

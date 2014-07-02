@@ -101,6 +101,7 @@
     <Compile Include="..\SharedVersion.cs">
       <Link>Properties\SharedVersion.cs</Link>
     </Compile>
+    <Compile Include="Channels\ChannelConfigurations.cs" />
     <Compile Include="Channels\ChannelDownloadScheduledTask.cs" />
     <Compile Include="Channels\ChannelImageProvider.cs" />
     <Compile Include="Channels\ChannelItemImageProvider.cs" />
@@ -132,6 +133,7 @@
     <Compile Include="EntryPoints\ServerEventNotifier.cs" />
     <Compile Include="EntryPoints\UserDataChangeNotifier.cs" />
     <Compile Include="FileOrganization\OrganizerScheduledTask.cs" />
+    <Compile Include="HttpServer\Security\AuthorizationContext.cs" />
     <Compile Include="HttpServer\ContainerAdapter.cs" />
     <Compile Include="HttpServer\GetSwaggerResource.cs" />
     <Compile Include="HttpServer\HttpListenerHost.cs" />
@@ -140,9 +142,12 @@
     <Compile Include="HttpServer\NativeWebSocket.cs" />
     <Compile Include="HttpServer\RangeRequestWriter.cs" />
     <Compile Include="HttpServer\ResponseFilter.cs" />
+    <Compile Include="HttpServer\Security\AuthService.cs" />
+    <Compile Include="HttpServer\Security\SessionAuthProvider.cs" />
     <Compile Include="HttpServer\ServerFactory.cs" />
     <Compile Include="HttpServer\ServerLogFactory.cs" />
     <Compile Include="HttpServer\ServerLogger.cs" />
+    <Compile Include="HttpServer\Security\SessionContext.cs" />
     <Compile Include="HttpServer\StreamWriter.cs" />
     <Compile Include="HttpServer\SwaggerService.cs" />
     <Compile Include="Drawing\ImageProcessor.cs" />
@@ -195,6 +200,7 @@
     <Compile Include="News\NewsService.cs" />
     <Compile Include="Notifications\CoreNotificationTypes.cs" />
     <Compile Include="Notifications\InternalNotificationService.cs" />
+    <Compile Include="Notifications\NotificationConfigurationFactory.cs" />
     <Compile Include="Notifications\NotificationManager.cs" />
     <Compile Include="Persistence\SqliteChapterRepository.cs" />
     <Compile Include="Persistence\SqliteExtensions.cs" />
@@ -344,6 +350,8 @@
     <EmbeddedResource Include="Localization\JavaScript\vi.json" />
     <EmbeddedResource Include="Localization\Server\da.json" />
     <EmbeddedResource Include="Localization\Server\vi.json" />
+    <EmbeddedResource Include="Localization\JavaScript\pl.json" />
+    <EmbeddedResource Include="Localization\Server\pl.json" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

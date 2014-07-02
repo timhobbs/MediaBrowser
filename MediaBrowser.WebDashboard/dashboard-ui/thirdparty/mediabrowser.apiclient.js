@@ -14,19 +14,19 @@ MediaBrowser.ApiClient = function ($, navigator, JSON, WebSocket, setTimeout, wi
         var randomId = '';
         
         if (localStorage) {
-            
+
             //  Since the above is not guaranteed to be unique per device, add a little more
             randomId = localStorage.getItem('randomId');
-            
+
             if (!randomId) {
 
                 randomId = new Date().getTime();
-                localStorage.setItem('randomId', randomId);
+
+                localStorage.setItem('randomId', randomId.toString());
             }
         }
 
         keys.push(randomId);
-
         return MediaBrowser.SHA1(keys.join('|'));
     }
     
@@ -145,6 +145,15 @@ MediaBrowser.ApiClient = function ($, navigator, JSON, WebSocket, setTimeout, wi
             }
 
             return $.ajax(request);
+        };
+
+        self.getJSON = function(url) {
+
+            return self.ajax({
+                type: "GET",
+                url: url,
+                dataType: "json"
+            });
         };
 
         /**
@@ -1310,6 +1319,17 @@ MediaBrowser.ApiClient = function ($, navigator, JSON, WebSocket, setTimeout, wi
                 dataType: "json"
             });
         };
+        
+        self.getNamedConfiguration = function (name) {
+
+            var url = self.getUrl("System/Configuration/" + name);
+
+            return self.ajax({
+                type: "GET",
+                url: url,
+                dataType: "json"
+            });
+        };
 
         /**
          * Gets the server's scheduled tasks
@@ -2384,6 +2404,22 @@ MediaBrowser.ApiClient = function ($, navigator, JSON, WebSocket, setTimeout, wi
             }
 
             var url = self.getUrl("System/Configuration");
+
+            return self.ajax({
+                type: "POST",
+                url: url,
+                data: JSON.stringify(configuration),
+                contentType: "application/json"
+            });
+        };
+
+        self.updateNamedConfiguration = function (name, configuration) {
+
+            if (!configuration) {
+                throw new Error("null configuration");
+            }
+
+            var url = self.getUrl("System/Configuration/" + name);
 
             return self.ajax({
                 type: "POST",

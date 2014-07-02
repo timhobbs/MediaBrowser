@@ -13,7 +13,6 @@ using MediaBrowser.Model.Drawing;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.IO;
-using MediaBrowser.Model.Library;
 using MediaBrowser.Model.LiveTv;
 using MediaBrowser.Model.MediaInfo;
 using System;
@@ -1386,8 +1385,6 @@ namespace MediaBrowser.Api.Playback
                 ParseParams(request);
             }
 
-            var user = AuthorizationRequestFilterAttribute.GetCurrentUser(Request, UserManager);
-
             var url = Request.PathInfo;
 
             if (string.IsNullOrEmpty(request.AudioCodec))
@@ -1408,11 +1405,6 @@ namespace MediaBrowser.Api.Playback
             }
 
             var item = LibraryManager.GetItemById(request.Id);
-
-            if (user != null && item.GetPlayAccess(user) != PlayAccess.Full)
-            {
-                throw new ArgumentException(string.Format("{0} is not allowed to play media.", user.Name));
-            }
 
             List<MediaStream> mediaStreams = null;
 
@@ -1447,6 +1439,16 @@ namespace MediaBrowser.Api.Playback
                     state.MediaPath = mediaUrl;
                     state.InputProtocol = MediaProtocol.Http;
                 }
+                else
+                {
+                    // No media info, so this is probably needed
+                    state.DeInterlace = true;
+                }
+
+                if (recording.RecordingInfo.Status == RecordingStatus.InProgress)
+                {
+                    state.ReadInputAtNativeFramerate = true;
+                }
 
                 state.RunTimeTicks = recording.RunTimeTicks;
 
@@ -1455,9 +1457,7 @@ namespace MediaBrowser.Api.Playback
                     await Task.Delay(1000, cancellationToken).ConfigureAwait(false);
                 }
 
-                state.ReadInputAtNativeFramerate = recording.RecordingInfo.Status == RecordingStatus.InProgress;
                 state.OutputAudioSync = "1000";
-                state.DeInterlace = true;
                 state.InputVideoSync = "-1";
                 state.InputAudioSync = "1";
                 state.InputContainer = recording.Container;
@@ -1481,13 +1481,13 @@ namespace MediaBrowser.Api.Playback
             }
             else if (item is IChannelMediaItem)
             {
-                var source = await GetChannelMediaInfo(request.Id, request.MediaSourceId, cancellationToken).ConfigureAwait(false);
+                var mediaSource = await GetChannelMediaInfo(request.Id, request.MediaSourceId, cancellationToken).ConfigureAwait(false);
                 state.IsInputVideo = string.Equals(item.MediaType, MediaType.Video, StringComparison.OrdinalIgnoreCase);
-                state.InputProtocol = source.Protocol;
-                state.MediaPath = source.Path;
+                state.InputProtocol = mediaSource.Protocol;
+                state.MediaPath = mediaSource.Path;
                 state.RunTimeTicks = item.RunTimeTicks;
-                state.RemoteHttpHeaders = source.RequiredHttpHeaders;
-                mediaStreams = source.MediaStreams;
+                state.RemoteHttpHeaders = mediaSource.RequiredHttpHeaders;
+                mediaStreams = mediaSource.MediaStreams;
             }
             else
             {
@@ -1524,9 +1524,16 @@ namespace MediaBrowser.Api.Playback
                 state.RunTimeTicks = mediaSource.RunTimeTicks;
             }
 
-            if (string.Equals(state.InputContainer, "wtv", StringComparison.OrdinalIgnoreCase))
+            // If it's a wtv and we don't have media info, we will probably need to deinterlace
+            if (string.Equals(state.InputContainer, "wtv", StringComparison.OrdinalIgnoreCase) &&
+                mediaStreams.Count == 0)
             {
                 state.DeInterlace = true;
+            }
+
+            if (state.InputProtocol == MediaProtocol.Rtmp)
+            {
+                state.ReadInputAtNativeFramerate = true;
             }
 
             var videoRequest = request as VideoStreamRequest;
@@ -1947,12 +1954,6 @@ namespace MediaBrowser.Api.Playback
         /// <param name="videoRequest">The video request.</param>
         private void EnforceResolutionLimit(StreamState state, VideoStreamRequest videoRequest)
         {
-            // If enabled, allow whatever the client asks for
-            if (ServerConfigurationManager.Configuration.AllowVideoUpscaling)
-            {
-                return;
-            }
-
             // Switch the incoming params to be ceilings rather than fixed values
             videoRequest.MaxWidth = videoRequest.MaxWidth ?? videoRequest.Width;
             videoRequest.MaxHeight = videoRequest.MaxHeight ?? videoRequest.Height;

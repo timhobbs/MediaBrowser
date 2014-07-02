@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using MediaBrowser.Model.Querying;
 
 namespace MediaBrowser.Server.Implementations.Library
 {
@@ -62,40 +63,48 @@ namespace MediaBrowser.Server.Implementations.Library
 
             if (recursiveChildren.OfType<Series>().Any())
             {
-                list.Add(await GetUserView(CollectionType.TvShows, user, cancellationToken).ConfigureAwait(false));
+                list.Add(await GetUserView(CollectionType.TvShows, user, string.Empty, cancellationToken).ConfigureAwait(false));
             }
 
             if (recursiveChildren.OfType<MusicAlbum>().Any() ||
                 recursiveChildren.OfType<MusicVideo>().Any())
             {
-                list.Add(await GetUserView(CollectionType.Music, user, cancellationToken).ConfigureAwait(false));
+                list.Add(await GetUserView(CollectionType.Music, user, string.Empty, cancellationToken).ConfigureAwait(false));
             }
 
             if (recursiveChildren.OfType<Movie>().Any())
             {
-                list.Add(await GetUserView(CollectionType.Movies, user, cancellationToken).ConfigureAwait(false));
+                list.Add(await GetUserView(CollectionType.Movies, user, string.Empty, cancellationToken).ConfigureAwait(false));
             }
 
             if (recursiveChildren.OfType<Game>().Any())
             {
-                list.Add(await GetUserView(CollectionType.Games, user, cancellationToken).ConfigureAwait(false));
+                list.Add(await GetUserView(CollectionType.Games, user, string.Empty, cancellationToken).ConfigureAwait(false));
             }
 
-            if (recursiveChildren.OfType<BoxSet>().Any())
+            if (user.Configuration.DisplayCollectionsView ||
+                recursiveChildren.OfType<BoxSet>().Any())
             {
-                list.Add(await GetUserView(CollectionType.BoxSets, user, cancellationToken).ConfigureAwait(false));
+                list.Add(await GetUserView(CollectionType.BoxSets, user, CollectionType.BoxSets, cancellationToken).ConfigureAwait(false));
             }
 
             if (query.IncludeExternalContent)
             {
                 var channelResult = await _channelManager.GetChannels(new ChannelQuery
                 {
-                    Limit = 0,
                     UserId = query.UserId
 
                 }, cancellationToken).ConfigureAwait(false);
 
-                if (channelResult.TotalRecordCount > 0)
+                var channels = channelResult.Items;
+
+                var embeddedChannels = channels
+                    .Where(i => user.Configuration.DisplayChannelsWithinViews.Contains(i.Id))
+                    .ToList();
+
+                list.AddRange(embeddedChannels.Select(i => _channelManager.GetChannel(i.Id)));
+
+                if (channels.Length > embeddedChannels.Count)
                 {
                     list.Add(await _channelManager.GetInternalChannelFolder(query.UserId, cancellationToken).ConfigureAwait(false));
                 }
@@ -106,14 +115,14 @@ namespace MediaBrowser.Server.Implementations.Library
                 }
             }
 
-            return list.OrderBy(i => i.SortName);
+            return _libraryManager.Sort(list, user, new[] { ItemSortBy.SortName }, SortOrder.Ascending).Cast<Folder>();
         }
 
-        private Task<UserView> GetUserView(string type, User user, CancellationToken cancellationToken)
+        private Task<UserView> GetUserView(string type, User user, string sortName, CancellationToken cancellationToken)
         {
             var name = _localizationManager.GetLocalizedString("ViewType" + type);
 
-            return _libraryManager.GetNamedView(name, type, string.Empty, cancellationToken);
+            return _libraryManager.GetNamedView(name, type, sortName, cancellationToken);
         }
     }
 }

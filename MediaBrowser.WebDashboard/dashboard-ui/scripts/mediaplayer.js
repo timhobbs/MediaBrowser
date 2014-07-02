@@ -19,7 +19,7 @@
         self.playlist = [];
         self.isLocalPlayer = true;
         self.isDefaultPlayer = true;
-        
+
         self.name = 'Html5 Player';
 
         self.getTargets = function () {
@@ -46,7 +46,7 @@
             var playerTime = Math.floor(10000000 * (mediaElement || self.currentMediaElement).currentTime);
 
             //if (!self.isCopyingTimestamps) {
-                playerTime += self.startTimeTicksOffset;
+            playerTime += self.startTimeTicksOffset;
             //}
 
             return playerTime;
@@ -156,9 +156,13 @@
                     isStatic = finalParams.isStatic;
                 }
 
-                if (isStatic || !ticks) {
+                var isSeekableMedia = self.currentMediaSource.RunTimeTicks;
+                var isClientSeekable = isStatic || (isSeekableMedia && transcodingExtension == '.m3u8');
+
+                if (isClientSeekable || !ticks || !isSeekableMedia) {
                     currentSrc = replaceQueryString(currentSrc, 'starttimeticks', '');
-                } else {
+                }
+                else {
                     currentSrc = replaceQueryString(currentSrc, 'starttimeticks', ticks);
                 }
 
@@ -406,7 +410,7 @@
 
                 self.currentItem = item;
                 self.currentMediaSource = getOptimalMediaSource(item.MediaType, item.MediaSources);
-                
+
                 mediaElement = playAudio(item, self.currentMediaSource, startPosition);
 
                 self.currentDurationTicks = self.currentMediaSource.RunTimeTicks;
@@ -798,26 +802,32 @@
 
             var elem = self.currentMediaElement;
 
-            elem.pause();
+            if (elem) {
 
-            var isVideo = self.currentItem.MediaType == "Video";
+                elem.pause();
 
-            $(elem).off("ended.playnext").one("ended", function () {
+                $(elem).off("ended.playnext").one("ended", function () {
 
-                $(this).off();
+                    $(this).off();
 
-                if (this.tagName.toLowerCase() != 'audio') {
-                    $(this).remove();
-                }
+                    if (this.tagName.toLowerCase() != 'audio') {
+                        $(this).remove();
+                    }
 
-                elem.src = "";
+                    elem.src = "";
+                    self.currentMediaElement = null;
+                    self.currentItem = null;
+                    self.currentMediaSource = null;
+
+                }).trigger("ended");
+
+            } else {
                 self.currentMediaElement = null;
                 self.currentItem = null;
                 self.currentMediaSource = null;
+            }
 
-            }).trigger("ended");
-
-            if (isVideo) {
+            if (self.currentItem && self.currentItem.MediaType == "Video") {
                 if (self.isFullScreen()) {
                     self.exitFullScreen();
                 }

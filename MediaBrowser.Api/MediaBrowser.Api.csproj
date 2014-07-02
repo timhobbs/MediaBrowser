@@ -79,7 +79,6 @@
     <Compile Include="DefaultTheme\Models.cs" />
     <Compile Include="DisplayPreferencesService.cs" />
     <Compile Include="EnvironmentService.cs" />
-    <Compile Include="AuthorizationRequestFilterAttribute.cs" />
     <Compile Include="GamesService.cs" />
     <Compile Include="IHasItemFields.cs" />
     <Compile Include="Images\ImageByNameService.cs" />
@@ -101,6 +100,7 @@
     <Compile Include="NotificationsService.cs" />
     <Compile Include="PackageReviewService.cs" />
     <Compile Include="PackageService.cs" />
+    <Compile Include="Playback\BifService.cs" />
     <Compile Include="Playback\EndlessStreamCopy.cs" />
     <Compile Include="Playback\Hls\BaseHlsService.cs" />
     <Compile Include="Playback\Hls\DynamicHlsService.cs" />

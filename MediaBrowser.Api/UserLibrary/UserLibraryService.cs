@@ -3,6 +3,7 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
 using MediaBrowser.Controller.Session;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Entities;
@@ -424,6 +425,7 @@ namespace MediaBrowser.Api.UserLibrary
     /// <summary>
     /// Class UserLibraryService
     /// </summary>
+    [Authenticated]
     public class UserLibraryService : BaseApiService
     {
         /// <summary>
@@ -541,7 +543,8 @@ namespace MediaBrowser.Api.UserLibrary
             if (series != null)
             {
                 var dtos = series
-                    .GetRecursiveChildren(i => i is Episode && i.ParentIndexNumber.HasValue && i.ParentIndexNumber.Value == 0)
+                    .GetRecursiveChildren()
+                    .Where(i => i is Episode && i.ParentIndexNumber.HasValue && i.ParentIndexNumber.Value == 0)
                     .OrderBy(i =>
                     {
                         if (i.PremiereDate.HasValue)
@@ -790,7 +793,7 @@ namespace MediaBrowser.Api.UserLibrary
                 datePlayed = DateTime.ParseExact(request.DatePlayed, "yyyyMMddHHmmss", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
             }
 
-            var session = GetSession(_sessionManager);
+            var session = GetSession();
 
             var dto = await UpdatePlayedStatus(user, request.Id, true, datePlayed).ConfigureAwait(false);
 
@@ -825,7 +828,7 @@ namespace MediaBrowser.Api.UserLibrary
 
         public void Post(ReportPlaybackStart request)
         {
-            request.SessionId = GetSession(_sessionManager).Id;
+            request.SessionId = GetSession().Id;
 
             var task = _sessionManager.OnPlaybackStart(request);
 
@@ -853,7 +856,7 @@ namespace MediaBrowser.Api.UserLibrary
 
         public void Post(ReportPlaybackProgress request)
         {
-            request.SessionId = GetSession(_sessionManager).Id;
+            request.SessionId = GetSession().Id;
 
             var task = _sessionManager.OnPlaybackProgress(request);
 
@@ -876,7 +879,7 @@ namespace MediaBrowser.Api.UserLibrary
 
         public void Post(ReportPlaybackStopped request)
         {
-            request.SessionId = GetSession(_sessionManager).Id;
+            request.SessionId = GetSession().Id;
 
             var task = _sessionManager.OnPlaybackStopped(request);
 
@@ -898,7 +901,7 @@ namespace MediaBrowser.Api.UserLibrary
         {
             var user = _userManager.GetUserById(request.UserId);
 
-            var session = GetSession(_sessionManager);
+            var session = GetSession();
 
             var dto = await UpdatePlayedStatus(user, request.Id, false, null).ConfigureAwait(false);
 

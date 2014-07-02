@@ -49,12 +49,20 @@
                 values.SortOrder = query.SortOrder;
             }
 
-            localStorage.setItem(key + '_' + Dashboard.getCurrentUserId(), JSON.stringify(values));
+            try {
+                localStorage.setItem(key + '_' + Dashboard.getCurrentUserId(), JSON.stringify(values));
+            } catch (e) {
+                
+            }
         },
 
         saveViewSetting: function (key, value) {
 
-            localStorage.setItem(key + '_' + Dashboard.getCurrentUserId() + '_view', value);
+            try {
+                localStorage.setItem(key + '_' + Dashboard.getCurrentUserId() + '_view', value);
+            } catch (e) {
+
+            }
         },
 
         getSavedViewSetting: function (key) {
@@ -300,7 +308,7 @@
 
             $('.playFlyout').popup("close").remove();
 
-            var html = '<div data-role="popup" class="playFlyout" data-history="false">';
+            var html = '<div data-role="popup" class="playFlyout" data-history="false" data-theme="a">';
 
             html += '<ul data-role="listview" style="min-width: 180px;">';
             html += '<li data-role="list-divider">Play Menu</li>';
@@ -339,13 +347,14 @@
         closePlayMenu: function () {
             $('.playFlyout').popup("close").remove();
         },
-        
+
         getHref: function (item, context) {
 
             var href = LibraryBrowser.getHrefInternal(item);
 
             if (context) {
-                href += "&context=" + context;
+                href += href.indexOf('?') == -1 ? "?context=" : "&context=";
+                href += context;
             }
 
             return href;
@@ -570,7 +579,29 @@
 
                 var downloadHeight = 576;
 
-                if (options.preferBackdrop && item.BackdropImageTags && item.BackdropImageTags.length) {
+                if (options.autoThumb && item.ImageTags && item.ImageTags.Primary && item.PrimaryImageAspectRatio && item.PrimaryImageAspectRatio >= 1.5) {
+
+                    height = 400;
+                    width = primaryImageAspectRatio ? Math.round(height * primaryImageAspectRatio) : null;
+
+                    imgUrl = ApiClient.getImageUrl(item.Id, {
+                        type: "Primary",
+                        height: height,
+                        width: width,
+                        tag: item.ImageTags.Primary
+                    });
+
+                }
+                else if (options.autoThumb && item.ImageTags && item.ImageTags.Thumb) {
+
+                    imgUrl = ApiClient.getScaledImageUrl(item.Id, {
+                        type: "Thumb",
+                        maxWidth: downloadHeight,
+                        tag: item.ImageTags.Thumb
+                    });
+
+                }
+                else if (options.preferBackdrop && item.BackdropImageTags && item.BackdropImageTags.length) {
 
                     imgUrl = ApiClient.getScaledImageUrl(item.Id, {
                         type: "Backdrop",
@@ -771,7 +802,25 @@
 
                 var href = options.linkItem === false ? '#' : LibraryBrowser.getHref(hrefItem, options.context);
 
-                html += '<a data-itemid="' + item.Id + '" class="' + cssClass + '" data-mediasourcecount="' + mediaSourceCount + '" href="' + href + '">';
+                if (item.UserData) {
+                    cssClass += ' posterItemUserData' + item.UserData.Key;
+                }
+
+                var itemCommands = [];
+
+                //if (MediaController.canPlay(item)) {
+                //    itemCommands.push('playmenu');
+                //}
+
+                if (item.Type != "Recording" && item.Type != "Program") {
+                    itemCommands.push('edit');
+                }
+
+                if (item.LocalTrailerCount) {
+                    itemCommands.push('trailer');
+                }
+
+                html += '<a data-commands="' + itemCommands.join(',') + '" data-itemid="' + item.Id + '" class="' + cssClass + '" data-mediasourcecount="' + mediaSourceCount + '" href="' + href + '">';
 
                 var style = "";
 
@@ -827,7 +876,7 @@
                 if (!options.overlayText) {
 
                     if (progressHtml) {
-                        html += '<div class="posterItemTextOverlay">';
+                        html += '<div class="posterItemTextOverlay posterItemProgressContainer">';
                         html += "<div class='posterItemProgress miniPosterItemProgress'>";
                         html += progressHtml;
                         html += "</div>";
@@ -888,7 +937,7 @@
                 if (options.overlayText) {
 
                     if (progressHtml) {
-                        html += "<div class='posterItemText posterItemProgress'>";
+                        html += "<div class='posterItemText posterItemProgress posterItemProgressContainer'>";
                         html += progressHtml || "&nbsp;";
                         html += "</div>";
                     }
@@ -1087,14 +1136,8 @@
                     return '<div class="unplayedIndicator">' + item.RecursiveUnplayedItemCount + '</div>';
                 }
 
-                if (item.PlayedPercentage == 100) {
-                    return '<div class="unplayedIndicator"><div class="ui-icon-check ui-btn-icon-notext"></div></div>';
-                }
-
-                var userData = item.UserData || {};
-
-                if (userData.Played) {
-                    return '<div class="unplayedIndicator"><div class="ui-icon-check ui-btn-icon-notext"></div></div>';
+                if (item.PlayedPercentage == 100 || (item.UserData && item.UserData.Played)) {
+                    return '<div class="playedIndicator"><div class="ui-icon-check ui-btn-icon-notext"></div></div>';
                 }
             }
 
@@ -1275,7 +1318,11 @@
         getPagingHtml: function (query, totalRecordCount, updatePageSizeSetting, pageSizes, showLimit) {
 
             if (query.Limit && updatePageSizeSetting !== false) {
-                localStorage.setItem('pagesize_', query.Limit);
+                try {
+                    localStorage.setItem('pagesize_', query.Limit);
+                } catch (e) {
+
+                }
             }
 
             var html = '';
@@ -1780,7 +1827,7 @@
                         html += '&nbsp;&nbsp;/&nbsp;&nbsp;';
                     }
 
-                    html += '<a class="textlink" href="itembynamedetails.html?context=' + context + '&studio=' + ApiClient.encodeName(item.Studios[i].Name) + '">' + item.Studios[i].Name + '</a>';
+                    html += '<a class="textlink" href="itembynamedetails.html?context=' + context + '&id=' + item.Studios[i].Id + '">' + item.Studios[i].Name + '</a>';
                 }
 
                 elem.show().html(html).trigger('create');

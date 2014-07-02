@@ -4,7 +4,7 @@
 
         Dashboard.showLoadingMsg();
 
-        $.ajax({
+        ApiClient.ajax({
             type: "POST",
             url: ApiClient.getUrl("System/Configuration/VideoImageExtraction", { Enabled: $('#chkVideoImages', page).checked() })
 
@@ -14,14 +14,20 @@
             // After saving chapter task, now save server config
             ApiClient.getServerConfiguration().done(function (config) {
 
-                config.ChapterOptions.EnableMovieChapterImageExtraction = $('#chkMovies', page).checked();
-
                 config.EnableUPnP = $('#chkEnableUpnp', page).checked();
 
                 ApiClient.updateServerConfiguration(config).done(function (result) {
 
-                    navigateToNextPage();
+                    ApiClient.getNamedConfiguration("chapters").done(function (chapterConfig) {
 
+                        chapterConfig.EnableMovieChapterImageExtraction = $('#chkMovies', page).checked();
+
+                        ApiClient.updateNamedConfiguration("chapters", chapterConfig).done(function () {
+                            
+                            navigateToNextPage();
+
+                        });
+                    });
                 });
             });
         });

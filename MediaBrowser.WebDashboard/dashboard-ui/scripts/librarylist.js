@@ -28,7 +28,7 @@
         });
     }
 
-    function getOverlayHtml(item, currentUser, posterItem) {
+    function getOverlayHtml(item, currentUser, posterItem, commands) {
 
         var html = '';
 
@@ -116,12 +116,12 @@
             buttonCount++;
         }
 
-        if (item.LocalTrailerCount && item.PlayAccess == 'Full') {
+        if (commands.indexOf('trailer') != -1) {
             html += '<button type="button" data-mini="true" data-inline="true" data-icon="video" data-iconpos="notext" class="btnPlayTrailer" data-itemid="' + item.Id + '" title="' + Globalize.translate('ButtonPlayTrailer') + '" style="' + buttonMargin + '">' + Globalize.translate('ButtonPlayTrailer') + '</button>';
             buttonCount++;
         }
 
-        if (currentUser.Configuration.IsAdministrator && item.Type != "Recording" && item.Type != "Program") {
+        if (currentUser.Configuration.IsAdministrator && commands.indexOf('edit') != -1) {
             html += '<button type="button" data-mini="true" data-inline="true" data-icon="edit" data-iconpos="notext" title="' + Globalize.translate('ButtonEdit') + '" onclick="Dashboard.navigate(\'edititemmetadata.html?id=' + item.Id + '\');return false;" style="' + buttonMargin + '">' + Globalize.translate('ButtonEdit') + '</button>';
             buttonCount++;
         }
@@ -141,40 +141,150 @@
             MediaController.play({ items: trailers });
         });
 
+        // Used by the tab menu, not the slide up
+        $('.tapHoldMenu').popup('close');
+
         return false;
     }
 
-    function onMenuCommand(command, elem) {
+    function onShuffleButtonClick() {
 
-        var id = elem.getAttribute('data-itemid');
-        var page = $(elem).parents('.page');
+        var id = this.getAttribute('data-itemid');
 
-        if (command == 'SplitVersions') {
-            splitVersions(id, page);
-        }
+        MediaController.shuffle(id);
+
+        // Used by the tab menu, not the slide up
+        $('.tapHoldMenu').popup('close');
+
+        return false;
     }
 
-    function splitVersions(id, page) {
+    function onInstantMixButtonClick() {
 
-        Dashboard.confirm(Globalize.translate('MessageConfirmSplitMedia'), Globalize.translate('HeaderSplitMedia'), function (confirmResult) {
+        var id = this.getAttribute('data-itemid');
 
-            if (confirmResult) {
+        MediaController.instantMix(id);
 
-                Dashboard.showLoadingMsg();
+        // Used by the tab menu, not the slide up
+        $('.tapHoldMenu').popup('close');
 
-                $.ajax({
-                    type: "DELETE",
-                    url: ApiClient.getUrl("Videos/" + id + "/AlternateSources")
+        return false;
+    }
 
-                }).done(function () {
+    function onQueueButtonClick() {
 
-                    Dashboard.hideLoadingMsg();
+        var id = this.getAttribute('data-itemid');
 
-                    $('.itemsContainer', page).trigger('needsrefresh');
-                });
-            }
+        MediaController.queue(id);
+
+        // Used by the tab menu, not the slide up
+        $('.tapHoldMenu').popup('close');
+
+        return false;
+    }
+
+    function onPlayButtonClick() {
+
+        var id = this.getAttribute('data-itemid');
+
+        MediaController.play(id);
+
+        // Used by the tab menu, not the slide up
+        $('.tapHoldMenu').popup('close');
+
+        return false;
+    }
+
+    function onResumeButtonClick() {
+
+        var id = this.getAttribute('data-itemid');
+
+        MediaController.play({
+            ids: [id],
+            startPositionTicks: parseInt(this.getAttribute('data-ticks'))
         });
 
+        // Used by the tab menu, not the slide up
+        $('.tapHoldMenu').popup('close');
+
+        return false;
+    }
+
+    function onPosterItemTapHold(e) {
+
+        $('.tapHoldMenu').popup("close").remove();
+
+        var posterItem = this;
+
+        var itemId = posterItem.getAttribute('data-itemid');
+        var commands = posterItem.getAttribute('data-commands').split(',');
+
+        var promise1 = ApiClient.getItem(Dashboard.getCurrentUserId(), itemId);
+        var promise2 = Dashboard.getCurrentUser();
+
+        $.when(promise1, promise2).done(function (response1, response2) {
+
+            var item = response1[0];
+            var user = response2[0];
+
+            var html = '<div data-role="popup" class="tapHoldMenu" data-theme="a">';
+
+            html += '<ul data-role="listview" style="min-width: 240px;">';
+            html += '<li data-role="list-divider">' + Globalize.translate('HeaderMenu') + '</li>';
+
+            html += '<li><a href="' + posterItem.href + '">' + Globalize.translate('ButtonOpen') + '</a></li>';
+            html += '<li><a href="' + posterItem.href + '" target="_blank">' + Globalize.translate('ButtonOpenInNewTab') + '</a></li>';
+
+            if (user.Configuration.IsAdministrator && commands.indexOf('edit') != -1) {
+                html += '<li data-icon="edit"><a href="edititemmetadata.html?id=' + itemId + '">' + Globalize.translate('ButtonEdit') + '</a></li>';
+            }
+
+            if (MediaController.canPlay(item)) {
+                html += '<li data-icon="play"><a href="#" class="btnPlay" data-itemid="' + itemId + '">' + Globalize.translate('ButtonPlay') + '</a></li>';
+            }
+
+            if (item.UserData.PlaybackPositionTicks && item.MediaType != "Audio" && !item.IsFolder) {
+                html += '<li data-icon="play"><a href="#" class="btnResume" data-ticks="' + item.UserData.PlaybackPositionTicks + '" data-itemid="' + itemId + '">' + Globalize.translate('ButtonResume') + '</a></li>';
+            }
+
+            if (commands.indexOf('trailer') != -1) {
+                html += '<li data-icon="video"><a href="#" class="btnPlayTrailer" data-itemid="' + itemId + '">' + Globalize.translate('ButtonPlayTrailer') + '</a></li>';
+            }
+
+            if (MediaController.canQueueMediaType(item.MediaType)) {
+                html += '<li data-icon="plus"><a href="#" class="btnQueue" data-itemid="' + itemId + '">' + Globalize.translate('ButtonQueue') + '</a></li>';
+            }
+
+            if (item.Type == "Audio" || item.Type == "MusicAlbum" || item.Type == "MusicArtist" || item.Type == "MusicGenre") {
+                html += '<li data-icon="recycle"><a href="#" class="btnInstantMix" data-itemid="' + itemId + '">' + Globalize.translate('ButtonInstantMix') + '</a></li>';
+            }
+
+            if (item.IsFolder || item.Type == "MusicArtist" || item.Type == "MusicGenre") {
+                html += '<li data-icon="recycle"><a href="#" class="btnShuffle" data-itemid="' + itemId + '">' + Globalize.translate('ButtonShuffle') + '</a></li>';
+            }
+
+            html += '</ul>';
+
+            html += '</div>';
+
+            $($.mobile.activePage).append(html);
+
+            var elem = $('.tapHoldMenu').popup({ positionTo: e.target }).trigger('create').popup("open").on("popupafterclose", function () {
+
+                $(this).off("popupafterclose").remove();
+
+            });
+
+            $('.btnPlay', elem).on('click', onPlayButtonClick);
+            $('.btnResume', elem).on('click', onResumeButtonClick);
+            $('.btnQueue', elem).on('click', onQueueButtonClick);
+            $('.btnInstantMix', elem).on('click', onInstantMixButtonClick);
+            $('.btnShuffle', elem).on('click', onShuffleButtonClick);
+            $('.btnPlayTrailer', elem).on('click', onTrailerButtonClick);
+        });
+
+        e.preventDefault();
+        return false;
     }
 
     $.fn.createPosterItemMenus = function () {
@@ -193,6 +303,7 @@
 
             var innerElem = $('.posterItemOverlayTarget', elem);
             var id = elem.getAttribute('data-itemid');
+            var commands = elem.getAttribute('data-commands').split(',');
 
             var promise1 = ApiClient.getItem(Dashboard.getCurrentUserId(), id);
             var promise2 = Dashboard.getCurrentUser();
@@ -202,7 +313,7 @@
                 var item = response1[0];
                 var user = response2[0];
 
-                innerElem.html(getOverlayHtml(item, user, elem)).trigger('create');
+                innerElem.html(getOverlayHtml(item, user, elem, commands)).trigger('create');
 
                 $('.btnPlayTrailer', innerElem).on('click', onTrailerButtonClick);
             });
@@ -240,6 +351,12 @@
         }
 
         var elems = '.backdropPosterItem,.smallBackdropPosterItem,.portraitPosterItem,.squarePosterItem,.miniBackdropPosterItem';
+
+        if ($.browser.mobile) {
+
+            this.off('contextmenu.posterItemMenu', elems)
+                .on('contextmenu.posterItemMenu', elems, onPosterItemTapHold);
+        }
 
         return this.off('.posterItemHoverMenu')
             .on('mouseenter.posterItemHoverMenu', elems, onHoverIn)
@@ -319,8 +436,8 @@
 
                 Dashboard.showLoadingMsg();
 
-                $.ajax({
-                    
+                ApiClient.ajax({
+
                     type: "POST",
                     url: ApiClient.getUrl("Videos/MergeVersions", { Ids: selection.join(',') })
 
@@ -335,9 +452,9 @@
             }
         });
     }
-    
+
     function addToCollection(page) {
-        
+
         var selection = getSelectedItems(page);
 
         if (selection.length < 1) {
@@ -374,7 +491,50 @@
         var page = this;
 
         hideSelections(page);
-
     });
+
+    function renderUserDataChanges(posterItem, userData) {
+
+        if (userData.Played) {
+
+            if (!$('.playedIndicator', posterItem).length) {
+
+                var html = '<div class="unplayedIndicator"><div class="ui-icon-check ui-btn-icon-notext"></div></div>';
+
+                $(html).insertAfter($('.posterItemOverlayTarget', posterItem));
+            }
+
+        } else {
+            $('.playedIndicator', posterItem).remove();
+        }
+
+        // TODO: Handle progress bar
+        // $('.posterItemProgressContainer').remove();
+    }
+
+    function onUserDataChanged(userData) {
+
+        $('.posterItemUserData' + userData.Key).each(function () {
+            renderUserDataChanges(this, userData);
+        });
+    }
+
+    function onWebSocketMessage(e, data) {
+
+        var msg = data;
+
+        if (msg.MessageType === "UserDataChanged") {
+
+            if (msg.Data.UserId == Dashboard.getCurrentUserId()) {
+
+                for (var i = 0, length = msg.Data.UserDataList.length; i < length; i++) {
+                    onUserDataChanged(msg.Data.UserDataList[i]);
+                }
+            }
+        }
+
+    }
+
+    $(ApiClient).on('websocketmessage', onWebSocketMessage);
 
 })(jQuery, document, window);

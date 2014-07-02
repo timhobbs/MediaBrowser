@@ -328,7 +328,8 @@ namespace MediaBrowser.Server.Implementations.Dto
             if (!string.IsNullOrEmpty(item.Album))
             {
                 var parentAlbum = _libraryManager.RootFolder
-                    .GetRecursiveChildren(i => i is MusicAlbum)
+                    .GetRecursiveChildren()
+                    .Where(i => i is MusicAlbum)
                     .FirstOrDefault(i => string.Equals(i.Name, item.Album, StringComparison.OrdinalIgnoreCase));
 
                 if (parentAlbum != null)
@@ -423,7 +424,38 @@ namespace MediaBrowser.Server.Implementations.Dto
             // Ordering by person type to ensure actors and artists are at the front.
             // This is taking advantage of the fact that they both begin with A
             // This should be improved in the future
-            var people = item.People.OrderBy(i => i.SortOrder ?? int.MaxValue).ThenBy(i => i.Type).ToList();
+            var people = item.People.OrderBy(i => i.SortOrder ?? int.MaxValue)
+                .ThenBy(i =>
+                {
+                    if (i.IsType(PersonType.Actor))
+                    {
+                        return 0;
+                    }
+                    if (i.IsType(PersonType.GuestStar))
+                    {
+                        return 1;
+                    }
+                    if (i.IsType(PersonType.Director))
+                    {
+                        return 2;
+                    }
+                    if (i.IsType(PersonType.Writer))
+                    {
+                        return 3;
+                    }
+                    if (i.IsType(PersonType.Producer))
+                    {
+                        return 4;
+                    }
+                    if (i.IsType(PersonType.Composer))
+                    {
+                        return 4;
+                    }
+
+                    return 10;
+                })
+                .ThenBy(i => i.Name)
+                .ToList();
 
             // Attach People by transforming them into BaseItemPerson (DTO)
             dto.People = new BaseItemPerson[people.Count];
@@ -508,6 +540,7 @@ namespace MediaBrowser.Server.Implementations.Dto
 
                 if (dictionary.TryGetValue(studio, out entity))
                 {
+                    studioDto.Id = entity.Id.ToString("N");
                     studioDto.PrimaryImageTag = GetImageCacheTag(entity, ImageType.Primary);
                 }
 
@@ -1217,7 +1250,8 @@ namespace MediaBrowser.Server.Implementations.Dto
             }
             else
             {
-                children = folder.GetRecursiveChildren(user, i => !i.IsFolder && i.LocationType != LocationType.Virtual);
+                children = folder.GetRecursiveChildren(user)
+                    .Where(i => !i.IsFolder && i.LocationType != LocationType.Virtual);
             }
 
             // Loop through each recursive child

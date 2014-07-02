@@ -6,6 +6,7 @@
         $('#chkDisplayUnairedEpisodes', page).checked(user.Configuration.DisplayUnairedEpisodes || false).checkboxradio("refresh");
 
         $('#chkGroupMoviesIntoCollections', page).checked(user.Configuration.GroupMoviesIntoBoxSets || false).checkboxradio("refresh");
+        $('#chkDisplayCollectionView', page).checked(user.Configuration.DisplayCollectionsView || false).checkboxradio("refresh");
 
         ApiClient.getItems(user.Id, {}).done(function (result) {
 
@@ -36,6 +37,37 @@
             Dashboard.hideLoadingMsg();
         });
 
+        ApiClient.getJSON(ApiClient.getUrl("Channels", {
+
+            UserId: user.Id
+
+        })).done(function (result) {
+
+            var folderHtml = '';
+
+            folderHtml += '<div data-role="controlgroup">';
+            folderHtml += result.Items.map(function (i) {
+
+                var currentHtml = '';
+
+                var id = 'chkGroupChannel' + i.Id;
+
+                currentHtml += '<label for="' + id + '">' + i.Name + '</label>';
+
+                var isChecked = user.Configuration.DisplayChannelsWithinViews.indexOf(i.Id) != -1;
+                var checkedHtml = isChecked ? ' checked="checked"' : '';
+
+                currentHtml += '<input class="chkGroupChannel" data-channelid="' + i.Id + '" type="checkbox" data-mini="true" id="' + id + '"' + checkedHtml + ' />';
+
+                return currentHtml;
+
+            }).join('');
+
+            folderHtml += '</div>';
+
+            $('.channelGroupList', page).html(folderHtml).trigger('create');
+        });
+
     }
 
     function saveUser(page, user) {
@@ -44,9 +76,16 @@
         user.Configuration.DisplayUnairedEpisodes = $('#chkDisplayUnairedEpisodes', page).checked();
         user.Configuration.GroupMoviesIntoBoxSets = $('#chkGroupMoviesIntoCollections', page).checked();
 
+        user.Configuration.DisplayCollectionsView = $('#chkDisplayCollectionView', page).checked();
+
         user.Configuration.ExcludeFoldersFromGrouping = $(".chkGroupFolder:not(:checked)", page).get().map(function (i) {
 
             return i.getAttribute('data-folderid');
+        });
+
+        user.Configuration.DisplayChannelsWithinViews = $(".chkGroupChannel:checked", page).get().map(function (i) {
+
+            return i.getAttribute('data-channelid');
         });
 
         ApiClient.updateUser(user).done(function () {
