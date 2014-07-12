@@ -26,13 +26,6 @@ namespace MediaBrowser.Controller.Dto
         string GetDtoId(BaseItem item);
 
         /// <summary>
-        /// Gets the user item data dto.
-        /// </summary>
-        /// <param name="data">The data.</param>
-        /// <returns>UserItemDataDto.</returns>
-        UserItemDataDto GetUserItemDataDto(UserItemData data);
-
-        /// <summary>
         /// Attaches the primary image aspect ratio.
         /// </summary>
         /// <param name="dto">The dto.</param>
@@ -56,6 +49,13 @@ namespace MediaBrowser.Controller.Dto
         /// <param name="item">The item.</param>
         /// <returns>ChapterInfoDto.</returns>
         ChapterInfoDto GetChapterInfoDto(ChapterInfo chapterInfo, BaseItem item);
+
+        /// <summary>
+        /// Gets the user item data dto.
+        /// </summary>
+        /// <param name="data">The data.</param>
+        /// <returns>UserItemDataDto.</returns>
+        UserItemDataDto GetUserItemDataDto(UserItemData data);
 
         /// <summary>
         /// Gets the item by name dto.

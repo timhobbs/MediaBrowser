@@ -212,12 +212,20 @@
 
     function onPosterItemTapHold(e) {
 
-        $('.tapHoldMenu').popup("close").remove();
+        showContextMenu(this);
 
-        var posterItem = this;
+        e.preventDefault();
+        return false;
+    }
+
+    function showContextMenu(posterItem) {
+
+        $('.tapHoldMenu').popup("close").remove();
 
         var itemId = posterItem.getAttribute('data-itemid');
         var commands = posterItem.getAttribute('data-commands').split(',');
+
+        $(posterItem).addClass('hasContextMenu');
 
         var promise1 = ApiClient.getItem(Dashboard.getCurrentUserId(), itemId);
         var promise2 = Dashboard.getCurrentUser();
@@ -232,8 +240,10 @@
             html += '<ul data-role="listview" style="min-width: 240px;">';
             html += '<li data-role="list-divider">' + Globalize.translate('HeaderMenu') + '</li>';
 
-            html += '<li><a href="' + posterItem.href + '">' + Globalize.translate('ButtonOpen') + '</a></li>';
-            html += '<li><a href="' + posterItem.href + '" target="_blank">' + Globalize.translate('ButtonOpenInNewTab') + '</a></li>';
+            var href = posterItem.getAttribute('data-href') || posterItem.href;
+            
+            html += '<li><a href="' + href + '">' + Globalize.translate('ButtonOpen') + '</a></li>';
+            html += '<li><a href="' + href + '" target="_blank">' + Globalize.translate('ButtonOpenInNewTab') + '</a></li>';
 
             if (user.Configuration.IsAdministrator && commands.indexOf('edit') != -1) {
                 html += '<li data-icon="edit"><a href="edititemmetadata.html?id=' + itemId + '">' + Globalize.translate('ButtonEdit') + '</a></li>';
@@ -269,9 +279,10 @@
 
             $($.mobile.activePage).append(html);
 
-            var elem = $('.tapHoldMenu').popup({ positionTo: e.target }).trigger('create').popup("open").on("popupafterclose", function () {
+            var elem = $('.tapHoldMenu').popup({ positionTo: posterItem }).trigger('create').popup("open").on("popupafterclose", function () {
 
                 $(this).off("popupafterclose").remove();
+                $(posterItem).removeClass('hasContextMenu');
 
             });
 
@@ -282,10 +293,129 @@
             $('.btnShuffle', elem).on('click', onShuffleButtonClick);
             $('.btnPlayTrailer', elem).on('click', onTrailerButtonClick);
         });
+    }
+
+    function onListViewMenuButtonClick(e) {
+
+        showContextMenu(this);
 
         e.preventDefault();
         return false;
     }
+
+    function onGroupedPosterItemClick(e) {
+
+        var posterItem = this;
+        var itemId = posterItem.getAttribute('data-itemid');
+
+        $(posterItem).addClass('hasContextMenu');
+
+        var userId = Dashboard.getCurrentUserId();
+
+        var promise1 = ApiClient.getItem(userId, itemId);
+
+        var options = {
+
+            Limit: parseInt($('.playedIndicator', posterItem).html() || '10'),
+            Fields: "PrimaryImageAspectRatio,DateCreated",
+            ParentId: itemId,
+            IsFolder: false,
+            GroupItems: false
+        };
+
+        if ($(posterItem).hasClass('unplayedGroupings')) {
+            options.IsPlayed = false;
+        }
+
+        var promise2 = ApiClient.getJSON(ApiClient.getUrl('Users/' + userId + '/Items/Latest', options));
+
+        $.when(promise1, promise2).done(function (response1, response2) {
+
+            var item = response1[0];
+            var latestItems = response2[0];
+
+            if (latestItems.length == 1) {
+                var first = latestItems[0];
+                Dashboard.navigate(LibraryBrowser.getHref(first));
+                return;
+            }
+
+            var html = '<div data-role="popup" class="groupingMenu" data-theme="a">';
+
+            html += '<a href="#" data-rel="back" class="ui-btn ui-corner-all ui-shadow ui-btn-b ui-icon-delete ui-btn-icon-notext ui-btn-right">Close</a>';
+            html += '<div>';
+            html += '<ul data-role="listview">';
+
+            var href = LibraryBrowser.getHref(item);
+            var header = Globalize.translate('HeaderLatestFromChannel').replace('{0}', '<a href="' + href + '">' + item.Name + '</a>');
+            html += '<li data-role="list-divider">' + header + '</li>';
+
+            html += '</ul>';
+
+            html += '<div class="groupingMenuScroller">';
+            html += '<ul data-role="listview">';
+
+            html += latestItems.map(function (latestItem) {
+
+                var itemHtml = '';
+
+                href = LibraryBrowser.getHref(latestItem);
+                itemHtml += '<li class="ui-li-has-thumb"><a href="' + href + '">';
+
+                var imgUrl;
+
+                if (latestItem.ImageTags.Primary) {
+
+                    // Scaling 400w episode images to 80 doesn't turn out very well
+                    var width = latestItem.Type == 'Episode' ? 160 : 80;
+                    imgUrl = ApiClient.getScaledImageUrl(latestItem.Id, {
+                        width: width,
+                        tag: latestItem.ImageTags.Primary,
+                        type: "Primary",
+                        index: 0
+                    });
+
+                }
+                if (imgUrl) {
+                    itemHtml += '<div class="listviewImage ui-li-thumb" style="background-image:url(\'' + imgUrl + '\');"></div>';
+                }
+
+                itemHtml += '<h3>';
+                itemHtml += LibraryBrowser.getPosterViewDisplayName(latestItem);
+                itemHtml += '</h3>';
+
+                var date = parseISO8601Date(latestItem.DateCreated, { toLocal: true });
+
+                itemHtml += '<p>';
+                itemHtml += Globalize.translate('LabelAddedOnDate').replace('{0}', date.toLocaleDateString());
+                itemHtml += '</p>';
+
+                itemHtml += '</a></li>';
+
+                return itemHtml;
+
+            }).join('');
+
+            html += '</ul>';
+            html += '</div>';
+
+            html += '</div>';
+            html += '</div>';
+
+            $($.mobile.activePage).append(html);
+
+            var elem = $('.groupingMenu').popup().trigger('create').popup("open").on("popupafterclose", function () {
+
+                $(this).off("popupafterclose").remove();
+                $(posterItem).removeClass('hasContextMenu');
+
+            });
+        });
+
+        e.preventDefault();
+        return false;
+    }
+
 
     $.fn.createPosterItemMenus = function () {
 
@@ -352,11 +482,11 @@
 
         var elems = '.backdropPosterItem,.smallBackdropPosterItem,.portraitPosterItem,.squarePosterItem,.miniBackdropPosterItem';
 
-        if ($.browser.mobile) {
+        $('.posterItem', this).on('contextmenu.posterItemMenu', onPosterItemTapHold);
 
-            this.off('contextmenu.posterItemMenu', elems)
-                .on('contextmenu.posterItemMenu', elems, onPosterItemTapHold);
-        }
+        $('.listviewMenuButton', this).on('click', onListViewMenuButtonClick);
+
+        $('.groupedPosterItem', this).on('click', onGroupedPosterItemClick);
 
         return this.off('.posterItemHoverMenu')
             .on('mouseenter.posterItemHoverMenu', elems, onHoverIn)
@@ -499,17 +629,27 @@
 
             if (!$('.playedIndicator', posterItem).length) {
 
-                var html = '<div class="unplayedIndicator"><div class="ui-icon-check ui-btn-icon-notext"></div></div>';
-
-                $(html).insertAfter($('.posterItemOverlayTarget', posterItem));
+                $('<div class="playedIndicator"></div>').insertAfter($('.posterItemOverlayTarget', posterItem));
             }
-
-        } else {
-            $('.playedIndicator', posterItem).remove();
+            $('.playedIndicator', posterItem).html('<div class="ui-icon-check ui-btn-icon-notext"></div>');
+            $('.posterItemProgress', posterItem).remove();
         }
+        else if (userData.UnplayedItemCount) {
 
-        // TODO: Handle progress bar
-        // $('.posterItemProgressContainer').remove();
+            if (!$('.playedIndicator', posterItem).length) {
+
+                $('<div class="playedIndicator"></div>').insertAfter($('.posterItemOverlayTarget', posterItem));
+            }
+            $('.playedIndicator', posterItem).html(userData.UnplayedItemCount);
+        }
+        else {
+
+            $('.playedIndicator', posterItem).remove();
+
+            var progressHtml = LibraryBrowser.getItemProgressBarHtml(userData);
+
+            $('.posterItemProgress', posterItem).html(progressHtml);
+        }
     }
 
     function onUserDataChanged(userData) {

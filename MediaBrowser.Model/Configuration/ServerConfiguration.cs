@@ -158,9 +158,6 @@ namespace MediaBrowser.Model.Configuration
         public bool EnableTmdbUpdates { get; set; }
         public bool EnableFanArtUpdates { get; set; }
 
-        public bool RequireMobileManualLogin { get; set; }
-        public bool RequireNonMobileManualLogin { get; set; }
-
         /// <summary>
         /// Gets or sets the image saving convention.
         /// </summary>
@@ -212,6 +209,8 @@ namespace MediaBrowser.Model.Configuration
         public ChapterOptions ChapterOptions { get; set; }
 
         public bool DefaultMetadataSettingsApplied { get; set; }
+
+        public bool EnableTokenAuthentication { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServerConfiguration" /> class.

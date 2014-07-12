@@ -91,7 +91,15 @@ namespace MediaBrowser.Controller.Entities.TV
         {
             get
             {
-                return FindParent<Season>();
+                return Season;
+            }
+        }
+
+        public override Folder LatestItemsIndexContainer
+        {
+            get
+            {
+                return Series;
             }
         }
 

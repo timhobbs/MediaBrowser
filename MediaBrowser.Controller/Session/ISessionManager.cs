@@ -219,7 +219,13 @@ namespace MediaBrowser.Controller.Session
         /// <param name="deviceName">Name of the device.</param>
         /// <param name="remoteEndPoint">The remote end point.</param>
         /// <returns>Task{SessionInfo}.</returns>
-        Task<AuthenticationResult> AuthenticateNewSession(string username, string password, string clientType, string appVersion, string deviceId, string deviceName, string remoteEndPoint);
+        Task<AuthenticationResult> AuthenticateNewSession(string username, 
+            string password, 
+            string clientType, 
+            string appVersion, 
+            string deviceId, 
+            string deviceName, 
+            string remoteEndPoint);
 
         /// <summary>
         /// Reports the capabilities.
@@ -253,7 +259,28 @@ namespace MediaBrowser.Controller.Session
         /// <summary>
         /// Validates the security token.
         /// </summary>
-        /// <param name="token">The token.</param>
-        void ValidateSecurityToken(string token);
+        /// <param name="accessToken">The access token.</param>
+        void ValidateSecurityToken(string accessToken);
+
+        /// <summary>
+        /// Logouts the specified access token.
+        /// </summary>
+        /// <param name="accessToken">The access token.</param>
+        /// <returns>Task.</returns>
+        Task Logout(string accessToken);
+
+        /// <summary>
+        /// Revokes the user tokens.
+        /// </summary>
+        /// <param name="userId">The user identifier.</param>
+        /// <returns>Task.</returns>
+        Task RevokeUserTokens(string userId);
+
+        /// <summary>
+        /// Determines whether the specified remote endpoint is local.
+        /// </summary>
+        /// <param name="remoteEndpoint">The remote endpoint.</param>
+        /// <returns><c>true</c> if the specified remote endpoint is local; otherwise, <c>false</c>.</returns>
+        bool IsInLocalNetwork(string remoteEndpoint);
     }
 }

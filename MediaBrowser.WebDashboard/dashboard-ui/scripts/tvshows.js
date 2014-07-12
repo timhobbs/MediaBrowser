@@ -1,6 +1,6 @@
 ﻿(function ($, document) {
 
-    var view = "Thumb";
+    var view = LibraryBrowser.getDefaultItemsView('Thumb', 'List');
 
     // The base query options
     var query = {
@@ -9,7 +9,7 @@
         SortOrder: "Ascending",
         IncludeItemTypes: "Series",
         Recursive: true,
-        Fields: "SeriesInfo,PrimaryImageAspectRatio",
+        Fields: "PrimaryImageAspectRatio,SortName",
         StartIndex: 0
     };
 
@@ -34,7 +34,7 @@
             updateFilterControls(page);
 
             if (view == "Thumb") {
-                
+
                 html = LibraryBrowser.getPosterViewHtml({
                     items: result.Items,
                     shape: "backdrop",
@@ -42,7 +42,7 @@
                     context: 'tv',
                     lazy: true
                 });
-                
+
                 $('.itemsContainer', page).removeClass('timelineItemsContainer');
             }
             else if (view == "Banner") {
@@ -56,8 +56,18 @@
                 });
                 $('.itemsContainer', page).removeClass('timelineItemsContainer');
             }
-            else if (view == "Poster") {
+            else if (view == "List") {
 
+                html = LibraryBrowser.getListViewHtml({
+                    items: result.Items,
+                    context: 'tv',
+                    sortBy: query.SortBy
+                });
+                $('.itemsContainer', page).removeClass('timelineItemsContainer');
+            }
+            else {
+
+                // Poster
                 html = LibraryBrowser.getPosterViewHtml({
                     items: result.Items,
                     shape: "portrait",
@@ -67,19 +77,6 @@
                     lazy: true
                 });
                 $('.itemsContainer', page).removeClass('timelineItemsContainer');
-            }
-            else if (view == "Timeline") {
-                
-                html = LibraryBrowser.getPosterViewHtml({
-                    items: result.Items,
-                    shape: "portrait",
-                    context: 'tv',
-                    timeline: true,
-                    showTitle: true,
-                    lazy: true
-                });
-
-                $('.itemsContainer', page).addClass('timelineItemsContainer');
             }
 
             html += LibraryBrowser.getPagingHtml(query, result.TotalRecordCount);

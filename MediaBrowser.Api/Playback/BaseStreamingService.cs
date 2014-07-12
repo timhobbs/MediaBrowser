@@ -467,11 +467,13 @@ namespace MediaBrowser.Api.Playback
         /// </summary>
         /// <param name="state">The state.</param>
         /// <param name="outputVideoCodec">The output video codec.</param>
+        /// <param name="allowTimeStampCopy">if set to <c>true</c> [allow time stamp copy].</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>System.String.</returns>
         protected string GetOutputSizeParam(StreamState state,
             string outputVideoCodec,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool allowTimeStampCopy = true)
         {
             // http://sonnati.wordpress.com/2012/10/19/ffmpeg-the-swiss-army-knife-of-internet-streaming-part-vi/
 
@@ -564,7 +566,10 @@ namespace MediaBrowser.Api.Playback
 
                 filters.Add(subParam);
 
-                output += " -copyts";
+                if (allowTimeStampCopy)
+                {
+                    output += " -copyts";
+                }
             }
 
             if (filters.Count > 0)
@@ -948,7 +953,7 @@ namespace MediaBrowser.Api.Playback
             // This is arbitrary, but add a little buffer time when internet streaming
             if (state.InputProtocol != MediaProtocol.File)
             {
-                await Task.Delay(3000, cancellationTokenSource.Token).ConfigureAwait(false);
+                await Task.Delay(2500, cancellationTokenSource.Token).ConfigureAwait(false);
             }
         }
 

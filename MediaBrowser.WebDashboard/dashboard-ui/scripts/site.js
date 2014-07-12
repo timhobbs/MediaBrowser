@@ -68,6 +68,11 @@ var Dashboard = {
         }
     },
 
+    getAccessToken: function () {
+
+        return localStorage.getItem('token');
+    },
+
     getCurrentUserId: function () {
 
         if (!window.localStorage) {
@@ -76,24 +81,24 @@ var Dashboard = {
 
         var autoLoginUserId = getParameterByName('u');
         var storedUserId = localStorage.getItem("userId");
-        var userId;
 
         if (autoLoginUserId && autoLoginUserId != storedUserId) {
 
-            localStorage.setItem("userId", autoLoginUserId);
-            ApiClient.currentUserId(autoLoginUserId);
+            var token = getParameterByName('t');
+            Dashboard.setCurrentUser(autoLoginUserId, token);
         }
 
         return autoLoginUserId || storedUserId;
     },
 
-    setCurrentUser: function (userId) {
+    setCurrentUser: function (userId, token) {
 
         if (window.localStorage) {
             localStorage.setItem("userId", userId);
+            localStorage.setItem("token", token);
         }
 
-        ApiClient.currentUserId(userId);
+        ApiClient.setCurrentUserId(userId, token);
         Dashboard.getUserPromise = null;
     },
 
@@ -101,11 +106,12 @@ var Dashboard = {
 
         if (window.localStorage) {
             localStorage.removeItem("userId");
+            localStorage.removeItem("token");
         }
 
-        Dashboard.getUserPromise = null;
-        ApiClient.currentUserId(null);
-        window.location = "login.html";
+        ApiClient.logout().done(function () {
+            window.location = "login.html";
+        });
     },
 
     showError: function (message) {
@@ -146,6 +152,7 @@ var Dashboard = {
     updateSystemInfo: function (info) {
 
         Dashboard.lastSystemInfo = info;
+
         Dashboard.ensureWebSocket(info);
 
         if (!Dashboard.initialServerVersion) {
@@ -403,10 +410,14 @@ var Dashboard = {
     },
 
     refreshSystemInfoFromServer: function () {
-        ApiClient.getSystemInfo().done(function (info) {
 
-            Dashboard.updateSystemInfo(info);
-        });
+        // TODO: Eventually remove the currentUserId check
+        if (Dashboard.getAccessToken() || Dashboard.getCurrentUserId()) {
+            ApiClient.getSystemInfo().done(function (info) {
+
+                Dashboard.updateSystemInfo(info);
+            });
+        }
     },
 
     restartServer: function () {
@@ -646,9 +657,13 @@ var Dashboard = {
         var pageElem = page[0];
 
         return [{
-            name: "Dashboard",
+            name: "Server",
             href: "dashboard.html",
             selected: page.hasClass("dashboardHomePage")
+        }, {
+            name: "Users",
+            href: "userprofiles.html",
+            selected: page.hasClass("userProfilesConfigurationPage") || (pageElem.id == "mediaLibraryPage" && getParameterByName('userId'))
         }, {
             name: "Library",
             divider: true,
@@ -663,11 +678,6 @@ var Dashboard = {
             href: "autoorganizelog.html",
             selected: page.hasClass("organizePage")
         }, {
-            name: "Channels",
-            divider: true,
-            href: "channelsettings.html",
-            selected: page.hasClass("channelSettingsPage")
-        }, {
             name: "DLNA",
             href: "dlnasettings.html",
             selected: page.hasClass("dlnaPage")
@@ -679,15 +689,6 @@ var Dashboard = {
             name: "Plugins",
             href: "plugins.html",
             selected: page.hasClass("pluginConfigurationPage")
-        }, {
-            name: "Users",
-            divider: true,
-            href: "userprofiles.html",
-            selected: page.hasClass("userProfilesConfigurationPage") || (pageElem.id == "mediaLibraryPage" && getParameterByName('userId'))
-        }, {
-            name: "App Settings",
-            href: "appsplayback.html",
-            selected: page.hasClass("appsPage")
         }, {
             name: "Advanced",
             divider: true,
@@ -1190,22 +1191,28 @@ var Dashboard = {
     }
 };
 
-if (!window.WebSocket) {
+(function () {
 
-    alert("This browser does not support web sockets. For a better experience, try a newer browser such as Chrome, Firefox, IE10+, Safari (iOS) or Opera.");
-}
+    if (!window.WebSocket) {
 
-else if (!IsStorageEnabled()) {
-    alert("This browser does not support local storage or is running in private mode. For a better experience, try a newer browser such as Chrome, Firefox, IE10+, Safari (iOS) or Opera.");
-}
+        alert("This browser does not support web sockets. For a better experience, try a newer browser such as Chrome, Firefox, IE10+, Safari (iOS) or Opera.");
+    }
 
-var ApiClient = MediaBrowser.ApiClient.create("Dashboard", window.dashboardVersion);
+    else if (!IsStorageEnabled()) {
+        alert("This browser does not support local storage or is running in private mode. For a better experience, try a newer browser such as Chrome, Firefox, IE10+, Safari (iOS) or Opera.");
+    }
 
-$(ApiClient).on("websocketopen", Dashboard.onWebSocketOpened).on("websocketmessage", Dashboard.onWebSocketMessageReceived);
+    window.ApiClient = MediaBrowser.ApiClient.create("Dashboard", window.dashboardVersion);
+
+    $(ApiClient).on("websocketopen", Dashboard.onWebSocketOpened)
+        .on("websocketmessage", Dashboard.onWebSocketMessageReceived);
+
+    ApiClient.setCurrentUserId(Dashboard.getCurrentUserId(), Dashboard.getAccessToken());
+
+})();
+
 
 $(function () {
-
-    ApiClient.currentUserId(Dashboard.getCurrentUserId());
 
     var videoPlayerHtml = '<div id="mediaPlayer" data-theme="b" class="ui-bar-b" style="display: none;">';
 
@@ -1296,23 +1303,16 @@ $(function () {
             ApiClient.closeWebSocket();
         }
     });
-});
 
-$.fn.openPopup = function () {
+    $(document).on('contextmenu', '.ui-popup-screen', function (e) {
 
-    this.one('popupbeforeposition', function () {
+        document.title = '1';
+        $('.ui-popup').popup('close');
 
-        //$("body").on("touchmove.popup", false);
-        //$('body').addClass('bodyWithPopupOpen');
-
-    }).one('popupafterclose', function () {
-        //$("body").off("touchmove.popup");
-
-        //$('body').removeClass('bodyWithPopupOpen');
+        e.preventDefault();
+        return false;
     });
-
-    return this.popup('open');
-};
+});
 
 Dashboard.jQueryMobileInit();
 
@@ -1321,7 +1321,6 @@ $(document).on('pagebeforeshow', ".page", function () {
     var page = $(this);
 
     var userId = Dashboard.getCurrentUserId();
-    ApiClient.currentUserId(userId);
 
     if (userId) {
 

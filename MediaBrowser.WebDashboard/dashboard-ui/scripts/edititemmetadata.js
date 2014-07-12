@@ -51,13 +51,7 @@
             Dashboard.populateLanguages($('#selectLanguage', page), languages);
             Dashboard.populateCountries($('#selectCountry', page), countries);
 
-            if (item.LocationType == "Offline") {
-                $('.saveButtonContainer', page).hide();
-            } else {
-                $('.saveButtonContainer', page).show();
-            }
-
-            $('#btnRefresh', page).buttonEnabled(true);
+            $('.btnRefresh', page).buttonEnabled(true);
             $('#btnDelete', page).buttonEnabled(true);
             $('.btnSave', page).buttonEnabled(true);
 
@@ -271,7 +265,6 @@
             $('#fldCommunityRating', page).hide();
             $('#fldCommunityVoteCount', page).hide();
             $('#genresCollapsible', page).hide();
-            $('#countriesCollapsible', page).hide();
             $('#peopleCollapsible', page).hide();
             $('#studiosCollapsible', page).hide();
 
@@ -286,10 +279,15 @@
             $('#fldCommunityVoteCount', page).show();
             $('#genresCollapsible', page).show();
             $('#peopleCollapsible', page).show();
-            $('#countriesCollapsible', page).show();
             $('#studiosCollapsible', page).show();
             $('#fldOfficialRating', page).show();
             $('#fldCustomRating', page).show();
+        }
+
+        if (item.Type == "Movie" || item.Type == "AdultVideo" || item.Type == "Trailer" || item.Type == "MusicArtist") {
+            $('#countriesCollapsible', page).show();
+        } else {
+            $('#countriesCollapsible', page).hide();
         }
 
         if (item.Type == "TvChannel") {
@@ -819,7 +817,7 @@
     function performDelete(page) {
 
         $('#btnDelete', page).buttonEnabled(false);
-        $('#btnRefresh', page).buttonEnabled(false);
+        $('.btnRefresh', page).buttonEnabled(false);
         $('.btnSave', page).buttonEnabled(false);
 
         $('#refreshLoading', page).show();
@@ -984,6 +982,13 @@
             var page = $(this).parents('.page');
 
             searchForIdentificationResults(page);
+            return false;
+        };
+
+        self.onRefreshFormSubmit = function () {
+            var page = $(this).parents('.page');
+
+            refreshFromPopupOptions(page);
             return false;
         };
 
@@ -1197,31 +1202,63 @@
         });
     }
 
+    function performAdvancedRefresh(page) {
+
+        $('.popupAdvancedRefresh', page).popup('open');
+
+        $('#selectMetadataRefreshMode', page).val('all').selectmenu('refresh');
+        $('#selectImageRefreshMode', page).val('missing').selectmenu('refresh');
+    }
+
+    function refreshFromPopupOptions(page) {
+
+        var metadataRefreshMode = $('#selectMetadataRefreshMode', page).val();
+        var imageRefreshMode = $('#selectImageRefreshMode', page).val();
+
+        refreshWithOptions(page, {
+
+            Recursive: true,
+            ImageRefreshMode: imageRefreshMode == 'none' ? 'None' : 'FullRefresh',
+            MetadataRefreshMode: metadataRefreshMode == 'none' ? 'None' : (metadataRefreshMode == 'local' ? 'ValidationOnly' : 'FullRefresh'),
+            ReplaceAllImages: imageRefreshMode == imageRefreshMode == 'all',
+            ReplaceAllMetadata: metadataRefreshMode == 'all'
+        });
+
+        $('.popupAdvancedRefresh', page).popup('close');
+    }
+
+    function refreshWithOptions(page, options) {
+        $('#refreshLoading', page).show();
+
+        $('#btnDelete', page).buttonEnabled(false);
+        $('.btnRefresh', page).buttonEnabled(false);
+        $('.btnSave', page).buttonEnabled(false);
+
+        ApiClient.refreshItem(currentItem.Id, options).done(function () {
+
+            reload(page);
+        });
+    }
+
     $(document).on('pageinit', "#editItemMetadataPage", function () {
 
         var page = this;
 
-        $('#btnRefresh', this).on('click', function () {
+        $('.btnRefreshBasic', this).on('click', function () {
 
-            $('#btnDelete', page).buttonEnabled(false);
-            $('#btnRefresh', page).buttonEnabled(false);
-            $('.btnSave', page).buttonEnabled(false);
+            refreshWithOptions(page, {
 
-            $('#refreshLoading', page).show();
-
-            var mode = $('#selectRefreshMode', page).val();
-
-            ApiClient.refreshItem(currentItem.Id, {
-
-                forced: mode == 'allandimages' || mode == 'all',
-                recursive: true,
-                replaceAllImages: mode == 'allandimages'
-
-            }).done(function () {
-
-                reload(page);
-
+                Recursive: true,
+                ImageRefreshMode: 'FullRefresh',
+                MetadataRefreshMode: 'FullRefresh',
+                ReplaceAllImages: false,
+                ReplaceAllMetadata: true
             });
+        });
+
+        $('.btnRefreshAdvanced', this).on('click', function () {
+
+            performAdvancedRefresh(page);
         });
 
         $('#btnIdentify', page).on('click', function () {

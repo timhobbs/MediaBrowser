@@ -31,26 +31,12 @@
                                 <div class="circle1"></div>
                                 <div style="margin-top: -15px;"></div>
                             </div>
-                            <div style="vertical-align: bottom; display: inline-block;">
-                                <button class="saveButtonContainer btnSave" type="submit" data-theme="a" data-icon="check" data-mini="true" data-inline="true">
-                                    Save
-                                </button>
-                            </div>
-                            <div style="vertical-align: bottom; display: inline-block;">
-                                <button id="btnRefresh" type="button" data-icon="refresh" data-mini="true" data-inline="true">Refresh</button>
-                            </div>
-                            <div style="display: inline-block; vertical-align: top;">
-
-                                <select data-mini="true" data-inline="true" id="selectRefreshMode">
-                                    <option value="all">Refresh All Data</option>
-                                    <option value="allandimages">Refresh All Data and Images</option>
-                                    <option value="missing">Add Missing Data Only</option>
-                                </select>
-
-                            </div>
-                            <div style="vertical-align: bottom; display: inline-block;">
-                                <button id="btnIdentify" type="button" data-icon="info" data-mini="true" data-inline="true">Identify</button>
-                            </div>
+                            <button class="btnSave" type="submit" data-theme="a" data-icon="check" data-mini="true" data-inline="true">
+                                Save
+                            </button>
+                            <button class="btnRefresh btnRefreshBasic" type="button" data-icon="refresh" data-mini="true" data-inline="true">Refresh</button>
+                            <button class="btnRefresh btnRefreshAdvanced" type="button" data-icon="refresh" data-mini="true" data-inline="true">Advanced Refresh</button>
+                            <button id="btnIdentify" type="button" data-icon="info" data-mini="true" data-inline="true">Identify</button>
                             <div style="vertical-align: bottom; display: inline-block;">
                                 <div id="fldDelete" style="display: none;">
                                     <button id="btnDelete" type="button" data-icon="delete" data-mini="true" data-inline="true">${ButtonDelete}</button>
@@ -507,11 +493,54 @@
 
         </div>
 
+        <div data-role="popup" class="popup popupAdvancedRefresh" data-theme="a">
+
+            <div class="ui-bar-a" style="text-align: center; padding: 0 20px;">
+                <h3 style="margin: .5em;">Refresh Metadata</h3>
+            </div>
+
+            <div data-role="content">
+                <form class="popupAdvancedRefreshForm" style="min-width: 200px;">
+
+                    <br />
+                    <div>
+                        <label for="selectMetadataRefreshMode">Metadata refresh mode:</label>
+                        <select id="selectMetadataRefreshMode" data-mini="true">
+                            <option value="">None</option>
+                            <option value="local">Local Refresh Only</option>
+                            <option value="missing">Add Missing Data Only</option>
+                            <option value="all">Refresh All Data</option>
+                        </select>
+                    </div>
+                    <br />
+                    <div>
+                        <label for="selectImageRefreshMode">Images refresh mode:</label>
+                        <select id="selectImageRefreshMode" data-mini="true">
+                            <option value="">None</option>
+                            <option value="missing">Download missing images</option>
+                            <option value="all">Replace existing images</option>
+                        </select>
+                    </div>
+                    <br />
+                    <p>
+                        <button type="submit" data-theme="b" data-icon="check" data-mini="true">
+                            Ok
+                        </button>
+                        <button type="button" data-icon="delete" onclick="$(this).parents('.popup').popup('close');" data-mini="true">
+                            Cancel
+                        </button>
+                    </p>
+                </form>
+            </div>
+
+        </div>
+
         <script type="text/javascript">
             $('.editItemMetadataForm').off('submit', EditItemMetadataPage.onSubmit).on('submit', EditItemMetadataPage.onSubmit);
             $('.popupConfirmDeleteForm').off('submit', EditItemMetadataPage.onDeleteFormSubmitted).on('submit', EditItemMetadataPage.onDeleteFormSubmitted);
             $('.popupIdentifyForm').off('submit', EditItemMetadataPage.onIdentificationFormSubmitted).on('submit', EditItemMetadataPage.onIdentificationFormSubmitted);
             $('.popupEditPersonForm').off('submit', EditItemMetadataPage.onPersonInfoFormSubmit).on('submit', EditItemMetadataPage.onPersonInfoFormSubmit);
+            $('.popupAdvancedRefreshForm').off('submit', EditItemMetadataPage.onRefreshFormSubmit).on('submit', EditItemMetadataPage.onRefreshFormSubmit);
         </script>
 
     </div>

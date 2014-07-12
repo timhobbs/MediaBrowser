@@ -8,6 +8,7 @@
         <div class="libraryViewNav scopedLibraryViewNav">
             <a href="tvrecommended.html">${TabSuggested}</a>
             <a href="tvlatest.html">${TabLatest}</a>
+            <a href="tvupcoming.html">${TabUpcoming}</a>
             <a href="#" class="ui-btn-active">${TabShows}</a>
             <a href="episodes.html">${TabEpisodes}</a>
             <a href="tvgenres.html">${TabGenres}</a>
@@ -24,7 +25,7 @@
                             <option value="Thumb">${OptionThumb}</option>
                             <option value="Poster">${OptionPoster}</option>
                             <option value="Banner">${OptionBanner}</option>
-                            <option value="Timeline">${OptionTimeline}</option>
+                            <option value="List">${OptionList}</option>
                         </select>
                     </div>
                 </div>
@@ -94,6 +95,9 @@
                         </legend>
                         <input class="chkStandardFilter" type="checkbox" name="chkPlayed" id="chkPlayed" data-filter="IsPlayed" data-mini="true">
                         <label for="chkPlayed">${OptionPlayed}</label>
+
+                        <input class="chkStandardFilter" type="checkbox" name="chkUnplayed" id="chkUnplayed" data-filter="IsUnPlayed" data-mini="true">
+                        <label for="chkUnplayed">${OptionUnplayed}</label>
 
                         <input class="chkStandardFilter" type="checkbox" name="chkIsFavorite" id="chkIsFavorite" data-filter="IsFavorite" data-mini="true">
                         <label for="chkIsFavorite">${OptionFavorite}</label>

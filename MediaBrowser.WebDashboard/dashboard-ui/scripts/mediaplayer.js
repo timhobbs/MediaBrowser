@@ -8,7 +8,6 @@
         var currentProgressInterval;
         var canClientSeek;
         var currentPlaylistIndex = 0;
-        var getItemFields = "MediaSources,Chapters";
 
         self.currentMediaElement = null;
         self.currentItem = null;
@@ -16,7 +15,9 @@
 
         self.currentDurationTicks = null;
         self.startTimeTicksOffset = null;
+
         self.playlist = [];
+
         self.isLocalPlayer = true;
         self.isDefaultPlayer = true;
 
@@ -346,6 +347,57 @@
             return self.currentItem && self.currentItem.MediaType == mediaType;
         };
 
+        function translateItemsForPlayback(items) {
+
+            var deferred = $.Deferred();
+
+            var firstItem = items[0];
+            var promise;
+
+            if (firstItem.IsFolder) {
+
+                promise = self.getItemsForPlayback({
+                    ParentId: firstItem.Id,
+                    Filters: "IsNotFolder",
+                    Recursive: true,
+                    SortBy: "SortName",
+                    MediaTypes: "Audio,Video"
+                });
+            }
+            else if (firstItem.Type == "MusicArtist") {
+
+                promise = self.getItemsForPlayback({
+                    Artists: firstItem.Name,
+                    Filters: "IsNotFolder",
+                    Recursive: true,
+                    SortBy: "SortName",
+                    MediaTypes: "Audio"
+                });
+
+            }
+            else if (firstItem.Type == "MusicGenre") {
+
+                promise = self.getItemsForPlayback({
+                    Genres: firstItem.Name,
+                    Filters: "IsNotFolder",
+                    Recursive: true,
+                    SortBy: "SortName",
+                    MediaTypes: "Audio"
+                });
+            }
+
+            if (promise) {
+                promise.done(function (result) {
+
+                    deferred.resolveWith(null, [result.Items]);
+                });
+            } else {
+                deferred.resolveWith(null, [items]);
+            }
+
+            return deferred.promise();
+        }
+
         self.play = function (options) {
 
             Dashboard.getCurrentUser().done(function (user) {
@@ -380,11 +432,40 @@
                 }
 
             });
+
         };
 
         self.getBitrateSetting = function () {
             return parseInt(localStorage.getItem('preferredVideoBitrate') || '') || 1500000;
         };
+
+        function getOptimalMediaSource(mediaType, versions) {
+
+            var optimalVersion;
+
+            if (mediaType == 'Video') {
+
+                var bitrateSetting = self.getBitrateSetting();
+
+                var maxAllowedWidth = Math.max(screen.height, screen.width);
+
+                optimalVersion = versions.filter(function (v) {
+
+                    var videoStream = v.MediaStreams.filter(function (s) {
+                        return s.Type == 'Video';
+                    })[0];
+
+                    var audioStream = v.MediaStreams.filter(function (s) {
+                        return s.Type == 'Audio';
+                    })[0];
+
+                    return self.canPlayVideoDirect(v, videoStream, audioStream, null, maxAllowedWidth, bitrateSetting);
+
+                })[0];
+            }
+
+            return optimalVersion || versions[0];
+        }
 
         self.playInternal = function (item, startPosition, user) {
 
@@ -1023,20 +1104,7 @@
             $(self).trigger('playstatechange', [state]);
         };
 
-        self.getCurrentTargetInfo = function () {
-            return self.getTargets()[0];
-        };
-
-        self.canAutoPlayAudio = function () {
-
-            if ($.browser.android || ($.browser.webkit && !$.browser.chrome)) {
-                return false;
-            }
-
-            return true;
-        };
-
-        $(window).on("beforeunload popstate", function () {
+        $(window).on("beforeunload", function () {
 
             // Try to report playback stopped before the browser closes
             if (self.currentItem && self.currentMediaElement && currentProgressInterval) {
@@ -1044,93 +1112,6 @@
                 self.onPlaybackStopped.call(self.currentMediaElement);
             }
         });
-
-        function replaceQueryString(url, param, value) {
-            var re = new RegExp("([?|&])" + param + "=.*?(&|$)", "i");
-            if (url.match(re))
-                return url.replace(re, '$1' + param + "=" + value + '$2');
-            else
-                return url + '&' + param + "=" + value;
-        }
-
-        function translateItemsForPlayback(items) {
-
-            var deferred = $.Deferred();
-
-            var firstItem = items[0];
-            var promise;
-
-            if (firstItem.IsFolder) {
-
-                promise = self.getItemsForPlayback({
-                    ParentId: firstItem.Id,
-                    Filters: "IsNotFolder",
-                    Recursive: true,
-                    SortBy: "SortName",
-                    MediaTypes: "Audio,Video"
-                });
-            }
-            else if (firstItem.Type == "MusicArtist") {
-
-                promise = self.getItemsForPlayback({
-                    Artists: firstItem.Name,
-                    Filters: "IsNotFolder",
-                    Recursive: true,
-                    SortBy: "SortName",
-                    MediaTypes: "Audio"
-                });
-
-            }
-            else if (firstItem.Type == "MusicGenre") {
-
-                promise = self.getItemsForPlayback({
-                    Genres: firstItem.Name,
-                    Filters: "IsNotFolder",
-                    Recursive: true,
-                    SortBy: "SortName",
-                    MediaTypes: "Audio"
-                });
-            }
-
-            if (promise) {
-                promise.done(function (result) {
-
-                    deferred.resolveWith(null, [result.Items]);
-                });
-            } else {
-                deferred.resolveWith(null, [items]);
-            }
-
-            return deferred.promise();
-        }
-
-        function getOptimalMediaSource(mediaType, versions) {
-
-            var optimalVersion;
-
-            if (mediaType == 'Video') {
-
-                var bitrateSetting = self.getBitrateSetting();
-
-                var maxAllowedWidth = Math.max(screen.height, screen.width);
-
-                optimalVersion = versions.filter(function (v) {
-
-                    var videoStream = v.MediaStreams.filter(function (s) {
-                        return s.Type == 'Video';
-                    })[0];
-
-                    var audioStream = v.MediaStreams.filter(function (s) {
-                        return s.Type == 'Audio';
-                    })[0];
-
-                    return self.canPlayVideoDirect(v, videoStream, audioStream, null, maxAllowedWidth, bitrateSetting);
-
-                })[0];
-            }
-
-            return optimalVersion || versions[0];
-        }
 
         function sendProgressUpdate() {
 
@@ -1159,7 +1140,16 @@
 
             return testableVideoElement.canPlayType('video/webm').replace(/no/, '');
         }
-        
+
+        self.canAutoPlayAudio = function () {
+
+            if ($.browser.android || ($.browser.webkit && !$.browser.chrome)) {
+                return false;
+            }
+
+            return true;
+        };
+
         function getAudioElement() {
 
             var elem = $('.mediaPlayerAudio');
@@ -1287,11 +1277,18 @@
 
             return true;
         }
+
+        var getItemFields = "MediaSources,Chapters";
+
+        self.getCurrentTargetInfo = function () {
+            return self.getTargets()[0];
+        };
     }
 
     window.MediaPlayer = new mediaPlayer();
 
     window.MediaController.registerPlayer(window.MediaPlayer);
     window.MediaController.setActivePlayer(window.MediaPlayer);
+
 
 })(document, setTimeout, clearTimeout, screen, localStorage, $, setInterval, window);

@@ -25,7 +25,7 @@
 
         <div id="boxsetTabs" class="itemTabs" style="display: none;">
             <div class="libraryViewNav scopedLibraryViewNav">
-                <a href="#" class="ui-btn-active">${TabCollections}</a>
+                <a href="collections.html" class="ui-btn-active">${TabCollections}</a>
             </div>
         </div>
 
@@ -33,7 +33,8 @@
             <div class="libraryViewNav scopedLibraryViewNav">
                 <a href="movieslatest.html">${TabLatest}</a>
                 <a href="moviesrecommended.html">${TabSuggested}</a>
-                <a href="movies.html" class="ui-btn-active">${TabMovies}</a>
+                <a href="movies.html" class="lnkMovies">${TabMovies}</a>
+                <a href="collections.html?context=movies" class="lnkCollections">${TabCollections}</a>
                 <a href="moviegenres.html">${TabGenres}</a>
                 <a href="moviepeople.html">${TabPeople}</a>
                 <a href="moviestudios.html">${TabStudios}</a>
@@ -43,6 +44,7 @@
             <div class="libraryViewNav scopedLibraryViewNav">
                 <a href="tvrecommended.html">${TabSuggested}</a>
                 <a href="tvlatest.html">${TabLatest}</a>
+                <a href="tvupcoming.html">${TabUpcoming}</a>
                 <a href="tvshows.html" class="ui-btn-active">${TabShows}</a>
                 <a href="episodes.html">${TabEpisodes}</a>
                 <a href="tvgenres.html">${TabGenres}</a>
@@ -253,6 +255,7 @@
                 <div id="scenesCollapsible" style="display: none;" class="detailSection">
                     <div class="detailSectionHeader">
                         ${HeaderScenes}
+                        <a class="detailSectionHeaderButton" href="metadatachapters.html" data-role="button" data-icon="gear" data-iconpos="notext" data-inline="true" title="${ButtonSettings}">${ButtonSettings}</a>
                     </div>
                     <div id="scenesContent" class="detailSectionContent"></div>
                 </div>

@@ -1,57 +1,68 @@
 ﻿var LoginPage = {
 
-    onPageInit: function () {
-
-        var page = this;
-
-        $("#popupLogin", page).popup({
-            afteropen: function (event, ui) {
-                $('#pw').focus();
-            }
-        });
-    },
-
     onPageShow: function () {
 
         Dashboard.showLoadingMsg();
 
         var page = this;
 
-        var isLocalhost = window.location.toString().toLowerCase().indexOf('localhost') != -1;
-
-        if (isLocalhost) {
+        if (LoginPage.isLocalhost()) {
             $('.localhostMessage', page).show();
         } else {
             $('.localhostMessage', page).hide();
         }
 
         // Show all users on localhost
-        var promise1 = !isLocalhost ? ApiClient.getPublicUsers() : ApiClient.getUsers({ IsDisabled: false });
-        var promise2 = ApiClient.getServerConfiguration();
+        var promise1 = ApiClient.getPublicUsers();
 
-        $.when(promise1, promise2).done(function (response1, response2) {
+        promise1.done(function (users) {
 
-            var users = response1[0];
-            var config = response2[0];
-
-            var showManualForm = config.RequireMobileManualLogin || !users.length;
+            var showManualForm = !users.length;
 
             if (showManualForm) {
 
-                $('.visualLoginForm', page).hide();
-                $('#manualLoginForm', page).show();
-                $('#txtManualName', page).focus();
+                LoginPage.showManualForm(page, false);
 
             } else {
-
-                $('.visualLoginForm', page).show();
-                $('#manualLoginForm', page).hide();
-
+                LoginPage.showVisualForm(page);
                 LoginPage.loadUserList(users);
             }
 
             Dashboard.hideLoadingMsg();
         });
+
+        ApiClient.getJSON(ApiClient.getUrl('Branding/Configuration')).done(function (options) {
+
+            $('.disclaimer', page).html(options.LoginDisclaimer || '');
+        });
+    },
+
+    isLocalhost: function () {
+
+        var location = window.location.toString().toLowerCase();
+        return location.indexOf('localhost') != -1 || location.indexOf('127.0.0.1') != -1;
+    },
+    
+    cancelLogin: function() {
+
+        LoginPage.showVisualForm($.mobile.activePage);
+    },
+
+    showManualForm: function (page, showCancel) {
+        $('.visualLoginForm', page).hide();
+        $('#manualLoginForm', page).show();
+        $('#txtManualName', page).focus();
+        
+        if (showCancel) {
+            $('.btnCancel', page).show();
+        } else {
+            $('.btnCancel', page).hide();
+        }
+    },
+
+    showVisualForm: function (page) {
+        $('.visualLoginForm', page).show();
+        $('#manualLoginForm', page).hide();
     },
 
     getLastSeenText: function (lastActivityDate) {
@@ -76,22 +87,6 @@
         });
     },
 
-    authenticateUserLink: function (link) {
-
-        LoginPage.authenticateUser(link.getAttribute('data-userid'));
-    },
-
-    authenticateUser: function (userId, password) {
-
-        Dashboard.showLoadingMsg();
-
-        ApiClient.getUser(userId).done(function (user) {
-
-            LoginPage.authenticateUserByName(user.Name, password);
-        });
-
-    },
-
     authenticateUserByName: function (username, password) {
 
         Dashboard.showLoadingMsg();
@@ -100,12 +95,12 @@
 
             var user = result.User;
 
-            Dashboard.setCurrentUser(user.Id);
+            Dashboard.setCurrentUser(user.Id, result.AccessToken);
 
             if (user.Configuration.IsAdministrator) {
-                window.location = "dashboard.html?u=" + user.Id;
+                window.location = "dashboard.html?u=" + user.Id + '&t=' + result.AccessToken;
             } else {
-                window.location = "index.html?u=" + user.Id;
+                window.location = "index.html?u=" + user.Id + '&t=' + result.AccessToken;
             }
 
         }).fail(function () {
@@ -126,21 +121,14 @@
     loadUserList: function (users) {
         var html = "";
 
-        var isLocalhost = window.location.toString().toLowerCase().indexOf('localhost') != -1;
+        var page = $.mobile.activePage;
 
         for (var i = 0, length = users.length; i < length; i++) {
             var user = users[i];
 
             var linkId = "lnkUser" + i;
 
-            if (isLocalhost) {
-                html += "<a class='posterItem squarePosterItem' id='" + linkId + "' data-userid='" + user.Id + "' href='index.html?u=" + user.Id + "' data-ajax='false' \">";
-            }
-            else if (user.HasPassword) {
-                html += "<a class='posterItem squarePosterItem' id='" + linkId + "' data-userid='" + user.Id + "' href='#popupLogin' data-rel='popup' onclick='LoginPage.authenticatingLinkId=this.id;' \">";
-            } else {
-                html += "<a class='posterItem squarePosterItem' id='" + linkId + "' data-userid='" + user.Id + "' href='#' onclick='LoginPage.authenticateUserLink(this);' \">";
-            }
+            html += "<a class='posterItem squarePosterItem' id='" + linkId + "' data-haspw='" + user.HasPassword + "' data-username='" + user.Name + "' data-userid='" + user.Id + "' href='#' data-ajax='false' \">";
 
             if (user.PrimaryImageTag) {
 
@@ -174,20 +162,21 @@
             html += '</a>';
         }
 
-        $('#divUsers', '#loginPage').html(html);
+        var elem = $('#divUsers', '#loginPage').html(html);
 
-    },
+        $('.posterItem', elem).on('click', function () {
 
-    onSubmit: function () {
+            var name = this.getAttribute('data-username');
+            var haspw = this.getAttribute('data-haspw');
 
-        $('#popupLogin', '#loginPage').popup('close');
-
-        var link = $('#' + LoginPage.authenticatingLinkId)[0];
-
-        LoginPage.authenticateUser(link.getAttribute('data-userid'), $('#pw', '#loginPage').val());
-
-        // Disable default form submission
-        return false;
+            if (LoginPage.isLocalhost() || haspw == 'false') {
+                LoginPage.authenticateUserByName(name, '');
+            } else {
+                $('#txtManualName', page).val(name);
+                $('#txtManualPassword', '#loginPage').val('');
+                LoginPage.showManualForm(page, true);
+            }
+        });
     },
 
     onManualSubmit: function () {
@@ -199,4 +188,4 @@
     }
 };
 
-$(document).on('pageshow', "#loginPage", LoginPage.onPageShow).on('pageinit', "#loginPage", LoginPage.onPageInit);
+$(document).on('pagebeforeshow', "#loginPage", LoginPage.onPageShow);

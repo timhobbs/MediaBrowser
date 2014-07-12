@@ -1,16 +1,15 @@
-﻿using MediaBrowser.Common.Extensions;
+﻿using System;
+using MediaBrowser.Common.Extensions;
 using MediaBrowser.Common.IO;
 using MediaBrowser.Controller.Configuration;
-using MediaBrowser.Controller.Entities;
-using MediaBrowser.Controller.Entities.Movies;
-using MediaBrowser.Controller.Entities.TV;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Configuration;
 using MediaBrowser.Model.Serialization;
 using ServiceStack;
 using ServiceStack.Text.Controller;
 using ServiceStack.Web;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -21,12 +20,14 @@ namespace MediaBrowser.Api
     /// Class GetConfiguration
     /// </summary>
     [Route("/System/Configuration", "GET", Summary = "Gets application configuration")]
+    [Authenticated]
     public class GetConfiguration : IReturn<ServerConfiguration>
     {
 
     }
 
     [Route("/System/Configuration/{Key}", "GET", Summary = "Gets a named configuration")]
+    [Authenticated]
     public class GetNamedConfiguration
     {
         [ApiMember(Name = "Key", Description = "Key", IsRequired = true, DataType = "string", ParameterType = "path", Verb = "GET")]
@@ -37,11 +38,13 @@ namespace MediaBrowser.Api
     /// Class UpdateConfiguration
     /// </summary>
     [Route("/System/Configuration", "POST", Summary = "Updates application configuration")]
+    [Authenticated]
     public class UpdateConfiguration : ServerConfiguration, IReturnVoid
     {
     }
 
     [Route("/System/Configuration/{Key}", "POST", Summary = "Updates named configuration")]
+    [Authenticated]
     public class UpdateNamedConfiguration : IReturnVoid, IRequiresRequestStream
     {
         [ApiMember(Name = "Key", Description = "Key", IsRequired = true, DataType = "string", ParameterType = "path", Verb = "GET")]
@@ -51,21 +54,24 @@ namespace MediaBrowser.Api
     }
     
     [Route("/System/Configuration/MetadataOptions/Default", "GET", Summary = "Gets a default MetadataOptions object")]
+    [Authenticated]
     public class GetDefaultMetadataOptions : IReturn<MetadataOptions>
     {
 
     }
 
     [Route("/System/Configuration/MetadataPlugins", "GET", Summary = "Gets all available metadata plugins")]
+    [Authenticated]
     public class GetMetadataPlugins : IReturn<List<MetadataPluginSummary>>
     {
 
     }
 
-    [Route("/System/Configuration/VideoImageExtraction", "POST", Summary = "Updates image extraction for all types")]
-    public class UpdateVideoImageExtraction : IReturnVoid
+    [Route("/System/Configuration/MetadataPlugins/Autoset", "POST")]
+    [Authenticated]
+    public class AutoSetMetadataOptions : IReturnVoid
     {
-        public bool Enabled { get; set; }
+
     }
 
     public class ConfigurationService : BaseApiService
@@ -82,13 +88,15 @@ namespace MediaBrowser.Api
 
         private readonly IFileSystem _fileSystem;
         private readonly IProviderManager _providerManager;
+        private readonly ILibraryManager _libraryManager;
 
-        public ConfigurationService(IJsonSerializer jsonSerializer, IServerConfigurationManager configurationManager, IFileSystem fileSystem, IProviderManager providerManager)
+        public ConfigurationService(IJsonSerializer jsonSerializer, IServerConfigurationManager configurationManager, IFileSystem fileSystem, IProviderManager providerManager, ILibraryManager libraryManager)
         {
             _jsonSerializer = jsonSerializer;
             _configurationManager = configurationManager;
             _fileSystem = fileSystem;
             _providerManager = providerManager;
+            _libraryManager = libraryManager;
         }
 
         /// <summary>
@@ -112,6 +120,44 @@ namespace MediaBrowser.Api
             var result = _configurationManager.GetConfiguration(request.Key);
 
             return ToOptimizedResult(result);
+        }
+
+        public void Post(AutoSetMetadataOptions request)
+        {
+            var service = AutoDetectMetadataService();
+
+            Logger.Info("Setting preferred metadata format to " + service);
+
+            _configurationManager.SetPreferredMetadataService(service);
+            _configurationManager.SaveConfiguration();
+        }
+
+        private string AutoDetectMetadataService()
+        {
+            const string xbmc = "Xbmc Nfo";
+            const string mb = "Media Browser Xml";
+
+            var paths = _libraryManager.GetDefaultVirtualFolders()
+                .SelectMany(i => i.Locations)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Select(i => new DirectoryInfo(i))
+                .ToList();
+
+            if (paths.Select(i => i.EnumerateFiles("*.xml", SearchOption.AllDirectories))
+                .SelectMany(i => i)
+                .Any())
+            {
+                return xbmc;
+            }
+
+            if (paths.Select(i => i.EnumerateFiles("*.xml", SearchOption.AllDirectories))
+                .SelectMany(i => i)
+                .Any(i => string.Equals(i.Name, "series.xml", StringComparison.OrdinalIgnoreCase) || string.Equals(i.Name, "movie.xml", StringComparison.OrdinalIgnoreCase)))
+            {
+                return mb;
+            }
+            
+            return xbmc;
         }
 
         /// <summary>
@@ -147,72 +193,6 @@ namespace MediaBrowser.Api
         public object Get(GetMetadataPlugins request)
         {
             return ToOptimizedSerializedResultUsingCache(_providerManager.GetAllMetadataPlugins().ToList());
-        }
-
-        /// <summary>
-        /// This is a temporary method used until image settings get broken out.
-        /// </summary>
-        /// <param name="request"></param>
-        public void Post(UpdateVideoImageExtraction request)
-        {
-            var config = _configurationManager.Configuration;
-
-            EnableImageExtractionForType(typeof(Movie), config, request.Enabled);
-            EnableImageExtractionForType(typeof(Episode), config, request.Enabled);
-            EnableImageExtractionForType(typeof(AdultVideo), config, request.Enabled);
-            EnableImageExtractionForType(typeof(MusicVideo), config, request.Enabled);
-            EnableImageExtractionForType(typeof(Video), config, request.Enabled);
-            EnableImageExtractionForType(typeof(Trailer), config, request.Enabled);
-
-            _configurationManager.SaveConfiguration();
-        }
-
-        private void EnableImageExtractionForType(Type type, ServerConfiguration config, bool enabled)
-        {
-            var options = GetMetadataOptions(type, config);
-
-            const string imageProviderName = "Screen Grabber";
-
-            var contains = options.DisabledImageFetchers.Contains(imageProviderName, StringComparer.OrdinalIgnoreCase);
-
-            if (!enabled && !contains)
-            {
-                var list = options.DisabledImageFetchers.ToList();
-
-                list.Add(imageProviderName);
-
-                options.DisabledImageFetchers = list.ToArray();
-            }
-            else if (enabled && contains)
-            {
-                var list = options.DisabledImageFetchers.ToList();
-
-                list.Remove(imageProviderName);
-
-                options.DisabledImageFetchers = list.ToArray();
-            }
-        }
-
-        private MetadataOptions GetMetadataOptions(Type type, ServerConfiguration config)
-        {
-            var options = config.MetadataOptions
-                .FirstOrDefault(i => string.Equals(i.ItemType, type.Name, StringComparison.OrdinalIgnoreCase));
-
-            if (options == null)
-            {
-                var list = config.MetadataOptions.ToList();
-
-                options = new MetadataOptions
-                {
-                    ItemType = type.Name
-                };
-
-                list.Add(options);
-
-                config.MetadataOptions = list.ToArray();
-            }
-
-            return options;
         }
     }
 }

@@ -6,6 +6,7 @@ using MediaBrowser.Controller.Localization;
 using MediaBrowser.Controller.Persistence;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Configuration;
+using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Library;
 using MediaBrowser.Model.Logging;
@@ -795,6 +796,12 @@ namespace MediaBrowser.Controller.Entities
             get { return null; }
         }
 
+        [IgnoreDataMember]
+        public virtual Folder LatestItemsIndexContainer
+        {
+            get { return null; }
+        }
+
         /// <summary>
         /// Gets the user data key.
         /// </summary>
@@ -1519,6 +1526,11 @@ namespace MediaBrowser.Controller.Entities
 
         public virtual bool IsUnplayed(User user)
         {
+            if (user == null)
+            {
+                throw new ArgumentNullException("user");
+            }
+
             var userdata = UserDataManager.GetUserData(user.Id, GetUserDataKey());
 
             return userdata == null || !userdata.Played;
@@ -1570,6 +1582,20 @@ namespace MediaBrowser.Controller.Entities
             }
 
             return path;
+        }
+
+        public virtual void FillUserDataDtoValues(UserItemDataDto dto, UserItemData userData, User user)
+        {
+            if (RunTimeTicks.HasValue)
+            {
+                double pct = RunTimeTicks.Value;
+
+                if (pct > 0)
+                {
+                    pct = userData.PlaybackPositionTicks / pct;
+                    dto.PlayedPercentage = 100 * pct;
+                }
+            }
         }
     }
 }

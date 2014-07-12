@@ -55,17 +55,12 @@
     border-spacing: 0;
     border-collapse: collapse;
     margin: 0 auto;
-    max-width: 650px;
 }
 
     .ehsContent td {
         padding: 0;
         border-spacing: 0;
     }
-
-.squareEhsContent {
-    max-width: 750px;
-}
 
 .homePageSection + .homePageSection {
     margin-top: 1em;
@@ -85,55 +80,55 @@
 @media all and (min-width: 900px) {
 
     .ehsContent {
-        max-width: 880px;
+        width: 880px;
     }
 
     .squareEhsContent {
-        max-width: 750px;
+        width: 750px;
     }
 }
 
 @media all and (min-width: 1000px) {
 
     .ehsContent {
-        max-width: 905px;
+        width: 905px;
     }
 
     .squareEhsContent {
-        max-width: 900px;
+        width: 900px;
     }
 }
 
 @media all and (min-width: 1200px) {
 
     .ehsContent {
-        max-width: 925px;
+        width: 925px;
     }
 
     .squareEhsContent {
-        max-width: 900px;
+        width: 900px;
     }
 }
 
 @media all and (min-width: 1400px) {
 
     .ehsContent {
-        max-width: 1240px;
+        width: 1080px;
     }
 
     .squareEhsContent {
-        max-width: 1240px;
+        width: 1220px;
     }
 }
 
 @media all and (min-width: 1600px) {
 
     .homeEhsContent {
-        max-width: 1540px;
+        width: 1440px;
     }
 
     .squareEhsContent {
-        max-width: 1420px;
+        width: 1420px;
     }
 }
 
@@ -184,9 +179,9 @@
 }
 
     .galleryImageContainer:hover {
-        -moz-box-shadow: 0 0 20px 3px #38c;
-        -webkit-box-shadow: 0 0 20px 3px #38c;
-        box-shadow: 0 0 20px 3px #38c;
+        -moz-box-shadow: 0 0 0 5px #38c;
+        -webkit-box-shadow: 0 0 0 5px #38c;
+        box-shadow: 0 0 0 5px #38c;
     }
 
 .galleryImage {
@@ -376,9 +371,9 @@ a.itemTag:hover {
 
 .itemBackdrop {
     background-size: cover;
-    background-position: center 15%;
+    background-position: center 13%;
     background-repeat: no-repeat;
-    height: 570px;
+    height: 600px;
     position: relative;
 }
 
@@ -518,26 +513,23 @@ a.itemTag:hover {
 
 .detailSectionHeader {
     background-clip: border-box;
-    background-color: rgb(20, 20, 20);
-    border-bottom-color: rgb(31, 31, 31);
-    border-bottom-style: solid;
-    border-bottom-width: 1px;
-    border-left-color: rgb(31, 31, 31);
-    border-left-style: solid;
-    border-left-width: 1px;
-    border-right-color: rgb(31, 31, 31);
-    border-right-style: solid;
-    border-right-width: 1px;
-    border-top-color: rgb(31, 31, 31);
-    border-top-style: solid;
-    border-top-width: 1px;
+    background-color: #141414;
     font-size: 16px;
     font-weight: 400;
-    padding: .7em 0 .7em 1em;
+    padding: .75em 0 .75em 1em;
     border-radius: 4px;
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
+    position: relative;
+}
+
+.detailSectionHeaderButton {
+    position: absolute;
+    right: 0;
+    top: 7px;
+    margin-top: 0;
+    margin-bottom: 0;
 }
 
 .lblDetailTab {
@@ -700,21 +692,6 @@ a.itemTag:hover {
 
 @media all and (min-width: 1000px) {
 
-    .detailPageContent {
-        max-width: 900px;
-    }
-
-    .primaryDetailPageContent {
-        max-width: 850px;
-    }
-}
-
-@media all and (min-width: 1200px) {
-
-    .detailPageContent {
-        max-width: 930px;
-    }
-
     .primaryDetailPageContent {
         max-width: 850px;
     }
@@ -782,7 +759,7 @@ a.itemTag:hover {
     background: rgba(248, 58, 34, .8);
 }
 
-.unplayedIndicator, .playedIndicator {
+.playedIndicator {
     display: block;
     position: absolute;
     top: 5px;
@@ -798,7 +775,7 @@ a.itemTag:hover {
     background: rgba(82, 181, 75, .8);
 }
 
-    .unplayedIndicator div:after, .playedIndicator div:after {
+    .playedIndicator div:after {
         background-color: transparent !important;
     }
 
@@ -1197,3 +1174,93 @@ a.itemTag:hover {
     .channelHeader a {
         text-decoration: none;
     }
+
+.groupingMenuScroller {
+    max-height: 200px;
+    min-width: 240px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+@media all and (min-width: 400px) {
+
+    .groupingMenuScroller {
+        min-width: 300px;
+    }
+}
+
+@media all and (min-width: 500px) {
+
+    .groupingMenuScroller {
+        min-width: 400px;
+    }
+}
+
+@media all and (min-width: 600px) {
+
+    .groupingMenuScroller {
+        min-width: 500px;
+    }
+}
+
+@media all and (min-height: 400px) {
+
+    .groupingMenuScroller {
+        max-height: 300px;
+    }
+}
+
+@media all and (min-height: 500px) {
+
+    .groupingMenuScroller {
+        max-height: 400px;
+    }
+}
+
+@media all and (min-height: 600px) {
+
+    .groupingMenuScroller {
+        max-height: 500px;
+    }
+}
+
+.itemsListview {
+    max-width: 800px;
+    margin: 0 auto!important;
+}
+
+    .itemsListview .ui-li-aside {
+        right: 1.3em;
+        font-weight: normal;
+        font-size: 13px;
+        font-family: "Open Sans";
+    }
+
+    .itemsListview .ui-li-count {
+        right: 1em;
+        top: 70%;
+        background: rgba(82, 181, 75, .8);
+        border: 0;
+    }
+
+    .itemsListview .playedIndicator {
+        right: 1em;
+        top: 55%;
+        background: rgba(82, 181, 75, .8);
+    }
+
+.listviewImage {
+    width: 80px;
+    height: 80px;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center center;
+}
+
+@media all and (max-width: 600px) {
+
+    .itemsListview .ui-li-aside {
+        display: none;
+    }
+}

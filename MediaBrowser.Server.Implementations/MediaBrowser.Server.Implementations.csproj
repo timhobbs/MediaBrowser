@@ -48,9 +48,9 @@
     <Reference Include="Alchemy">
       <HintPath>..\packages\Alchemy.2.2.1\lib\net40\Alchemy.dll</HintPath>
     </Reference>
-    <Reference Include="Mono.Nat, Version=1.2.13.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Mono.Nat, Version=1.2.20.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Mono.Nat.1.2.13.0\lib\net40\Mono.Nat.dll</HintPath>
+      <HintPath>..\packages\Mono.Nat.1.2.20.0\lib\net40\Mono.Nat.dll</HintPath>
     </Reference>
     <Reference Include="Nowin">
       <HintPath>..\ThirdParty\Nowin\Nowin.dll</HintPath>
@@ -101,6 +101,7 @@
     <Compile Include="..\SharedVersion.cs">
       <Link>Properties\SharedVersion.cs</Link>
     </Compile>
+    <Compile Include="Branding\BrandingConfigurationFactory.cs" />
     <Compile Include="Channels\ChannelConfigurations.cs" />
     <Compile Include="Channels\ChannelDownloadScheduledTask.cs" />
     <Compile Include="Channels\ChannelImageProvider.cs" />
@@ -215,6 +216,7 @@
     <Compile Include="ScheduledTasks\ChapterImagesTask.cs" />
     <Compile Include="ScheduledTasks\RefreshIntrosTask.cs" />
     <Compile Include="ScheduledTasks\RefreshMediaLibraryTask.cs" />
+    <Compile Include="Security\AuthenticationRepository.cs" />
     <Compile Include="Security\EncryptionManager.cs" />
     <Compile Include="ServerApplicationPaths.cs" />
     <Compile Include="ServerManager\ServerManager.cs" />
@@ -352,6 +354,8 @@
     <EmbeddedResource Include="Localization\Server\vi.json" />
     <EmbeddedResource Include="Localization\JavaScript\pl.json" />
     <EmbeddedResource Include="Localization\Server\pl.json" />
+    <EmbeddedResource Include="Localization\JavaScript\es_ES.json" />
+    <EmbeddedResource Include="Localization\Server\es_ES.json" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

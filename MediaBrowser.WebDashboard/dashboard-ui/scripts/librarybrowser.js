@@ -24,6 +24,12 @@
             return 20;
         },
 
+        getDefaultItemsView: function (view, mobileView) {
+
+            return $.browser.mobile ? mobileView : view;
+
+        },
+
         loadSavedQueryValues: function (key, query) {
 
             var values = localStorage.getItem(key + '_' + Dashboard.getCurrentUserId());
@@ -52,7 +58,7 @@
             try {
                 localStorage.setItem(key + '_' + Dashboard.getCurrentUserId(), JSON.stringify(values));
             } catch (e) {
-                
+
             }
         },
 
@@ -493,6 +499,193 @@
 
         },
 
+        getListViewIndex: function (item, sortBy) {
+
+            sortBy = (sortBy || '').toLowerCase();
+            var code, name;
+
+            if (sortBy.indexOf('sortname') == 0) {
+
+                if (item.Type == 'Episode') return '';
+
+                // SortName
+                name = (item.SortName || item.Name)[0].toUpperCase();
+
+                code = name.charCodeAt(0);
+                if (code < 65 || code > 90) {
+                    return '#';
+                }
+
+                return name.toUpperCase();
+            }
+            if (sortBy.indexOf('officialrating') == 0) {
+
+                return item.OfficialRating || 'Unrated';
+            }
+            if (sortBy.indexOf('communityrating') == 0) {
+
+                if (item.CommunityRating == null) {
+                    return 'Unrated';
+                }
+
+                return Math.floor(item.CommunityRating);
+            }
+            if (sortBy.indexOf('criticrating') == 0) {
+
+                if (item.CriticRating == null) {
+                    return 'Unrated';
+                }
+
+                return Math.floor(item.CriticRating);
+            }
+            if (sortBy.indexOf('metascore') == 0) {
+
+                if (item.Metascore == null) {
+                    return 'Unrated';
+                }
+
+                return Math.floor(item.Metascore);
+            }
+            if (sortBy.indexOf('albumartist') == 0) {
+
+                // SortName
+                if (!item.AlbumArtist) return '';
+
+                name = item.AlbumArtist[0].toUpperCase();
+
+                code = name.charCodeAt(0);
+                if (code < 65 || code > 90) {
+                    return '#';
+                }
+
+                return name.toUpperCase();
+            }
+            return '';
+        },
+
+        getListViewHtml: function (options) {
+
+            var outerHtml = "";
+
+            outerHtml += '<ul data-role="listview" data-inset="true" class="itemsListview">';
+
+            var index = 0;
+            var groupTitle = '';
+
+            outerHtml += options.items.map(function (item) {
+
+                var html = '';
+
+                var itemGroupTitle = LibraryBrowser.getListViewIndex(item, options.sortBy);
+
+                if (itemGroupTitle != groupTitle) {
+
+                    html += '<li data-role="list-divider">';
+                    html += itemGroupTitle;
+                    html += '</li>';
+
+                    groupTitle = itemGroupTitle;
+                }
+
+                var href = LibraryBrowser.getHref(item, options.context);
+                html += '<li class="ui-li-has-thumb" data-itemid="' + item.Id + '"><a href="' + href + '">';
+
+                var imgUrl;
+
+                if (item.ImageTags.Primary) {
+
+                    // Scaling 400w episode images to 80 doesn't turn out very well
+                    var minScale = item.Type == 'Episode' || item.Type == 'Game' ? 2 : null;
+
+                    imgUrl = ApiClient.getScaledImageUrl(item.Id, {
+                        width: 80,
+                        tag: item.ImageTags.Primary,
+                        type: "Primary",
+                        index: 0,
+                        EnableImageEnhancers: false,
+                        minScale: minScale
+                    });
+
+                }
+                if (imgUrl) {
+
+                    if (index < 10) {
+                        html += '<div class="listviewImage ui-li-thumb" style="background-image:url(\'' + imgUrl + '\');"></div>';
+                    } else {
+                        html += '<div class="listviewImage ui-li-thumb lazy" data-src="' + imgUrl + '"></div>';
+                    }
+                }
+
+                var textlines = [];
+
+                if (item.Type == 'Episode') {
+                    textlines.push(item.SeriesName || 'Unknown Series');
+                }
+                else if (item.Type == 'MusicAlbum') {
+                    textlines.push(item.AlbumArtist || 'Unknown Artist');
+                }
+
+                textlines.push(LibraryBrowser.getPosterViewDisplayName(item));
+
+                if (item.Type == 'Game') {
+                    textlines.push(item.GameSystem || 'Unknown Gane System');
+                }
+
+                textlines.push(LibraryBrowser.getMiscInfoHtml(item));
+
+                html += '<h3>';
+                html += textlines[0];
+                html += '</h3>';
+
+                if (textlines.length > 1) {
+                    html += '<p>';
+                    html += textlines[1];
+                    html += '</p>';
+                }
+
+                html += '<div class="ui-li-aside">';
+                html += textlines[2] || LibraryBrowser.getRatingHtml(item, false);
+                html += '</div>';
+
+                if (item.Type == 'Series' || item.Type == 'Season' || item.Type == 'BoxSet' || item.MediaType == 'Video') {
+                    if (item.UserData.UnplayedItemCount) {
+                        html += '<span class="ui-li-count">' + item.UserData.UnplayedItemCount + '</span>';
+                    }
+                    else if (item.UserData.Played && item.Type != 'TvChannel') {
+                        html += '<div class="playedIndicator"><div class="ui-icon-check ui-btn-icon-notext"></div></div>';
+                    }
+                }
+                html += '</a>';
+
+                var itemCommands = [];
+
+                //if (MediaController.canPlay(item)) {
+                //    itemCommands.push('playmenu');
+                //}
+
+                if (item.Type != "Recording" && item.Type != "Program") {
+                    itemCommands.push('edit');
+                }
+
+                if (item.LocalTrailerCount) {
+                    itemCommands.push('trailer');
+                }
+
+                html += '<a href="#" data-icon="ellipsis-v" data-itemid="' + item.Id + '" data-commands="' + itemCommands.join(',') + '" data-href="' + LibraryBrowser.getHref(item, options.context) + '" class="listviewMenuButton">';
+                html += '</a>';
+
+                html += '</li>';
+
+                return html;
+
+            }).join('');
+
+            outerHtml += '</ul>';
+
+            index++;
+            return outerHtml;
+        },
+
         getPosterViewHtml: function (options) {
 
             var items = options.items;
@@ -628,7 +821,7 @@
                     });
 
                 }
-                else if (options.preferThumb && item.SeriesThumbImageTag) {
+                else if (options.preferThumb && item.SeriesThumbImageTag && options.inheritThumb !== false) {
 
                     imgUrl = ApiClient.getScaledImageUrl(item.SeriesId, {
                         type: "Thumb",
@@ -637,7 +830,7 @@
                     });
 
                 }
-                else if (options.preferThumb && item.ParentThumbItemId) {
+                else if (options.preferThumb && item.ParentThumbItemId && options.inheritThumb !== false) {
 
                     imgUrl = ApiClient.getThumbImageUrl(item.ParentThumbItemId, {
                         type: "Thumb",
@@ -806,6 +999,14 @@
                     cssClass += ' posterItemUserData' + item.UserData.Key;
                 }
 
+                if (options.showChildCountIndicator && item.ChildCount) {
+                    cssClass += ' groupedPosterItem';
+
+                    if (item.Type == 'Series') {
+                        cssClass += ' unplayedGroupings';
+                    }
+                }
+
                 var itemCommands = [];
 
                 //if (MediaController.canPlay(item)) {
@@ -818,6 +1019,10 @@
 
                 if (item.LocalTrailerCount) {
                     itemCommands.push('trailer');
+                }
+
+                if (options.showChildCountIndicator) {
+                    cssClass += ' groupingPosterItem';
                 }
 
                 html += '<a data-commands="' + itemCommands.join(',') + '" data-itemid="' + item.Id + '" class="' + cssClass + '" data-mediasourcecount="' + mediaSourceCount + '" href="' + href + '">';
@@ -844,7 +1049,7 @@
                     dataSrc = ' data-src="' + imgUrl + '"';
                 }
 
-                var progressHtml = options.showProgress === false ? '' : LibraryBrowser.getItemProgressBarHtml(item);
+                var progressHtml = options.showProgress === false || item.IsFolder ? '' : LibraryBrowser.getItemProgressBarHtml((item.Type == 'Recording' ? item : item.UserData));
 
                 html += '<div class="' + imageCssClass + '" style="' + style + '"' + dataSrc + '>';
 
@@ -854,8 +1059,12 @@
                     if (options.showLocationTypeIndicator !== false) {
                         html += LibraryBrowser.getOfflineIndicatorHtml(item);
                     }
-                } else if (options.showUnplayedIndicator !== false) {
+                }
+                else if (options.showUnplayedIndicator !== false) {
                     html += LibraryBrowser.getPlayedIndicatorHtml(item);
+                }
+                else if (options.showChildCountIndicator) {
+                    html += LibraryBrowser.getGroupCountIndicator(item);
                 }
 
                 if (mediaSourceCount > 1) {
@@ -876,9 +1085,9 @@
                 if (!options.overlayText) {
 
                     if (progressHtml) {
-                        html += '<div class="posterItemTextOverlay posterItemProgressContainer">';
+                        html += '<div class="posterItemTextOverlay">';
                         html += "<div class='posterItemProgress miniPosterItemProgress'>";
-                        html += progressHtml;
+                        html += progressHtml || "&nbsp;";
                         html += "</div>";
                         html += "</div>";
                     }
@@ -937,7 +1146,7 @@
                 if (options.overlayText) {
 
                     if (progressHtml) {
-                        html += "<div class='posterItemText posterItemProgress posterItemProgressContainer'>";
+                        html += "<div class='posterItemText posterItemProgress'>";
                         html += progressHtml || "&nbsp;";
                         html += "</div>";
                     }
@@ -1128,17 +1337,25 @@
 
         getPlayedIndicatorHtml: function (item) {
 
-            if (item.Type == "TvChannel") {
-                return '';
-            }
             if (item.Type == "Series" || item.Type == "Season" || item.Type == "BoxSet" || item.MediaType == "Video" || item.MediaType == "Game" || item.MediaType == "Book") {
-                if (item.RecursiveUnplayedItemCount) {
-                    return '<div class="unplayedIndicator">' + item.RecursiveUnplayedItemCount + '</div>';
+                if (item.UserData.UnplayedItemCount) {
+                    return '<div class="playedIndicator">' + item.UserData.UnplayedItemCount + '</div>';
                 }
 
-                if (item.PlayedPercentage == 100 || (item.UserData && item.UserData.Played)) {
-                    return '<div class="playedIndicator"><div class="ui-icon-check ui-btn-icon-notext"></div></div>';
+                if (item.Type != 'TvChannel') {
+                    if (item.UserData.PlayedPercentage >= 100 || (item.UserData && item.UserData.Played)) {
+                        return '<div class="playedIndicator"><div class="ui-icon-check ui-btn-icon-notext"></div></div>';
+                    }
                 }
+            }
+
+            return '';
+        },
+
+        getGroupCountIndicator: function (item) {
+
+            if (item.ChildCount) {
+                return '<div class="playedIndicator">' + item.ChildCount + '</div>';
             }
 
             return '';
@@ -1224,14 +1441,14 @@
 
         },
 
-        renderName: function (item, nameElem, linkToElement) {
+        renderName: function (item, nameElem, linkToElement, context) {
 
             var name = LibraryBrowser.getPosterViewDisplayName(item, false, false);
 
             Dashboard.setPageTitle(name);
 
             if (linkToElement) {
-                nameElem.html('<a class="detailPageParentLink" href="' + LibraryBrowser.getHref(item) + '">' + name + '</a>').trigger('create');
+                nameElem.html('<a class="detailPageParentLink" href="' + LibraryBrowser.getHref(item, context) + '">' + name + '</a>').trigger('create');
             } else {
                 nameElem.html(name);
             }
@@ -1427,16 +1644,11 @@
                 return '<progress class="itemProgressBar recordingProgressBar" min="0" max="100" value="' + item.CompletionPercentage + '"></progress>';
             }
 
-            if (item.UserData && item.UserData.PlaybackPositionTicks && item.RunTimeTicks) {
+            var pct = item.PlayedPercentage;
 
-                var tooltip = Dashboard.getDisplayTime(item.UserData.PlaybackPositionTicks) + " / " + Dashboard.getDisplayTime(item.RunTimeTicks);
+            if (pct && pct < 100) {
 
-                var pct = (item.UserData.PlaybackPositionTicks / item.RunTimeTicks) * 100;
-
-                if (pct && pct < 100) {
-
-                    return '<progress title="' + tooltip + '" class="itemProgressBar" min="0" max="100" value="' + pct + '"></progress>';
-                }
+                return '<progress class="itemProgressBar" min="0" max="100" value="' + pct + '"></progress>';
             }
 
             return null;
@@ -1674,7 +1886,7 @@
                 html += "</a>";
             }
 
-            var progressHtml = LibraryBrowser.getItemProgressBarHtml(item);
+            var progressHtml = item.IsFolder ? '' : LibraryBrowser.getItemProgressBarHtml((item.Type == 'Recording' ? item : item.UserData));
 
             if (progressHtml) {
                 html += '<div class="detailImageProgressContainer">';

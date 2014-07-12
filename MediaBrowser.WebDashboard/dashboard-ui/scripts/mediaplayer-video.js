@@ -28,10 +28,8 @@
 
             if (remoteFullscreen) {
                 exitFullScreenToWindow();
-                $('.hiddenOnIdle').removeClass("inactive");
             } else {
                 enterFullScreen();
-                $('.hiddenOnIdle').addClass("inactive");
             }
 
             remoteFullscreen = !remoteFullscreen;
@@ -832,7 +830,7 @@
             }
 
             // Some 1080- videos are reported as 1912?
-            if (maxAllowedWidth >= 1910) {
+            if (maxAllowedWidth >= 1900) {
                 options.push({ name: '1080p - 30Mbps', maxWidth: 1920, bitrate: 30000000 });
                 options.push({ name: '1080p - 25Mbps', maxWidth: 1920, bitrate: 25000000 });
                 options.push({ name: '1080p - 20Mbps', maxWidth: 1920, bitrate: 20000000 });
@@ -842,13 +840,13 @@
                 options.push({ name: '1080p - 6Mbps', maxWidth: 1920, bitrate: 6000000 });
                 options.push({ name: '1080p - 5Mbps', maxWidth: 1920, bitrate: 5000000 });
             }
-            else if (maxAllowedWidth >= 1270) {
+            else if (maxAllowedWidth >= 1260) {
                 options.push({ name: '720p - 10Mbps', maxWidth: 1280, bitrate: 10000000 });
                 options.push({ name: '720p - 8Mbps', maxWidth: 1280, bitrate: 8000000 });
                 options.push({ name: '720p - 6Mbps', maxWidth: 1280, bitrate: 6000000 });
                 options.push({ name: '720p - 5Mbps', maxWidth: 1280, bitrate: 5000000 });
             }
-            else if (maxAllowedWidth >= 470) {
+            else if (maxAllowedWidth >= 460) {
                 options.push({ name: '480p - 4Mbps', maxWidth: 720, bitrate: 4000000 });
                 options.push({ name: '480p - 3.5Mbps', maxWidth: 720, bitrate: 3500000 });
                 options.push({ name: '480p - 3Mbps', maxWidth: 720, bitrate: 3000000 });
@@ -857,7 +855,7 @@
                 options.push({ name: '480p - 1.5Mbps', maxWidth: 720, bitrate: 1500000 });
             }
 
-            if (maxAllowedWidth >= 1270) {
+            if (maxAllowedWidth >= 1260) {
                 options.push({ name: '720p - 4Mbps', maxWidth: 1280, bitrate: 4000000 });
                 options.push({ name: '720p - 3Mbps', maxWidth: 1280, bitrate: 3000000 });
                 options.push({ name: '720p - 2Mbps', maxWidth: 1280, bitrate: 2000000 });
@@ -895,18 +893,20 @@
 
         function bindEventsForPlayback() {
 
-            $(document).on('webkitfullscreenchange.videoplayer mozfullscreenchange.videoplayer fullscreenchange.videoplayer', function (e) {
-
+            var hideElementsOnIdle = !$.browser.mobile;
+            
+            if (hideElementsOnIdle) {
                 $('.itemVideo').off('mousemove.videoplayer keydown.videoplayer scroll.videoplayer', idleHandler);
+                $('.itemVideo').on('mousemove.videoplayer keydown.videoplayer scroll.videoplayer', idleHandler).trigger('mousemove');
+            }
+
+            $(document).on('webkitfullscreenchange.videoplayer mozfullscreenchange.videoplayer fullscreenchange.videoplayer', function (e) {
 
                 if (self.isFullScreen()) {
                     enterFullScreen();
                     idleState = true;
-                    $('.itemVideo').on('mousemove.videoplayer keydown.videoplayer scroll.videoplayer', idleHandler).trigger('mousemove');
 
                 } else {
-                    $('.hiddenOnIdle').removeClass("inactive");
-
                     exitFullScreenToWindow();
                 }
 
@@ -935,10 +935,12 @@
                 return;
             });
 
-            $(document.body).on("mousemove.videplayer", "#videoPlayer.fullscreenVideo #itemVideo", function () {
+            if (hideElementsOnIdle) {
+                $(document.body).on("mousemove.videplayer", "#itemVideo", function () {
 
-                idleHandler(this);
-            });
+                    idleHandler(this);
+                });
+            }
         }
 
         function unbindEventsForPlayback() {
@@ -948,7 +950,7 @@
             // Stop playback on browser back button nav
             $(window).off("popstate.videoplayer");
 
-            $(document.body).off("mousemove.videplayer", "#videoPlayer.fullscreenVideo #itemVideo");
+            $(document.body).off("mousemove.videplayer");
 
             $('.itemVideo').off('mousemove.videoplayer keydown.videoplayer scroll.videoplayer');
         }

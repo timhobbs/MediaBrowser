@@ -17,9 +17,6 @@ using MediaBrowser.Controller.Dlna;
 using MediaBrowser.Controller.Drawing;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
-using MediaBrowser.Controller.Entities.Audio;
-using MediaBrowser.Controller.Entities.Movies;
-using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.FileOrganization;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.LiveTv;
@@ -45,7 +42,6 @@ using MediaBrowser.LocalMetadata.Providers;
 using MediaBrowser.MediaEncoding.BdInfo;
 using MediaBrowser.MediaEncoding.Encoder;
 using MediaBrowser.MediaEncoding.Subtitles;
-using MediaBrowser.Model.Configuration;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.MediaInfo;
 using MediaBrowser.Model.System;
@@ -210,6 +206,8 @@ namespace MediaBrowser.ServerApplication
 
         private IUserViewManager UserViewManager { get; set; }
 
+        private IAuthenticationRepository AuthenticationRepository { get; set; }
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="ApplicationHost"/> class.
         /// </summary>
@@ -341,56 +339,11 @@ namespace MediaBrowser.ServerApplication
                     ? "Xbmc Nfo"
                     : "Media Browser Xml";
 
-                DisableMetadataService(typeof(Movie), ServerConfigurationManager.Configuration, service);
-                DisableMetadataService(typeof(MusicAlbum), ServerConfigurationManager.Configuration, service);
-                DisableMetadataService(typeof(MusicArtist), ServerConfigurationManager.Configuration, service);
-                DisableMetadataService(typeof(Episode), ServerConfigurationManager.Configuration, service);
-                DisableMetadataService(typeof(Season), ServerConfigurationManager.Configuration, service);
-                DisableMetadataService(typeof(Series), ServerConfigurationManager.Configuration, service);
-                DisableMetadataService(typeof(MusicVideo), ServerConfigurationManager.Configuration, service);
-                DisableMetadataService(typeof(Trailer), ServerConfigurationManager.Configuration, service);
-                DisableMetadataService(typeof(AdultVideo), ServerConfigurationManager.Configuration, service);
-                DisableMetadataService(typeof(Video), ServerConfigurationManager.Configuration, service);
+                ServerConfigurationManager.SetPreferredMetadataService(service);
             }
 
             ServerConfigurationManager.Configuration.DefaultMetadataSettingsApplied = true;
             ServerConfigurationManager.SaveConfiguration();
-        }
-
-        private void DisableMetadataService(Type type, ServerConfiguration config, string service)
-        {
-            var options = GetMetadataOptions(type, config);
-
-            if (!options.DisabledMetadataSavers.Contains(service, StringComparer.OrdinalIgnoreCase))
-            {
-                var list = options.DisabledMetadataSavers.ToList();
-
-                list.Add(service);
-
-                options.DisabledMetadataSavers = list.ToArray();
-            }
-        }
-
-        private MetadataOptions GetMetadataOptions(Type type, ServerConfiguration config)
-        {
-            var options = config.MetadataOptions
-                .FirstOrDefault(i => string.Equals(i.ItemType, type.Name, StringComparison.OrdinalIgnoreCase));
-
-            if (options == null)
-            {
-                var list = config.MetadataOptions.ToList();
-
-                options = new MetadataOptions
-                {
-                    ItemType = type.Name
-                };
-
-                list.Add(options);
-
-                config.MetadataOptions = list.ToArray();
-            }
-
-            return options;
         }
 
         private void DeleteDeprecatedModules()
@@ -586,6 +539,9 @@ namespace MediaBrowser.ServerApplication
             FileOrganizationRepository = await GetFileOrganizationRepository().ConfigureAwait(false);
             RegisterSingleInstance(FileOrganizationRepository);
 
+            AuthenticationRepository = await GetAuthenticationRepository().ConfigureAwait(false);
+            RegisterSingleInstance(AuthenticationRepository);
+
             UserManager = new UserManager(LogManager.GetLogger("UserManager"), ServerConfigurationManager, UserRepository, XmlSerializer);
             RegisterSingleInstance(UserManager);
 
@@ -625,7 +581,7 @@ namespace MediaBrowser.ServerApplication
             DtoService = new DtoService(Logger, LibraryManager, UserDataManager, ItemRepository, ImageProcessor, ServerConfigurationManager, FileSystemManager, ProviderManager, () => ChannelManager);
             RegisterSingleInstance(DtoService);
 
-            SessionManager = new SessionManager(UserDataManager, ServerConfigurationManager, Logger, UserRepository, LibraryManager, UserManager, musicManager, DtoService, ImageProcessor, ItemRepository, JsonSerializer, this, HttpClient);
+            SessionManager = new SessionManager(UserDataManager, ServerConfigurationManager, Logger, UserRepository, LibraryManager, UserManager, musicManager, DtoService, ImageProcessor, ItemRepository, JsonSerializer, this, HttpClient, AuthenticationRepository);
             RegisterSingleInstance(SessionManager);
 
             var newsService = new Server.Implementations.News.NewsService(ApplicationPaths, JsonSerializer);
@@ -651,10 +607,10 @@ namespace MediaBrowser.ServerApplication
             var connectionManager = new ConnectionManager(dlnaManager, ServerConfigurationManager, LogManager.GetLogger("UpnpConnectionManager"), HttpClient);
             RegisterSingleInstance<IConnectionManager>(connectionManager);
 
-            var collectionManager = new CollectionManager(LibraryManager, FileSystemManager, LibraryMonitor);
+            var collectionManager = new CollectionManager(LibraryManager, FileSystemManager, LibraryMonitor, LogManager.GetLogger("CollectionManager"));
             RegisterSingleInstance<ICollectionManager>(collectionManager);
 
-            LiveTvManager = new LiveTvManager(ServerConfigurationManager, FileSystemManager, Logger, ItemRepository, ImageProcessor, UserDataManager, DtoService, UserManager, LibraryManager, TaskManager, JsonSerializer, LocalizationManager);
+            LiveTvManager = new LiveTvManager(ServerConfigurationManager, FileSystemManager, Logger, ItemRepository, ImageProcessor, UserDataManager, DtoService, UserManager, LibraryManager, TaskManager, LocalizationManager);
             RegisterSingleInstance(LiveTvManager);
 
             UserViewManager = new UserViewManager(LibraryManager, LocalizationManager, FileSystemManager, UserManager, ChannelManager, LiveTvManager);
@@ -678,7 +634,7 @@ namespace MediaBrowser.ServerApplication
             var authContext = new AuthorizationContext();
             RegisterSingleInstance<IAuthorizationContext>(authContext);
             RegisterSingleInstance<ISessionContext>(new SessionContext(UserManager, authContext, SessionManager));
-            RegisterSingleInstance<IAuthService>(new AuthService(UserManager, SessionManager, authContext));
+            RegisterSingleInstance<IAuthService>(new AuthService(UserManager, SessionManager, authContext, ServerConfigurationManager));
 
             RegisterSingleInstance<ISubtitleEncoder>(new SubtitleEncoder(LibraryManager, LogManager.GetLogger("SubtitleEncoder"), ApplicationPaths, FileSystemManager, MediaEncoder));
 
@@ -749,6 +705,15 @@ namespace MediaBrowser.ServerApplication
         private async Task<IFileOrganizationRepository> GetFileOrganizationRepository()
         {
             var repo = new SqliteFileOrganizationRepository(LogManager, ServerConfigurationManager.ApplicationPaths);
+
+            await repo.Initialize().ConfigureAwait(false);
+
+            return repo;
+        }
+
+        private async Task<IAuthenticationRepository> GetAuthenticationRepository()
+        {
+            var repo = new AuthenticationRepository(LogManager.GetLogger("AuthenticationRepository"), ServerConfigurationManager.ApplicationPaths);
 
             await repo.Initialize().ConfigureAwait(false);
 
@@ -1202,8 +1167,14 @@ namespace MediaBrowser.ServerApplication
 
             HasUpdateAvailable = versionObject != null && versionObject >= ApplicationVersion;
 
-            return versionObject != null ? new CheckForUpdateResult { AvailableVersion = versionObject.ToString(), IsUpdateAvailable = versionObject > ApplicationVersion, Package = version } :
-                       new CheckForUpdateResult { AvailableVersion = ApplicationVersion.ToString(), IsUpdateAvailable = false };
+            if (versionObject != null && versionObject >= ApplicationVersion)
+            {
+                Logger.Info("New application version is available: {0}", versionObject);
+            }
+
+            return versionObject != null ? 
+                new CheckForUpdateResult { AvailableVersion = versionObject.ToString(), IsUpdateAvailable = versionObject > ApplicationVersion, Package = version } :
+                new CheckForUpdateResult { AvailableVersion = ApplicationVersion.ToString(), IsUpdateAvailable = false };
         }
 
         /// <summary>

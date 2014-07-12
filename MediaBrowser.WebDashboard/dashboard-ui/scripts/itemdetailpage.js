@@ -40,7 +40,7 @@
 
         renderHeader(page, item, context);
 
-        LibraryBrowser.renderName(item, $('.itemName', page));
+        LibraryBrowser.renderName(item, $('.itemName', page), false, context);
         LibraryBrowser.renderParentName(item, $('.parentName', page));
 
         Dashboard.getCurrentUser().done(function (user) {
@@ -240,6 +240,16 @@
             $('a', elem).removeClass('ui-btn-active');
             $('.lnkHomeUpcoming', page).addClass('ui-btn-active');
         }
+        else if (context == 'movies' || item.Type == 'Movie') {
+            elem = $('#movieTabs', page).show();
+            $('a', elem).removeClass('ui-btn-active');
+            
+            if (item.Type == 'BoxSet') {
+                $('.lnkCollections', page).addClass('ui-btn-active');
+            } else {
+                $('.lnkMovies', page).addClass('ui-btn-active');
+            }
+        }
         else if (item.Type == "MusicAlbum") {
             $('#albumTabs', page).show();
         }
@@ -250,10 +260,6 @@
 
         else if (item.Type == "Audio") {
             $('#songTabs', page).show();
-        }
-
-        else if (item.Type == "Movie") {
-            $('#movieTabs', page).show();
         }
 
         else if (item.Type == "ChannelVideoItem" || item.Type == "ChannelAudioItem" || item.Type == "ChannelFolderItem") {
@@ -363,7 +369,7 @@
 
         $('.itemCommunityRating', page).html(LibraryBrowser.getRatingHtml(item));
 
-        if (item.Type != "Episode" && item.Type != "Movie" && item.Type != "Series") {
+        if (item.Type != "Episode" && item.Type != "Movie" && item.Type != "Series" && item.Type != "Season") {
             var premiereDateElem = $('#itemPremiereDate', page).show();
             LibraryBrowser.renderPremiereDate(premiereDateElem, item);
         } else {
@@ -585,7 +591,7 @@
 
         var options = {
             userId: Dashboard.getCurrentUserId(),
-            limit: item.Type == "MusicAlbum" ? 4 : 6,
+            limit: item.Type == "MusicAlbum" ? 4 : 5,
             fields: "PrimaryImageAspectRatio,UserData"
         };
 
@@ -866,7 +872,7 @@
         html += '<span>' + type.name + '</span>';
 
         if (user.Configuration.IsAdministrator) {
-            html += '<a href="editcollectionitems.html?id=' + currentItem.Id + '" data-role="button" data-icon="edit" data-iconpos="notext" data-inline="true" style="position: absolute; right: 0; top: 6px; margin-top: 0; margin-bottom: 0;">Edit</a>';
+            html += '<a class="detailSectionHeaderButton" href="editcollectionitems.html?id=' + currentItem.Id + '" data-role="button" data-icon="edit" data-iconpos="notext" data-inline="true">Edit</a>';
         }
 
         html += '</div>';
