@@ -1,4 +1,4 @@
-(function (document, setTimeout, clearTimeout, screen, localStorage, $, setInterval, window) {
+(function (document, setTimeout, clearTimeout, screen, store, $, setInterval, window) {
 
     function mediaPlayer() {
 
@@ -53,18 +53,7 @@
             return playerTime;
         };
 
-        self.clearPauseStop = function () {
-
-            if (self.pauseStop) {
-                console.log('clearing pause stop timer');
-                window.clearTimeout(self.pauseStop);
-                self.pauseStop = null;
-            }
-        };
-
         self.playNextAfterEnded = function () {
-
-            $(this).off('ended.playnext');
 
             self.nextTrack();
         };
@@ -116,10 +105,12 @@
 
                 var currentSrc = element.currentSrc;
 
-                var transcodingExtension = self.getTranscodingExtension();
+                var transcodingExtension;
                 var isStatic;
 
                 if (self.currentItem.MediaType == "Video") {
+
+                    transcodingExtension = self.getTranscodingExtension();
 
                     if (params.AudioStreamIndex != null) {
                         currentSrc = replaceQueryString(currentSrc, 'AudioStreamIndex', params.AudioStreamIndex);
@@ -155,6 +146,8 @@
                     currentSrc = replaceQueryString(currentSrc, 'Static', finalParams.isStatic);
                     currentSrc = replaceQueryString(currentSrc, 'AudioCodec', finalParams.audioCodec);
                     isStatic = finalParams.isStatic;
+                } else {
+                    transcodingExtension = '.mp3';
                 }
 
                 var isSeekableMedia = self.currentMediaSource.RunTimeTicks;
@@ -173,7 +166,7 @@
 
                     self.updateCanClientSeek(this);
 
-                    $(this).on('ended.playbackstopped', self.onPlaybackStopped).on('ended.playnext', self.playNextAfterEnded);
+                    $(this).on('ended.playbackstopped', self.onPlaybackStopped).one('ended.playnext', self.playNextAfterEnded);
 
                     self.startProgressInterval();
                     sendProgressUpdate();
@@ -436,7 +429,7 @@
         };
 
         self.getBitrateSetting = function () {
-            return parseInt(localStorage.getItem('preferredVideoBitrate') || '') || 1500000;
+            return parseInt(store.getItem('preferredVideoBitrate') || '') || 1500000;
         };
 
         function getOptimalMediaSource(mediaType, versions) {
@@ -591,6 +584,7 @@
             var newItem = self.playlist[newIndex];
 
             if (newItem) {
+
                 Dashboard.getCurrentUser().done(function (user) {
 
                     self.playInternal(newItem, 0, user);
@@ -768,13 +762,13 @@
         self.saveVolume = function (val) {
 
             if (val) {
-                localStorage.setItem("volume", val);
+                store.setItem("volume", val);
             }
 
         };
 
         self.getSavedVolume = function () {
-            return localStorage.getItem("volume") || 0.5;
+            return store.getItem("volume") || 0.5;
         };
 
         self.shuffle = function (id) {
@@ -895,6 +889,7 @@
                         $(this).remove();
                     }
 
+                    elem.src = null;
                     elem.src = "";
                     self.currentMediaElement = null;
                     self.currentItem = null;
@@ -1073,8 +1068,6 @@
 
             $('body').removeClass('bodyWithPopupOpen');
 
-            self.clearPauseStop();
-
             var playerElement = this;
 
             $(playerElement).off('.mediaplayerevent').off('ended.playbackstopped');
@@ -1252,7 +1245,7 @@
 
                 self.setCurrentTime(self.getCurrentTicks(this));
 
-            }).on("ended.playbackstopped", self.onPlaybackStopped).on('ended.playnext', self.playNextAfterEnded)[0];
+            }).on("ended.playbackstopped", self.onPlaybackStopped).one('ended.playnext', self.playNextAfterEnded)[0];
         };
 
         function canPlayAudioStreamDirect(audioStream) {
@@ -1291,4 +1284,4 @@
     window.MediaController.setActivePlayer(window.MediaPlayer);
 
 
-})(document, setTimeout, clearTimeout, screen, localStorage, $, setInterval, window);
+})(document, setTimeout, clearTimeout, screen, window.store, $, setInterval, window);

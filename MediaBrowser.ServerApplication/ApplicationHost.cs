@@ -33,6 +33,7 @@ using MediaBrowser.Controller.Security;
 using MediaBrowser.Controller.Session;
 using MediaBrowser.Controller.Sorting;
 using MediaBrowser.Controller.Subtitles;
+using MediaBrowser.Controller.Sync;
 using MediaBrowser.Controller.Themes;
 using MediaBrowser.Dlna;
 using MediaBrowser.Dlna.ConnectionManager;
@@ -69,8 +70,8 @@ using MediaBrowser.Server.Implementations.Persistence;
 using MediaBrowser.Server.Implementations.Security;
 using MediaBrowser.Server.Implementations.ServerManager;
 using MediaBrowser.Server.Implementations.Session;
+using MediaBrowser.Server.Implementations.Sync;
 using MediaBrowser.Server.Implementations.Themes;
-using MediaBrowser.Server.Implementations.WebSocket;
 using MediaBrowser.ServerApplication.EntryPoints;
 using MediaBrowser.ServerApplication.FFMpeg;
 using MediaBrowser.ServerApplication.IO;
@@ -331,15 +332,13 @@ namespace MediaBrowser.ServerApplication
 
         private void ApplyDefaultMetadataSettings()
         {
-            if (!ServerConfigurationManager.Configuration.DefaultMetadataSettingsApplied)
+            if (!ServerConfigurationManager.Configuration.DefaultMetadataSettingsApplied &&
+                ServerConfigurationManager.Configuration.IsStartupWizardCompleted)
             {
                 // Make sure xbmc metadata is disabled for existing users.
-                // New users can just take the defaults.
-                var service = ServerConfigurationManager.Configuration.IsStartupWizardCompleted
-                    ? "Xbmc Nfo"
-                    : "Media Browser Xml";
+                // New users will be handled by the startup wizard.
 
-                ServerConfigurationManager.SetPreferredMetadataService(service);
+                ServerConfigurationManager.DisableMetadataService("Xbmc Nfo");
             }
 
             ServerConfigurationManager.Configuration.DefaultMetadataSettingsApplied = true;
@@ -517,8 +516,6 @@ namespace MediaBrowser.ServerApplication
             LocalizationManager = new LocalizationManager(ServerConfigurationManager, FileSystemManager, JsonSerializer);
             RegisterSingleInstance(LocalizationManager);
 
-            RegisterSingleInstance<IWebSocketServer>(() => new AlchemyServer(Logger));
-
             RegisterSingleInstance<IBlurayExaminer>(() => new BdInfoExaminer());
 
             UserDataManager = new UserDataManager(LogManager);
@@ -630,6 +627,8 @@ namespace MediaBrowser.ServerApplication
             EncodingManager = new EncodingManager(ServerConfigurationManager, FileSystemManager, Logger,
                 MediaEncoder, ChapterManager);
             RegisterSingleInstance(EncodingManager);
+
+            RegisterSingleInstance<ISyncManager>(new SyncManager());
 
             var authContext = new AuthorizationContext();
             RegisterSingleInstance<IAuthorizationContext>(authContext);
@@ -849,7 +848,7 @@ namespace MediaBrowser.ServerApplication
         {
             try
             {
-                ServerManager.Start(HttpServerUrlPrefixes, ServerConfigurationManager.Configuration.EnableHttpLevelLogging);
+                ServerManager.Start(HttpServerUrlPrefixes);
             }
             catch (Exception ex)
             {
@@ -866,8 +865,6 @@ namespace MediaBrowser.ServerApplication
                     throw;
                 }
             }
-
-            ServerManager.StartWebSocketServer();
         }
 
         /// <summary>
@@ -879,14 +876,7 @@ namespace MediaBrowser.ServerApplication
         {
             base.OnConfigurationUpdated(sender, e);
 
-            HttpServer.EnableHttpRequestLogging = ServerConfigurationManager.Configuration.EnableHttpLevelLogging;
-
             if (!HttpServer.UrlPrefixes.SequenceEqual(HttpServerUrlPrefixes, StringComparer.OrdinalIgnoreCase))
-            {
-                NotifyPendingRestart();
-            }
-
-            else if (!ServerManager.SupportsNativeWebSocket && ServerManager.WebSocketPortNumber != ServerConfigurationManager.Configuration.LegacyWebSocketPortNumber)
             {
                 NotifyPendingRestart();
             }
@@ -1022,7 +1012,7 @@ namespace MediaBrowser.ServerApplication
                 Version = ApplicationVersion.ToString(),
                 IsNetworkDeployed = CanSelfUpdate,
                 WebSocketPortNumber = ServerManager.WebSocketPortNumber,
-                SupportsNativeWebSocket = ServerManager.SupportsNativeWebSocket,
+                SupportsNativeWebSocket = true,
                 FailedPluginAssemblies = FailedAssemblies.ToList(),
                 InProgressInstallations = InstallationManager.CurrentInstallations.Select(i => i.Item1).ToList(),
                 CompletedInstallations = InstallationManager.CompletedInstallations.ToList(),

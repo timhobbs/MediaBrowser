@@ -46,12 +46,6 @@ namespace MediaBrowser.Server.Implementations.ServerManager
         }
 
         /// <summary>
-        /// Gets or sets the external web socket server.
-        /// </summary>
-        /// <value>The external web socket server.</value>
-        private IWebSocketServer ExternalWebSocketServer { get; set; }
-
-        /// <summary>
         /// The _logger
         /// </summary>
         private readonly ILogger _logger;
@@ -68,21 +62,12 @@ namespace MediaBrowser.Server.Implementations.ServerManager
         private IServerConfigurationManager ConfigurationManager { get; set; }
 
         /// <summary>
-        /// Gets a value indicating whether [supports web socket].
-        /// </summary>
-        /// <value><c>true</c> if [supports web socket]; otherwise, <c>false</c>.</value>
-        public bool SupportsNativeWebSocket
-        {
-            get { return HttpServer != null && HttpServer.SupportsWebSockets; }
-        }
-
-        /// <summary>
         /// Gets the web socket port number.
         /// </summary>
         /// <value>The web socket port number.</value>
         public int WebSocketPortNumber
         {
-            get { return SupportsNativeWebSocket ? ConfigurationManager.Configuration.HttpServerPortNumber : ConfigurationManager.Configuration.LegacyWebSocketPortNumber; }
+            get { return ConfigurationManager.Configuration.HttpServerPortNumber; }
         }
 
         /// <summary>
@@ -123,43 +108,21 @@ namespace MediaBrowser.Server.Implementations.ServerManager
         /// <summary>
         /// Starts this instance.
         /// </summary>
-        public void Start(IEnumerable<string> urlPrefixes, bool enableHttpLogging)
+        public void Start(IEnumerable<string> urlPrefixes)
         {
-            ReloadHttpServer(urlPrefixes, enableHttpLogging);
-        }
-
-        public void StartWebSocketServer()
-        {
-            if (!SupportsNativeWebSocket)
-            {
-                ReloadExternalWebSocketServer(ConfigurationManager.Configuration.LegacyWebSocketPortNumber);
-            }
-        }
-
-        /// <summary>
-        /// Starts the external web socket server.
-        /// </summary>
-        private void ReloadExternalWebSocketServer(int portNumber)
-        {
-            DisposeExternalWebSocketServer();
-
-            ExternalWebSocketServer = _applicationHost.Resolve<IWebSocketServer>();
-
-            ExternalWebSocketServer.Start(portNumber);
-            ExternalWebSocketServer.WebSocketConnected += HttpServer_WebSocketConnected;
+            ReloadHttpServer(urlPrefixes);
         }
 
         /// <summary>
         /// Restarts the Http Server, or starts it if not currently running
         /// </summary>
-        private void ReloadHttpServer(IEnumerable<string> urlPrefixes, bool enableHttpLogging)
+        private void ReloadHttpServer(IEnumerable<string> urlPrefixes)
         {
             _logger.Info("Loading Http Server");
 
             try
             {
                 HttpServer = _applicationHost.Resolve<IHttpServer>();
-                HttpServer.EnableHttpRequestLogging = enableHttpLogging;
                 HttpServer.StartServer(urlPrefixes);
             }
             catch (SocketException ex)
@@ -326,8 +289,6 @@ namespace MediaBrowser.Server.Implementations.ServerManager
                 HttpServer.WebSocketConnected -= HttpServer_WebSocketConnected;
                 HttpServer.Dispose();
             }
-
-            DisposeExternalWebSocketServer();
         }
 
         /// <summary>
@@ -348,18 +309,6 @@ namespace MediaBrowser.Server.Implementations.ServerManager
             if (dispose)
             {
                 DisposeHttpServer();
-            }
-        }
-
-        /// <summary>
-        /// Disposes the external web socket server.
-        /// </summary>
-        private void DisposeExternalWebSocketServer()
-        {
-            if (ExternalWebSocketServer != null)
-            {
-                _logger.Info("Disposing {0}", ExternalWebSocketServer.GetType().Name);
-                ExternalWebSocketServer.Dispose();
             }
         }
 

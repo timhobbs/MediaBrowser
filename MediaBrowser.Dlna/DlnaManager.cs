@@ -75,6 +75,10 @@ namespace MediaBrowser.Dlna
                 new LgTvProfile(),
                 new Foobar2000Profile(),
                 new MediaMonkeyProfile(),
+                new Windows81Profile(),
+                //new WindowsMediaCenterProfile(),
+                new WindowsPhoneProfile(),
+                new AndroidProfile(),
                 new DefaultProfile()
             };
 

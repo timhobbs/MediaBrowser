@@ -41,15 +41,6 @@
         $('#imagesByNamePath', page).html(systemInfo.ItemsByNamePath);
         $('#transcodingTemporaryPath', page).html(systemInfo.TranscodingTempPath);
         $('#metadataPath', page).html(systemInfo.InternalMetadataPath);
-
-        if (systemInfo.WanAddress) {
-
-            var externalUrl = systemInfo.WanAddress + "/mediabrowser";
-
-            $('.externalUrl', page).html('Remote access: <a href="' + externalUrl + '" target="_blank">' + externalUrl + '</a>').show().trigger('create');
-        } else {
-            $('.externalUrl', page).hide();
-        }
     },
 
     refreshSessionsLocally: function () {
@@ -647,6 +638,11 @@
 
             return "<img src='css/images/chromecast/ic_media_route_on_holo_light.png' />";
         }
+        if (clientLowered == "chrome companion") {
+
+            return "<img src='css/images/clients/chrome_companion.png' />";
+        }
+
 
         return null;
     },
@@ -742,13 +738,9 @@
 
     renderUrls: function (page, systemInfo) {
 
-        var url = ApiClient.serverAddress() + "/mediabrowser";
-
-        $('#bookmarkUrl', page).html(url).attr("href", url);
-
         if (systemInfo.WanAddress) {
 
-            var externalUrl = systemInfo.WanAddress + "/mediabrowser";
+            var externalUrl = systemInfo.WanAddress + ApiClient.apiPrefix();
 
             var remoteAccessHtml = Globalize.translate('LabelRemoteAccessUrl').replace('{0}', '<a href="' + externalUrl + '" target="_blank">' + externalUrl + '</a>');
 

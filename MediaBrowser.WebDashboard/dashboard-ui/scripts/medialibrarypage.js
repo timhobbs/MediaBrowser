@@ -17,7 +17,6 @@
         });
 
         $('#divMediaLibrary', page).show();
-        Dashboard.setPageTitle("Media Library");
     },
 
     shouldRefreshLibraryAfterChanges: function () {
@@ -55,8 +54,8 @@
     changeCollectionType: function () {
 
         Dashboard.alert({
-            message: "To change the folder type, please remove and rebuild the collection with the new type.",
-            title: "Change Folder Type"
+            message: Globalize.translate('HeaderChangeFolderTypeHelp'),
+            title: Globalize.translate('HeaderChangeFolderType')
         });
     },
 
@@ -228,7 +227,7 @@
             { name: "Home videos", value: "homevideos" },
             { name: "Music videos", value: "musicvideos" },
             { name: "Photos", value: "photos" },
-            { name: "Trailers", value: "trailers" },
+            //{ name: "Trailers", value: "trailers" },
             { name: "Adult videos", value: "adultvideos" },
             { name: "Mixed movies & tv", value: "mixed" }
         ];
@@ -380,13 +379,13 @@ var WizardLibraryPage = {
         var lastResult = task.LastExecutionResult ? task.LastExecutionResult.Status : '';
 
         if (lastResult == "Failed") {
-            $('.lastRefreshResult', page).html('<span style="color:#FF0000;">(failed)</span>');
+            $('.lastRefreshResult', page).html('<span style="color:#FF0000;">' + Globalize.translate('LabelFailed') + '</span>');
         }
         else if (lastResult == "Cancelled") {
-            $('.lastRefreshResult', page).html('<span style="color:#0026FF;">(cancelled)</span>');
+            $('.lastRefreshResult', page).html('<span style="color:#0026FF;">' + Globalize.translate('LabelCancelled') + '</span>');
         }
         else if (lastResult == "Aborted") {
-            $('.lastRefreshResult', page).html('<span style="color:#FF0000;">(Aborted by server shutdown)</span>');
+            $('.lastRefreshResult', page).html('<span style="color:#FF0000;">' + Globalize.translate('LabelAbortedByServerShutdown') + '</span>');
         } else {
             $('.lastRefreshResult', page).html(lastResult);
         }

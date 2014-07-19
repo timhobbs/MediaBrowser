@@ -1,6 +1,6 @@
 ﻿/* Fixes the issue of jqm panels altering the page background. */
 .ui-panel-content-wrap {
-    background: none!important;
+    background: none !important;
 }
 
 .ui-panel fieldset + fieldset {
@@ -13,7 +13,7 @@
 }
 
 .backdropPage {
-    background-color: rgba(15, 15,15, .92)!important;
+    background-color: rgba(15, 15,15, .94) !important;
 }
 
 .backdropContainer {
@@ -73,25 +73,32 @@
     top: 8px;
 }
 
+@media all and (max-width: 800px) {
+
+    .hiddenSectionOnMobile {
+        display: none;
+    }
+}
+
 .firstListHeader + .sectionHeaderButton {
     top: 3px;
 }
 
-@media all and (min-width: 900px) {
+@media all and (min-width: 800px) {
 
     .ehsContent {
-        width: 880px;
+        width: 770px;
     }
 
     .squareEhsContent {
-        width: 750px;
+        width: 760px;
     }
 }
 
 @media all and (min-width: 1000px) {
 
     .ehsContent {
-        width: 905px;
+        width: 900px;
     }
 
     .squareEhsContent {
@@ -102,33 +109,22 @@
 @media all and (min-width: 1200px) {
 
     .ehsContent {
-        width: 925px;
+        width: 1000px;
     }
 
     .squareEhsContent {
-        width: 900px;
-    }
-}
-
-@media all and (min-width: 1400px) {
-
-    .ehsContent {
-        width: 1080px;
-    }
-
-    .squareEhsContent {
-        width: 1220px;
+        width: 1000px;
     }
 }
 
 @media all and (min-width: 1600px) {
 
-    .homeEhsContent {
-        width: 1440px;
+    .ehsContent {
+        width: 1200px;
     }
 
     .squareEhsContent {
-        width: 1420px;
+        width: 1200px;
     }
 }
 
@@ -155,11 +151,11 @@
 }
 
 .viewControls + .listTopPaging {
-    margin-left: .5em!important;
+    margin-left: .5em !important;
 }
 
 .labelPageSize {
-    margin-left: 1em!important;
+    margin-left: 1em !important;
     display: inline !important;
 }
 
@@ -167,9 +163,21 @@
     display: inline-block;
 }
 
+.itemImageContainer {
+    vertical-align: top;
+    padding: 0 .8em 0 0;
+    display: inline-block;
+}
+
+@media all and (min-width: 650px) {
+    .itemImageContainer {
+        float: left;
+    }
+}
+
 @media all and (max-width: 650px) {
     .pageSizeContainer {
-        display: none!important;
+        display: none !important;
     }
 }
 
@@ -305,7 +313,7 @@
 }
 
 .criticRatingSummary {
-    color: #506A16!important;
+    color: #506A16 !important;
     background-color: #F2F0C4;
     background-image: -webkit-gradient(linear,left top,left bottom,from(#FFE37C),to(#F2F0C4));
     background-image: -webkit-linear-gradient(top,#FFE37C,#F2F0C4);
@@ -328,9 +336,9 @@
     padding: 5px 7px;
     font-size: 13px;
     margin: 0 5px 5px 0;
-    color: #fff!important;
+    color: #fff !important;
     text-decoration: none;
-    font-weight: normal!important;
+    font-weight: normal !important;
 }
 
 a.itemTag:hover {
@@ -400,10 +408,10 @@ a.itemTag:hover {
     position: fixed;
     top: 105px;
     text-decoration: none;
-    font-weight: normal!important;
+    font-weight: normal !important;
     display: none;
     background-color: rgba(0,0,0,0.6);
-    color: #ddd!important;
+    color: #ddd !important;
     background-color: transparent;
     padding: 0;
 }
@@ -415,7 +423,7 @@ a.itemTag:hover {
 @media all and (max-width: 1000px) {
 
     .lnkSibling {
-        display: none!important;
+        display: none !important;
     }
 }
 
@@ -533,8 +541,8 @@ a.itemTag:hover {
 }
 
 .lblDetailTab {
-    font-size: 14px!important;
-    font-weight: 400!important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
     font-family: 'Open Sans';
     padding: .5em 1em;
     border-color: #1f1f1f !important;
@@ -566,22 +574,22 @@ a.itemTag:hover {
     }
 
 .mediaBrowserAccent {
-    color: #52B54B!important;
+    color: #52B54B !important;
 }
 
 .libraryPanelCollapsibleHeader a {
     font-size: 16px;
-    font-weight: 300!important;
+    font-weight: 300 !important;
     font-family: 'Open Sans', Arial, Helvetica, sans-serif;
 }
 
 .selectedLibraryPanelLink {
-    background: #38c!important;
+    background: #38c !important;
 }
 
 .libraryPanelLink {
     font-size: 14px;
-    font-weight: 300!important;
+    font-weight: 300 !important;
     font-family: 'Open Sans', Arial, Helvetica, sans-serif;
 }
 
@@ -648,9 +656,9 @@ a.itemTag:hover {
     }
 
         .inlineItemName + .itemMiscInfo {
-            margin-left: 0!important;
+            margin-left: 0 !important;
             margin-top: 1em;
-            display: block!important;
+            display: block !important;
         }
 
     .primaryDetailPageContent {
@@ -658,7 +666,7 @@ a.itemTag:hover {
     }
 
         .primaryDetailPageContent .userDataIcons {
-            margin-left: 0!important;
+            margin-left: 0 !important;
             margin-top: 1.5em;
             display: block;
         }
@@ -823,19 +831,19 @@ a.itemTag:hover {
 }
 
 .scenePosterViewItem img {
-    max-width: 150px!important;
+    max-width: 150px !important;
 }
 
 @media all and (min-width: 650px) {
     .libraryTabs .ui-btn-inner {
-        padding: .5em 15px!important;
+        padding: .5em 15px !important;
     }
 }
 
 @media all and (min-width: 1200px) {
 
     .scenePosterViewItem img {
-        max-width: 200px!important;
+        max-width: 200px !important;
     }
 }
 
@@ -945,16 +953,16 @@ a.itemTag:hover {
         display: block;
         text-decoration: none;
         padding: 1px 0;
-        color: #bbb!important;
+        color: #bbb !important;
     }
 
         .alphabetPicker a:hover:not(.selectedCharacter) {
-            background: #666!important;
-            color: #fff!important;
+            background: #666 !important;
+            color: #fff !important;
         }
 
 .selectedCharacter {
-    color: #fff!important;
+    color: #fff !important;
     background: #4d90fe;
 }
 
@@ -1161,7 +1169,7 @@ a.itemTag:hover {
 @media all and (min-height: 1079px) and (min-width: 1400px) {
 
     .type-home {
-        overflow-x: visible!important;
+        overflow-x: visible !important;
     }
 }
 
@@ -1227,7 +1235,7 @@ a.itemTag:hover {
 
 .itemsListview {
     max-width: 800px;
-    margin: 0 auto!important;
+    margin: 0 auto !important;
 }
 
     .itemsListview .ui-li-aside {

@@ -51,6 +51,7 @@
     <Compile Include="..\SharedVersion.cs">
       <Link>Properties\SharedVersion.cs</Link>
     </Compile>
+    <Compile Include="Channels\DlnaChannelFactory.cs" />
     <Compile Include="ConfigurationExtension.cs" />
     <Compile Include="ConnectionManager\ConnectionManager.cs" />
     <Compile Include="ConnectionManager\ConnectionManagerXmlBuilder.cs" />
@@ -71,7 +72,8 @@
     <Compile Include="Common\DeviceService.cs" />
     <Compile Include="Didl\DidlBuilder.cs" />
     <Compile Include="PlayTo\PlayToController.cs" />
-    <Compile Include="PlayTo\Extensions.cs" />
+    <Compile Include="Ssdp\DeviceDiscoveryInfo.cs" />
+    <Compile Include="Ssdp\Extensions.cs" />
     <Compile Include="PlayTo\PlaybackProgressEventArgs.cs" />
     <Compile Include="PlayTo\PlaybackStoppedEventArgs.cs" />
     <Compile Include="PlayTo\PlaylistItem.cs">
@@ -82,6 +84,7 @@
     <Compile Include="Common\ServiceAction.cs" />
     <Compile Include="PlayTo\TRANSPORTSTATE.cs" />
     <Compile Include="PlayTo\uParserObject.cs" />
+    <Compile Include="Profiles\AndroidProfile.cs" />
     <Compile Include="Profiles\Foobar2000Profile.cs" />
     <Compile Include="Profiles\MediaMonkeyProfile.cs" />
     <Compile Include="Profiles\Windows81Profile.cs" />
@@ -97,6 +100,7 @@
     <Compile Include="Service\ServiceXmlBuilder.cs" />
     <Compile Include="Ssdp\Datagram.cs" />
     <Compile Include="Server\DescriptionXmlBuilder.cs" />
+    <Compile Include="Ssdp\DeviceDiscovery.cs" />
     <Compile Include="Ssdp\SsdpHelper.cs" />
     <Compile Include="PlayTo\SsdpHttpClient.cs" />
     <Compile Include="Common\StateVariable.cs" />
@@ -173,6 +177,11 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Profiles\Xml\MediaMonkey.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Profiles\Xml\Android.xml" />
+    <EmbeddedResource Include="Profiles\Xml\Windows 8 RT.xml" />
+    <EmbeddedResource Include="Profiles\Xml\Windows Phone.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

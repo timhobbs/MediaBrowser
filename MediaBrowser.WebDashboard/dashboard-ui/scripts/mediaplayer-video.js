@@ -395,7 +395,7 @@
                     var maxWidth = parseInt(this.getAttribute('data-maxwidth'));
                     var bitrate = parseInt(this.getAttribute('data-bitrate'));
 
-                    localStorage.setItem('preferredVideoBitrate', bitrate);
+                    store.setItem('preferredVideoBitrate', bitrate);
 
                     self.changeStream(self.getCurrentTicks(), {
 
@@ -894,7 +894,7 @@
         function bindEventsForPlayback() {
 
             var hideElementsOnIdle = !$.browser.mobile;
-            
+
             if (hideElementsOnIdle) {
                 $('.itemVideo').off('mousemove.videoplayer keydown.videoplayer scroll.videoplayer', idleHandler);
                 $('.itemVideo').on('mousemove.videoplayer keydown.videoplayer scroll.videoplayer', idleHandler).trigger('mousemove');
@@ -1002,7 +1002,8 @@
 
             self.startTimeTicksOffset = isStatic ? 0 : startPosition || 0;
 
-            var seekParam = startPosition ? '#t=' + (startPosition / 10000000) : '';
+            var startPositionInSeekParam = startPosition ? (startPosition / 10000000) : 0;
+            var seekParam = startPositionInSeekParam ? '#t=' + startPositionInSeekParam : '';
 
             var mp4VideoUrl = ApiClient.getUrl('Videos/' + item.Id + '/stream.mp4', $.extend({}, baseParams, {
                 Static: isStatic,
@@ -1165,7 +1166,14 @@
             self.volumeSlider.val(initialVolume).slider('refresh');
             updateVolumeButtons(initialVolume);
 
-            video.on("volumechange.mediaplayerevent", function (e) {
+            video.one("loadedmetadata.mediaplayerevent", function (e) {
+
+                // Appending #t=xxx to the query string doesn't seem to work with HLS
+                if (startPositionInSeekParam && this.currentSrc && this.currentSrc.toLowerCase().indexOf('.m3u8') != -1) {
+                    this.currentTime = startPositionInSeekParam;
+                }
+
+            }).on("volumechange.mediaplayerevent", function (e) {
 
                 var vol = this.volume;
 
@@ -1184,11 +1192,6 @@
                     $("#pause", videoElement).hide().removeClass("fadeOut");
                 }, 300);
 
-                // Pause stop timer
-                self.pauseStop = setTimeout(function () {
-                    self.stop();
-                }, 5 * 60 * 1000); // 5 minutes
-
             }).on("playing.mediaplayerevent", function (e) {
 
                 $('#video-playButton', videoControls).hide();
@@ -1197,9 +1200,6 @@
                 setTimeout(function () {
                     $("#play", videoElement).hide().removeClass("fadeOut");
                 }, 300);
-
-                // Remove pause setop timer
-                self.clearPauseStop();
 
             }).on("timeupdate.mediaplayerevent", function () {
 
@@ -1241,13 +1241,13 @@
 
             }).on("ended.playbackstopped", function () {
 
-                currentTimeElement.empty();
+                currentTimeElement.html('--:--');
 
                 self.onPlaybackStopped.call(this);
 
                 unbindEventsForPlayback();
 
-            }).on('ended.playnext', self.playNextAfterEnded);
+            }).one('ended.playnext', self.playNextAfterEnded);
 
             bindEventsForPlayback();
 

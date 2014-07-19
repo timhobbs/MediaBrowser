@@ -232,6 +232,9 @@
     <Compile Include="..\MediaBrowser.Model\Dlna\StreamInfo.cs">
       <Link>Dlna\StreamInfo.cs</Link>
     </Compile>
+    <Compile Include="..\MediaBrowser.Model\Dlna\SubtitleProfile.cs">
+      <Link>Dlna\SubtitleProfile.cs</Link>
+    </Compile>
     <Compile Include="..\MediaBrowser.Model\Dlna\TranscodeSeekInfo.cs">
       <Link>Dlna\TranscodeSeekInfo.cs</Link>
     </Compile>
@@ -798,6 +801,30 @@
     </Compile>
     <Compile Include="..\MediaBrowser.Model\Session\UserDataChangeInfo.cs">
       <Link>Session\UserDataChangeInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\MediaBrowser.Model\Sync\SyncJob.cs">
+      <Link>Sync\SyncJob.cs</Link>
+    </Compile>
+    <Compile Include="..\MediaBrowser.Model\Sync\SyncJobQuery.cs">
+      <Link>Sync\SyncJobQuery.cs</Link>
+    </Compile>
+    <Compile Include="..\MediaBrowser.Model\Sync\SyncJobRequest.cs">
+      <Link>Sync\SyncJobRequest.cs</Link>
+    </Compile>
+    <Compile Include="..\MediaBrowser.Model\Sync\SyncJobStatus.cs">
+      <Link>Sync\SyncJobStatus.cs</Link>
+    </Compile>
+    <Compile Include="..\MediaBrowser.Model\Sync\SyncQuality.cs">
+      <Link>Sync\SyncQuality.cs</Link>
+    </Compile>
+    <Compile Include="..\MediaBrowser.Model\Sync\SyncSchedule.cs">
+      <Link>Sync\SyncSchedule.cs</Link>
+    </Compile>
+    <Compile Include="..\MediaBrowser.Model\Sync\SyncScheduleQuery.cs">
+      <Link>Sync\SyncScheduleQuery.cs</Link>
+    </Compile>
+    <Compile Include="..\MediaBrowser.Model\Sync\SyncScheduleRequest.cs">
+      <Link>Sync\SyncScheduleRequest.cs</Link>
     </Compile>
     <Compile Include="..\MediaBrowser.Model\System\LogFile.cs">
       <Link>System\LogFile.cs</Link>

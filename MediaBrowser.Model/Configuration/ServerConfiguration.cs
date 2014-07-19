@@ -1,4 +1,5 @@
-﻿using MediaBrowser.Model.Notifications;
+﻿using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.Notifications;
 using MediaBrowser.Model.Weather;
 using System;
 
@@ -20,12 +21,6 @@ namespace MediaBrowser.Model.Configuration
         /// </summary>
         /// <value>The weather unit.</value>
         public WeatherUnits WeatherUnit { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether [enable HTTP level logging].
-        /// </summary>
-        /// <value><c>true</c> if [enable HTTP level logging]; otherwise, <c>false</c>.</value>
-        public bool EnableHttpLevelLogging { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether [enable u pn p].
@@ -222,7 +217,6 @@ namespace MediaBrowser.Model.Configuration
             ImageSavingConvention = ImageSavingConvention.Compatible;
             HttpServerPortNumber = 8096;
             LegacyWebSocketPortNumber = 8945;
-            EnableHttpLevelLogging = true;
             EnableDashboardResponseCaching = true;
 
             EnableAutomaticRestart = true;
@@ -261,8 +255,58 @@ namespace MediaBrowser.Model.Configuration
             MetadataOptions = new[]
             {
                 new MetadataOptions(1, 1280) {ItemType = "Book"},
-                new MetadataOptions(1, 1280) {ItemType = "MusicAlbum"},
-                new MetadataOptions(1, 1280) {ItemType = "MusicArtist"},
+
+                new MetadataOptions(1, 1280)
+                {
+                    ItemType = "MusicAlbum",
+                    ImageOptions = new []
+                    {
+                        new ImageOption
+                        {
+                            Limit = 1,
+                            MinWidth = 1280,
+                            Type = ImageType.Backdrop
+                        },
+
+                        // Don't download this by default as it's rarely used.
+                        new ImageOption
+                        {
+                            Limit = 0,
+                            Type = ImageType.Disc
+                        }
+                    }
+                },
+
+                new MetadataOptions(1, 1280)
+                {
+                    ItemType = "MusicArtist",
+                    ImageOptions = new []
+                    {
+                        new ImageOption
+                        {
+                            Limit = 1,
+                            MinWidth = 1280,
+                            Type = ImageType.Backdrop
+                        },
+
+                        // Don't download this by default
+                        // They do look great, but most artists won't have them, which means a banner view isn't really possible
+                        new ImageOption
+                        {
+                            Limit = 0,
+                            Type = ImageType.Banner
+                        },
+
+                        // Don't download this by default
+                        // Generally not used
+                        new ImageOption
+                        {
+                            Limit = 0,
+                            Type = ImageType.Art
+                        }
+                    }
+                },
+
                 new MetadataOptions(0, 1280) {ItemType = "Season"}
             };
 

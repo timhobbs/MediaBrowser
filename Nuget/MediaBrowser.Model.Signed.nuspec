@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
         <id>MediaBrowser.Model.Signed</id>
-        <version>3.0.415</version>
+        <version>3.0.418</version>
         <title>MediaBrowser.Model - Signed Edition</title>
         <authors>Media Browser Team</authors>
         <owners>ebr,Luke,scottisafool</owners>
@@ -14,9 +14,7 @@
         <dependencies>
 			<group targetFramework=".NETFramework4.5"/>
             <group targetFramework=".NETFramework3.5"/>
-            <group targetFramework=".NETPortable0.0-net45+sl4+wp71+win8">
-                <dependency id="Microsoft.Bcl.Async" version="1.0.16" />
-            </group>
+            <group targetFramework=".NETPortable0.0-net45+sl4+wp71+win8"/>
         </dependencies>
     </metadata>
     <files>

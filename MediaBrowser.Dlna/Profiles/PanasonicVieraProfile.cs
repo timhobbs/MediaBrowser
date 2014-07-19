@@ -192,6 +192,14 @@ namespace MediaBrowser.Dlna.Profiles
                    }
                }
            };
+
+            SoftSubtitleProfiles = new[]
+            {
+                new SubtitleProfile
+                {
+                    Format = "srt"
+                }
+            };
         }
     }
 }

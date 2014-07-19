@@ -122,7 +122,7 @@
         }
 
         if (currentUser.Configuration.IsAdministrator && commands.indexOf('edit') != -1) {
-            html += '<button type="button" data-mini="true" data-inline="true" data-icon="edit" data-iconpos="notext" title="' + Globalize.translate('ButtonEdit') + '" onclick="Dashboard.navigate(\'edititemmetadata.html?id=' + item.Id + '\');return false;" style="' + buttonMargin + '">' + Globalize.translate('ButtonEdit') + '</button>';
+            html += '<a data-role="button" data-mini="true" data-inline="true" data-icon="edit" data-iconpos="notext" title="' + Globalize.translate('ButtonEdit') + '" href="edititemmetadata.html?id=' + item.Id + '" style="' + buttonMargin + '">' + Globalize.translate('ButtonEdit') + '</button>';
             buttonCount++;
         }
 
@@ -241,7 +241,7 @@
             html += '<li data-role="list-divider">' + Globalize.translate('HeaderMenu') + '</li>';
 
             var href = posterItem.getAttribute('data-href') || posterItem.href;
-            
+
             html += '<li><a href="' + href + '">' + Globalize.translate('ButtonOpen') + '</a></li>';
             html += '<li><a href="' + href + '" target="_blank">' + Globalize.translate('ButtonOpenInNewTab') + '</a></li>';
 
@@ -261,7 +261,7 @@
                 html += '<li data-icon="video"><a href="#" class="btnPlayTrailer" data-itemid="' + itemId + '">' + Globalize.translate('ButtonPlayTrailer') + '</a></li>';
             }
 
-            if (MediaController.canQueueMediaType(item.MediaType)) {
+            if (MediaController.canQueueMediaType(item.MediaType, item.Type)) {
                 html += '<li data-icon="plus"><a href="#" class="btnQueue" data-itemid="' + itemId + '">' + Globalize.translate('ButtonQueue') + '</a></li>';
             }
 
@@ -305,6 +305,8 @@
 
     function onGroupedPosterItemClick(e) {
 
+        var target = $(e.target);
+
         var posterItem = this;
         var itemId = posterItem.getAttribute('data-itemid');
 
@@ -335,9 +337,12 @@
             var latestItems = response2[0];
 
             if (latestItems.length == 1) {
-                var first = latestItems[0];
-                Dashboard.navigate(LibraryBrowser.getHref(first));
-                return;
+
+                if (!target.is('a,button')) {
+                    var first = latestItems[0];
+                    Dashboard.navigate(LibraryBrowser.getHref(first));
+                    return;
+                }
             }
 
             var html = '<div data-role="popup" class="groupingMenu" data-theme="a">';
@@ -346,7 +351,7 @@
             html += '<div>';
             html += '<ul data-role="listview">';
 
-            var href = LibraryBrowser.getHref(item);
+            var href = posterItem.href || LibraryBrowser.getHref(item);
             var header = Globalize.translate('HeaderLatestFromChannel').replace('{0}', '<a href="' + href + '">' + item.Name + '</a>');
             html += '<li data-role="list-divider">' + header + '</li>';
 

@@ -12,7 +12,7 @@
         var options = {
 
             IncludeItemTypes: "Episode",
-            Limit: screenWidth >= 1920 ? 24 : (screenWidth >= 1440 ? 16 : 15),
+            Limit: screenWidth >= 1600 ? 24 : (screenWidth >= 1440 ? 16 : 15),
             Fields: "PrimaryImageAspectRatio",
             ParentId: parentId,
             IsPlayed: false
@@ -25,7 +25,7 @@
                 shape: "backdrop",
                 preferThumb: true,
                 inheritThumb: false,
-                showParentTitle: true,
+                showParentTitle: false,
                 showUnplayedIndicator: false,
                 showChildCountIndicator: true,
                 overlayText: screenWidth >= 600,
