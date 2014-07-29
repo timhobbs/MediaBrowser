@@ -73,6 +73,18 @@
     top: 8px;
 }
 
+.viewPanel {
+    width: 250px;
+}
+
+.viewPanelModelOpen {
+    right: 250px !important;
+}
+
+.viewPanelTabs {
+    margin-bottom: 2em;
+}
+
 @media all and (max-width: 800px) {
 
     .hiddenSectionOnMobile {
@@ -161,18 +173,6 @@
 
 .pageSizeContainer {
     display: inline-block;
-}
-
-.itemImageContainer {
-    vertical-align: top;
-    padding: 0 .8em 0 0;
-    display: inline-block;
-}
-
-@media all and (min-width: 650px) {
-    .itemImageContainer {
-        float: left;
-    }
 }
 
 @media all and (max-width: 650px) {
@@ -541,10 +541,6 @@ a.itemTag:hover {
 }
 
 .lblDetailTab {
-    font-size: 14px !important;
-    font-weight: 400 !important;
-    font-family: 'Open Sans';
-    padding: .5em 1em;
     border-color: #1f1f1f !important;
 }
 
@@ -575,22 +571,6 @@ a.itemTag:hover {
 
 .mediaBrowserAccent {
     color: #52B54B !important;
-}
-
-.libraryPanelCollapsibleHeader a {
-    font-size: 16px;
-    font-weight: 300 !important;
-    font-family: 'Open Sans', Arial, Helvetica, sans-serif;
-}
-
-.selectedLibraryPanelLink {
-    background: #38c !important;
-}
-
-.libraryPanelLink {
-    font-size: 14px;
-    font-weight: 300 !important;
-    font-family: 'Open Sans', Arial, Helvetica, sans-serif;
 }
 
 .detailImageProgressContainer {
@@ -698,12 +678,12 @@ a.itemTag:hover {
     }
 }
 
-@media all and (min-width: 1000px) {
+/*@media all and (min-width: 1000px) {
 
     .primaryDetailPageContent {
         max-width: 850px;
     }
-}
+}*/
 
 .detailPageParentLink {
     text-decoration: none;
@@ -999,11 +979,6 @@ a.itemTag:hover {
         margin-right: auto;
     }
 
-.selectionCommandsControlGroup {
-    display: inline-block;
-    margin-left: .5em;
-}
-
 @media all and (min-width: 750px) {
 
     .lnkSibling:not(.hide) {
@@ -1242,7 +1217,6 @@ a.itemTag:hover {
         right: 1.3em;
         font-weight: normal;
         font-size: 13px;
-        font-family: "Open Sans";
     }
 
     .itemsListview .ui-li-count {

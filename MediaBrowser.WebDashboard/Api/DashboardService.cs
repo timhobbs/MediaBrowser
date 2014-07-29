@@ -446,11 +446,16 @@ namespace MediaBrowser.WebDashboard.Api
             var newLineBytes = Encoding.UTF8.GetBytes(Environment.NewLine);
 
             // jQuery + jQuery mobile
-            await AppendResource(memoryStream, "thirdparty/jquery-2.0.3.min.js", newLineBytes).ConfigureAwait(false);
+            await AppendResource(memoryStream, "thirdparty/jquery-2.1.1.min.js", newLineBytes).ConfigureAwait(false);
             await AppendResource(memoryStream, "thirdparty/jquerymobile-1.4.3/jquery.mobile-1.4.3.min.js", newLineBytes).ConfigureAwait(false);
 
             await AppendResource(memoryStream, "thirdparty/jquery.unveil-custom.js", newLineBytes).ConfigureAwait(false);
-            await AppendResource(memoryStream, "thirdparty/cast_sender.js", newLineBytes).ConfigureAwait(false);
+
+            // This script produces errors in older versions of safari
+            if ((Request.UserAgent ?? string.Empty).IndexOf("chrome/", StringComparison.OrdinalIgnoreCase) != -1)
+            {
+                await AppendResource(memoryStream, "thirdparty/cast_sender.js", newLineBytes).ConfigureAwait(false);
+            }
             
             await AppendLocalization(memoryStream).ConfigureAwait(false);
             await memoryStream.WriteAsync(newLineBytes, 0, newLineBytes.Length).ConfigureAwait(false);
@@ -534,10 +539,7 @@ namespace MediaBrowser.WebDashboard.Api
                                 "alphapicker.js",
                                 "addpluginpage.js",
                                 "advancedconfigurationpage.js",
-                                "advancedpaths.js",
-                                "advancedserversettings.js",
                                 "metadataadvanced.js",
-                                "appsplayback.js",
                                 "autoorganizetv.js",
                                 "autoorganizelog.js",
                                 "channels.js",
@@ -546,6 +548,7 @@ namespace MediaBrowser.WebDashboard.Api
                                 "channelsettings.js",
                                 "dashboardgeneral.js",
                                 "dashboardpage.js",
+                                "dashboardsync.js",
                                 "directorybrowser.js",
                                 "dlnaprofile.js",
                                 "dlnaprofiles.js",
@@ -593,7 +596,6 @@ namespace MediaBrowser.WebDashboard.Api
                                 "metadataconfigurationpage.js",
                                 "metadataimagespage.js",
                                 "metadatasubtitles.js",
-                                "metadatachapters.js",
                                 "metadataxbmc.js",
                                 "moviegenres.js",
                                 "moviecollections.js",
@@ -675,6 +677,7 @@ namespace MediaBrowser.WebDashboard.Api
                                       "librarybrowser.css",
                                       "detailtable.css",
                                       "posteritem.css",
+                                      "card.css",
                                       "tileitem.css",
                                       "metadataeditor.css",
                                       "notifications.css",

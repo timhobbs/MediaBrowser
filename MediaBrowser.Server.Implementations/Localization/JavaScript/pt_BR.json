@@ -313,5 +313,11 @@
     "ButtonAudioTracks": "Faixas de \u00c1udio",
     "ButtonSubtitles": "Legendas",
     "ButtonScenes": "Cenas",
-    "ButtonQuality": "Qualidade"
+    "ButtonQuality": "Qualidade",
+    "HeaderNotifications": "Avisos",
+    "HeaderSelectPlayer": "Selecione onde executar:",
+    "ButtonSelect": "Selecionar",
+    "ButtonNew": "Nova",
+    "MessageInternetExplorerWebm": "Para melhores resultados com o Internet Explorer, por favor instale o plugin WebM para IE.",
+    "HeaderVideoError": "Erro de V\u00eddeo"
 }

@@ -142,7 +142,8 @@
 
         self.setSubtitleStreamIndex = function (index) {
 
-            if (!self.supportsTextTracks() || !self.isStatic) {
+            if (!self.supportsTextTracks()) {
+
                 self.changeStream(self.getCurrentTicks(), { SubtitleStreamIndex: index });
                 self.currentSubtitleStreamIndex = index;
                 return;
@@ -190,6 +191,7 @@
             }
 
             self.setCurrentTrackElement(selectedTrackElementIndex);
+
             self.currentSubtitleStreamIndex = index;
         };
 
@@ -199,17 +201,28 @@
                 return s.Type == 'Subtitle' && s.IsTextSubtitleStream;
             });
 
+            var newStream = textStreams.filter(function (s) {
+                return s.Index == index;
+            })[0];
+
+            var trackIndex = newStream ? textStreams.indexOf(newStream) : -1;
+
+            console.log('Setting new text track index to: ' + trackIndex);
+
             var allTracks = self.currentMediaElement.textTracks; // get list of tracks
 
             for (var i = 0; i < allTracks.length; i++) {
 
-                var trackIndex = textStreams[i].Index;
+                var mode;
 
-                if (trackIndex == index) {
-                    allTracks[i].mode = "showing"; // show this track
+                if (trackIndex == i) {
+                    mode = "showing"; // show this track
                 } else {
-                    allTracks[i].mode = "disabled"; // hide all other tracks
+                    mode = "disabled"; // hide all other tracks
                 }
+
+                console.log('Setting track ' + i + ' mode to: ' + mode);
+                allTracks[i].mode = mode;
             }
         };
 
@@ -379,13 +392,14 @@
 
             $('.videoSubtitlePopup').on('click', '.mediaPopupOption', function () {
 
+                $('.videoSubtitlePopup').popup('close');
+
                 if (!$(this).hasClass('selectedMediaPopupOption')) {
+
                     var index = parseInt(this.getAttribute('data-index'));
 
                     self.setSubtitleStreamIndex(index);
                 }
-
-                $('.videoSubtitlePopup').popup('close');
             });
 
             $('.videoQualityPopup').on('click', '.mediaPopupOption', function () {
@@ -1218,11 +1232,21 @@
                 var errorMsg = Globalize.translate('MessageErrorPlayingVideo');
 
                 if (item.Type == "TvChannel") {
-                    errorMsg += "<br/><br/>" + Globalize.translate('MessageEnsureOpenTuner');
+                    errorMsg += '<p>';
+                    errorMsg += Globalize.translate('MessageEnsureOpenTuner');
+                    errorMsg += '</p>';
+                }
+
+                if ($.browser.msie && !$.browser.mobile) {
+                    errorMsg += '<p>';
+                    errorMsg += '<a href="https://tools.google.com/dlpage/webmmf/" target="_blank">';
+                    errorMsg += Globalize.translate('MessageInternetExplorerWebm');
+                    errorMsg += '</a>';
+                    errorMsg += '</p>';
                 }
 
                 Dashboard.alert({
-                    title: 'Video Error',
+                    title: Globalize.translate('HeaderVideoError'),
                     message: errorMsg
                 });
 

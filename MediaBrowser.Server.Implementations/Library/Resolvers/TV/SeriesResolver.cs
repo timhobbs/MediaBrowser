@@ -1,4 +1,5 @@
 ﻿using MediaBrowser.Common.Extensions;
+using MediaBrowser.Common.IO;
 using MediaBrowser.Controller.Entities.Audio;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
@@ -14,6 +15,13 @@ namespace MediaBrowser.Server.Implementations.Library.Resolvers.TV
     /// </summary>
     public class SeriesResolver : FolderResolver<Series>
     {
+        private readonly IFileSystem _fileSystem;
+
+        public SeriesResolver(IFileSystem fileSystem)
+        {
+            _fileSystem = fileSystem;
+        }
+
         /// <summary>
         /// Gets the priority.
         /// </summary>
@@ -68,13 +76,7 @@ namespace MediaBrowser.Server.Implementations.Library.Resolvers.TV
                     return null;
                 }
 
-                // Without these movies that have the name season in them could cause the parent folder to be resolved as a series
-                if (filename.IndexOf("[tmdbid=", StringComparison.OrdinalIgnoreCase) != -1)
-                {
-                    return null;
-                }
-                
-                if (args.ContainsMetaFileByName("series.xml") || filename.IndexOf("[tvdbid=", StringComparison.OrdinalIgnoreCase) != -1 || TVUtils.IsSeriesFolder(args.Path, collectionType == CollectionType.TvShows, args.FileSystemChildren, args.DirectoryService))
+                if (TVUtils.IsSeriesFolder(args.Path, collectionType == CollectionType.TvShows, args.FileSystemChildren, args.DirectoryService, _fileSystem))
                 {
                     return new Series();
                 }

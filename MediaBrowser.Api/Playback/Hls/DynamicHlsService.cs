@@ -65,6 +65,11 @@ namespace MediaBrowser.Api.Playback.Hls
                 throw new ArgumentException("Video codec copy is not allowed here.");
             }
 
+            if (string.IsNullOrEmpty(request.MediaSourceId))
+            {
+                throw new ArgumentException("MediaSourceId is required");
+            }
+
             var result = GetAsync(request).Result;
 
             return result;
@@ -127,7 +132,7 @@ namespace MediaBrowser.Api.Playback.Hls
                         // If the playlist doesn't already exist, startup ffmpeg
                         try
                         {
-                            await ApiEntryPoint.Instance.KillTranscodingJobs(state.Request.DeviceId, TranscodingJobType.Hls, p => !string.Equals(p, playlistPath, StringComparison.OrdinalIgnoreCase), false).ConfigureAwait(false);
+                            await ApiEntryPoint.Instance.KillTranscodingJobs(j => j.Type == TranscodingJobType.Hls && string.Equals(j.DeviceId, request.DeviceId, StringComparison.OrdinalIgnoreCase), p => !string.Equals(p, playlistPath, StringComparison.OrdinalIgnoreCase), false).ConfigureAwait(false);
 
                             if (currentTranscodingIndex.HasValue)
                             {
@@ -264,10 +269,18 @@ namespace MediaBrowser.Api.Playback.Hls
 
             var segmentFilename = Path.GetFileName(segmentPath);
 
-            // If it appears in the playlist, it's done
-            if (File.ReadAllText(playlistPath).IndexOf(segmentFilename, StringComparison.OrdinalIgnoreCase) != -1)
+            using (var fileStream = FileSystem.GetFileStream(playlistPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, true))
             {
-                return ResultFactory.GetStaticFileResult(Request, segmentPath, FileShare.ReadWrite);
+                using (var reader = new StreamReader(fileStream))
+                {
+                    var text = await reader.ReadToEndAsync().ConfigureAwait(false);
+
+                    // If it appears in the playlist, it's done
+                    if (text.IndexOf(segmentFilename, StringComparison.OrdinalIgnoreCase) != -1)
+                    {
+                        return ResultFactory.GetStaticFileResult(Request, segmentPath, FileShare.ReadWrite);
+                    }
+                }
             }
 
             // if a different file is encoding, it's done

@@ -3,19 +3,13 @@ using MediaBrowser.Controller.Sync;
 using MediaBrowser.Model.Querying;
 using MediaBrowser.Model.Sync;
 using ServiceStack;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace MediaBrowser.Api.Sync
 {
     [Route("/Sync/Jobs/{Id}", "DELETE", Summary = "Cancels a sync job.")]
     public class CancelSyncJob : IReturnVoid
-    {
-        [ApiMember(Name = "Id", Description = "Id", IsRequired = true, DataType = "string", ParameterType = "path", Verb = "GET")]
-        public string Id { get; set; }
-    }
-
-    [Route("/Sync/Schedules/{Id}", "DELETE", Summary = "Cancels a sync job.")]
-    public class CancelSyncSchedule : IReturnVoid
     {
         [ApiMember(Name = "Id", Description = "Id", IsRequired = true, DataType = "string", ParameterType = "path", Verb = "GET")]
         public string Id { get; set; }
@@ -28,31 +22,34 @@ namespace MediaBrowser.Api.Sync
         public string Id { get; set; }
     }
 
-    [Route("/Sync/Schedules/{Id}", "GET", Summary = "Gets a sync job.")]
-    public class GetSyncSchedule : IReturn<SyncSchedule>
-    {
-        [ApiMember(Name = "Id", Description = "Id", IsRequired = true, DataType = "string", ParameterType = "path", Verb = "GET")]
-        public string Id { get; set; }
-    }
-
     [Route("/Sync/Jobs", "GET", Summary = "Gets sync jobs.")]
     public class GetSyncJobs : IReturn<QueryResult<SyncJob>>
     {
-    }
+        /// <summary>
+        /// Skips over a given number of items within the results. Use for paging.
+        /// </summary>
+        /// <value>The start index.</value>
+        [ApiMember(Name = "StartIndex", Description = "Optional. The record index to start at. All items with a lower index will be dropped from the results.", IsRequired = false, DataType = "int", ParameterType = "query", Verb = "GET")]
+        public int? StartIndex { get; set; }
 
-    [Route("/Sync/Schedules", "GET", Summary = "Gets sync schedules.")]
-    public class GetSyncSchedules : IReturn<QueryResult<SyncSchedule>>
-    {
+        /// <summary>
+        /// The maximum number of items to return
+        /// </summary>
+        /// <value>The limit.</value>
+        [ApiMember(Name = "Limit", Description = "Optional. The maximum number of records to return", IsRequired = false, DataType = "int", ParameterType = "query", Verb = "GET")]
+        public int? Limit { get; set; }
     }
 
     [Route("/Sync/Jobs", "POST", Summary = "Gets sync jobs.")]
-    public class CreateSyncJob : SyncJobRequest
+    public class CreateSyncJob : SyncJobRequest, IReturn<SyncJobCreationResult>
     {
     }
 
-    [Route("/Sync/Schedules", "POST", Summary = "Gets sync schedules.")]
-    public class CreateSyncSchedule : SyncScheduleRequest
+    [Route("/Sync/Targets", "GET", Summary = "Gets a list of available sync targets.")]
+    public class GetSyncTarget : IReturn<List<SyncTarget>>
     {
+        [ApiMember(Name = "UserId", Description = "UserId", IsRequired = true, DataType = "string", ParameterType = "query", Verb = "GET")]
+        public string UserId { get; set; }
     }
 
     [Authenticated]
@@ -65,22 +62,20 @@ namespace MediaBrowser.Api.Sync
             _syncManager = syncManager;
         }
 
-        public object Get(GetSyncJobs request)
+        public object Get(GetSyncTarget request)
         {
-            var result = _syncManager.GetJobs(new SyncJobQuery
-            {
-                 
-            });
+            var result = _syncManager.GetSyncTargets(request.UserId);
 
             return ToOptimizedResult(result);
         }
 
-        public object Get(GetSyncSchedules request)
+        public object Get(GetSyncJobs request)
         {
-            var result = _syncManager.GetSchedules(new SyncScheduleQuery
+            var result = _syncManager.GetJobs(new SyncJobQuery
             {
-                 
-            }); 
+                 StartIndex = request.StartIndex,
+                 Limit = request.Limit
+            });
 
             return ToOptimizedResult(result);
         }
@@ -92,13 +87,6 @@ namespace MediaBrowser.Api.Sync
             return ToOptimizedResult(result);
         }
 
-        public object Get(GetSyncSchedule request)
-        {
-            var result = _syncManager.GetSchedule(request.Id);
-
-            return ToOptimizedResult(result);
-        }
-
         public void Delete(CancelSyncJob request)
         {
             var task = _syncManager.CancelJob(request.Id);
@@ -106,25 +94,11 @@ namespace MediaBrowser.Api.Sync
             Task.WaitAll(task);
         }
 
-        public void Delete(CancelSyncSchedule request)
+        public object Post(CreateSyncJob request)
         {
-            var task = _syncManager.CancelSchedule(request.Id);
+            var result = _syncManager.CreateJob(request);
 
-            Task.WaitAll(task);
-        }
-
-        public void Post(CreateSyncJob request)
-        {
-            var task = _syncManager.CreateJob(request);
-
-            Task.WaitAll(task);
-        }
-
-        public void Post(CreateSyncSchedule request)
-        {
-            var task = _syncManager.CreateSchedule(request);
-
-            Task.WaitAll(task);
+            return ToOptimizedResult(result);
         }
     }
 }

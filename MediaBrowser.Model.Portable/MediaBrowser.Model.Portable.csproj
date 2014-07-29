@@ -98,6 +98,9 @@
     <Compile Include="..\MediaBrowser.Model\ApiClient\IServerEvents.cs">
       <Link>ApiClient\IServerEvents.cs</Link>
     </Compile>
+    <Compile Include="..\MediaBrowser.Model\ApiClient\ServerDiscoveryInfo.cs">
+      <Link>ApiClient\ServerDiscoveryInfo.cs</Link>
+    </Compile>
     <Compile Include="..\MediaBrowser.Model\ApiClient\SessionUpdatesEventArgs.cs">
       <Link>ApiClient\SessionUpdatesEventArgs.cs</Link>
     </Compile>
@@ -848,6 +851,12 @@
     <Compile Include="..\MediaBrowser.Model\Sync\SyncJob.cs">
       <Link>Sync\SyncJob.cs</Link>
     </Compile>
+    <Compile Include="..\MediaBrowser.Model\Sync\SyncJobCreationResult.cs">
+      <Link>Sync\SyncJobCreationResult.cs</Link>
+    </Compile>
+    <Compile Include="..\MediaBrowser.Model\Sync\SyncJobItem.cs">
+      <Link>Sync\SyncJobItem.cs</Link>
+    </Compile>
     <Compile Include="..\MediaBrowser.Model\Sync\SyncJobQuery.cs">
       <Link>Sync\SyncJobQuery.cs</Link>
     </Compile>
@@ -860,14 +869,8 @@
     <Compile Include="..\MediaBrowser.Model\Sync\SyncQuality.cs">
       <Link>Sync\SyncQuality.cs</Link>
     </Compile>
-    <Compile Include="..\MediaBrowser.Model\Sync\SyncSchedule.cs">
-      <Link>Sync\SyncSchedule.cs</Link>
-    </Compile>
-    <Compile Include="..\MediaBrowser.Model\Sync\SyncScheduleQuery.cs">
-      <Link>Sync\SyncScheduleQuery.cs</Link>
-    </Compile>
-    <Compile Include="..\MediaBrowser.Model\Sync\SyncScheduleRequest.cs">
-      <Link>Sync\SyncScheduleRequest.cs</Link>
+    <Compile Include="..\MediaBrowser.Model\Sync\SyncTarget.cs">
+      <Link>Sync\SyncTarget.cs</Link>
     </Compile>
     <Compile Include="..\MediaBrowser.Model\System\LogFile.cs">
       <Link>System\LogFile.cs</Link>

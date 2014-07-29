@@ -18,8 +18,7 @@
 
         statusCode: {
 
-            401: onAuthFailure,
-            403: onAuthFailure
+            401: onAuthFailure
         },
 
         error: function (event) {
@@ -176,7 +175,7 @@ var Dashboard = {
 
         Dashboard.lastSystemInfo = info;
 
-        Dashboard.ensureWebSocket(info);
+        Dashboard.ensureWebSocket();
 
         if (!Dashboard.initialServerVersion) {
             Dashboard.initialServerVersion = info.Version;
@@ -523,9 +522,9 @@ var Dashboard = {
 
             $(document.body).append(html);
 
-            var elem = $('#userFlyout').panel({}).trigger('create').panel("open").on("panelafterclose", function () {
+            var elem = $('#userFlyout').panel({}).trigger('create').panel("open").on("panelclose", function () {
 
-                $(this).off("panelafterclose").remove();
+                $(this).off("panelclose").remove();
             });
         });
     },
@@ -602,9 +601,7 @@ var Dashboard = {
 
         if (!sidebar.length) {
 
-            var html = '<div class="content-secondary ui-bar-a toolsSidebar">';
-
-            html += '<br/>';
+            var html = '<div class="content-secondary toolsSidebar">';
 
             html += '<div class="sidebarLinks">';
 
@@ -641,9 +638,9 @@ var Dashboard = {
             // content-secondary
             html += '</div>';
 
-            html += '<div data-role="panel" id="dashboardPanel" class="dashboardPanel" data-position="left" data-display="overlay" data-position-fixed="true" data-theme="b">';
+            html += '<div data-role="panel" id="dashboardPanel" class="dashboardPanel" data-position="left" data-display="overlay" data-position-fixed="true" data-theme="a">';
 
-            html += '<p class="libraryPanelHeader" style="margin: 15px 0 15px 15px;"><a href="index.html" class="imageLink"><img src="css/images/mblogoicon.png" /><span>MEDIA</span><span class="mediaBrowserAccent">BROWSER</span></a></p>';
+            html += '<p class="libraryPanelHeader" style="margin: 15px 0 15px 15px;"><a href="index.html" class="imageLink"><img src="css/images/mblogoicon.png" /><span style="color:#333;">MEDIA</span><span class="mediaBrowserAccent">BROWSER</span></a></p>';
 
             for (i = 0, length = links.length; i < length; i++) {
 
@@ -670,7 +667,8 @@ var Dashboard = {
 
             html += '</div>';
 
-            $(page).append(html).trigger('create');
+            $('.content-primary', page).before(html);
+            $(page).trigger('create');
         }
     },
 
@@ -685,7 +683,7 @@ var Dashboard = {
         }, {
             name: Globalize.translate('TabUsers'),
             href: "userprofiles.html",
-            selected: page.hasClass("userProfilesConfigurationPage") || (pageElem.id == "mediaLibraryPage" && getParameterByName('userId'))
+            selected: page.hasClass("userProfilesPage")
         }, {
             name: Globalize.translate('TabLibrary'),
             divider: true,
@@ -717,10 +715,6 @@ var Dashboard = {
             href: "advanced.html",
             selected: page.hasClass("advancedConfigurationPage")
         }, {
-            name: Globalize.translate('TabScheduledTasks'),
-            href: "scheduledtasks.html",
-            selected: pageElem.id == "scheduledTasksPage" || pageElem.id == "scheduledTaskPage"
-        }, {
             name: Globalize.translate('TabHelp'),
             href: "support.html",
             selected: pageElem.id == "supportPage" || pageElem.id == "logPage" || pageElem.id == "supporterPage" || pageElem.id == "supporterKeyPage" || pageElem.id == "aboutPage"
@@ -728,7 +722,7 @@ var Dashboard = {
 
     },
 
-    ensureWebSocket: function (systemInfo) {
+    ensureWebSocket: function () {
 
         if (!("WebSocket" in window)) {
             // Not supported by the browser
@@ -739,20 +733,12 @@ var Dashboard = {
             return;
         }
 
-        systemInfo = systemInfo || Dashboard.lastSystemInfo;
-
         var location = window.location;
 
         var webSocketUrl = "ws://" + location.hostname;
 
-        if (systemInfo.HttpServerPortNumber == systemInfo.WebSocketPortNumber) {
-
-            if (location.port) {
-                webSocketUrl += ':' + location.port;
-            }
-
-        } else {
-            webSocketUrl += ':' + systemInfo.WebSocketPortNumber;
+        if (location.port) {
+            webSocketUrl += ':' + location.port;
         }
 
         ApiClient.openWebSocket(webSocketUrl);

@@ -370,6 +370,8 @@ namespace MediaBrowser.Dlna.PlayTo
             if (_disposed)
                 return;
 
+            const int maxSuccessiveStopReturns = 5;
+
             try
             {
                 var transportState = await GetTransportInfo().ConfigureAwait(false);
@@ -408,7 +410,7 @@ namespace MediaBrowser.Dlna.PlayTo
                     {
                         _successiveStopCount++;
 
-                        if (_successiveStopCount >= 10)
+                        if (_successiveStopCount >= maxSuccessiveStopReturns)
                         {
                             RestartTimerInactive();
                         }
@@ -423,6 +425,13 @@ namespace MediaBrowser.Dlna.PlayTo
             catch (Exception ex)
             {
                 _logger.ErrorException("Error updating device info", ex);
+
+                _successiveStopCount++;
+
+                if (_successiveStopCount >= maxSuccessiveStopReturns)
+                {
+                    RestartTimerInactive();
+                }
             }
         }
 
@@ -748,13 +757,17 @@ namespace MediaBrowser.Dlna.PlayTo
 
             var deviceProperties = new DeviceInfo();
 
-            var name = document.Descendants(uPnpNamespaces.ud.GetName("friendlyName")).FirstOrDefault();
-            if (name != null)
-                deviceProperties.Name = name.Value;
+            var friendlyNames = new List<string>();
 
-            var name2 = document.Descendants(uPnpNamespaces.ud.GetName("roomName")).FirstOrDefault();
-            if (name2 != null)
-                deviceProperties.Name = name2.Value;
+            var name = document.Descendants(uPnpNamespaces.ud.GetName("friendlyName")).FirstOrDefault();
+            if (name != null && !string.IsNullOrWhiteSpace(name.Value))
+                friendlyNames.Add(name.Value);
+
+            var room = document.Descendants(uPnpNamespaces.ud.GetName("roomName")).FirstOrDefault();
+            if (room != null && !string.IsNullOrWhiteSpace(room.Value))
+                friendlyNames.Add(room.Value);
+
+            deviceProperties.Name = string.Join(" ", friendlyNames.ToArray());
 
             var model = document.Descendants(uPnpNamespaces.ud.GetName("modelName")).FirstOrDefault();
             if (model != null)
@@ -806,12 +819,12 @@ namespace MediaBrowser.Dlna.PlayTo
             foreach (var services in document.Descendants(uPnpNamespaces.ud.GetName("serviceList")))
             {
                 if (services == null)
-                    return null;
+                    continue;
 
                 var servicesList = services.Descendants(uPnpNamespaces.ud.GetName("service"));
 
                 if (servicesList == null)
-                    return null;
+                    continue;
 
                 foreach (var element in servicesList)
                 {
@@ -828,17 +841,15 @@ namespace MediaBrowser.Dlna.PlayTo
                 }
             }
 
+            var device = new Device(deviceProperties, httpClient, logger, config);
+
             if (isRenderer)
             {
-                var device = new Device(deviceProperties, httpClient, logger, config);
-
                 await device.GetRenderingProtocolAsync().ConfigureAwait(false);
                 await device.GetAVProtocolAsync().ConfigureAwait(false);
-
-                return device;
             }
 
-            return null;
+            return device;
         }
 
         #endregion

@@ -17,6 +17,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using MediaBrowser.Server.Implementations.Security;
 
 namespace MediaBrowser.Server.Implementations.Library
 {
@@ -137,7 +138,7 @@ namespace MediaBrowser.Server.Implementations.Library
 
             if (user.Configuration.IsDisabled)
             {
-                throw new UnauthorizedAccessException(string.Format("The {0} account is currently disabled. Please consult with your administrator.", user.Name));
+                throw new AuthenticationException(string.Format("The {0} account is currently disabled. Please consult with your administrator.", user.Name));
             }
 
             var existingPasswordString = string.IsNullOrEmpty(user.Password) ? GetSha1String(string.Empty) : user.Password;
@@ -281,7 +282,7 @@ namespace MediaBrowser.Server.Implementations.Library
         /// <exception cref="System.ArgumentException"></exception>
         public async Task<User> CreateUser(string name)
         {
-            if (string.IsNullOrEmpty(name))
+            if (string.IsNullOrWhiteSpace(name))
             {
                 throw new ArgumentNullException("name");
             }

@@ -1,4 +1,5 @@
-﻿using MediaBrowser.Model.Querying;
+﻿using MediaBrowser.Controller.Entities;
+using MediaBrowser.Model.Querying;
 using MediaBrowser.Model.Sync;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -12,14 +13,7 @@ namespace MediaBrowser.Controller.Sync
         /// </summary>
         /// <param name="request">The request.</param>
         /// <returns>Task.</returns>
-        Task<List<SyncJob>> CreateJob(SyncJobRequest request);
-
-        /// <summary>
-        /// Creates the schedule.
-        /// </summary>
-        /// <param name="request">The request.</param>
-        /// <returns>Task.</returns>
-        Task<SyncSchedule> CreateSchedule(SyncScheduleRequest request);
+        Task<SyncJobCreationResult> CreateJob(SyncJobRequest request);
 
         /// <summary>
         /// Gets the jobs.
@@ -28,24 +22,11 @@ namespace MediaBrowser.Controller.Sync
         QueryResult<SyncJob> GetJobs(SyncJobQuery query);
 
         /// <summary>
-        /// Gets the schedules.
-        /// </summary>
-        /// <returns>QueryResult&lt;SyncSchedule&gt;.</returns>
-        QueryResult<SyncSchedule> GetSchedules(SyncScheduleQuery query);
-
-        /// <summary>
         /// Gets the job.
         /// </summary>
         /// <param name="id">The identifier.</param>
         /// <returns>SyncJob.</returns>
         SyncJob GetJob(string id);
-
-        /// <summary>
-        /// Gets the schedule.
-        /// </summary>
-        /// <param name="id">The identifier.</param>
-        /// <returns>SyncSchedule.</returns>
-        SyncSchedule GetSchedule(string id);
         
         /// <summary>
         /// Cancels the job.
@@ -55,10 +36,20 @@ namespace MediaBrowser.Controller.Sync
         Task CancelJob(string id);
 
         /// <summary>
-        /// Cancels the schedule.
+        /// Adds the parts.
         /// </summary>
-        /// <param name="id">The identifier.</param>
-        /// <returns>Task.</returns>
-        Task CancelSchedule(string id);
+        void AddParts(IEnumerable<ISyncProvider> providers);
+
+        /// <summary>
+        /// Gets the synchronize targets.
+        /// </summary>
+        IEnumerable<SyncTarget> GetSyncTargets(string userId);
+
+        /// <summary>
+        /// Supportses the synchronize.
+        /// </summary>
+        /// <param name="item">The item.</param>
+        /// <returns><c>true</c> if XXXX, <c>false</c> otherwise.</returns>
+        bool SupportsSync(BaseItem item);
     }
 }

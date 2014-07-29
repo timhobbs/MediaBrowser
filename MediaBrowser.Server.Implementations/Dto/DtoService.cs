@@ -12,6 +12,7 @@ using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.LiveTv;
 using MediaBrowser.Controller.Persistence;
 using MediaBrowser.Controller.Providers;
+using MediaBrowser.Controller.Sync;
 using MediaBrowser.Model.Drawing;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Entities;
@@ -38,8 +39,9 @@ namespace MediaBrowser.Server.Implementations.Dto
         private readonly IProviderManager _providerManager;
 
         private readonly Func<IChannelManager> _channelManagerFactory;
+        private readonly ISyncManager _syncManager;
 
-        public DtoService(ILogger logger, ILibraryManager libraryManager, IUserDataManager userDataRepository, IItemRepository itemRepo, IImageProcessor imageProcessor, IServerConfigurationManager config, IFileSystem fileSystem, IProviderManager providerManager, Func<IChannelManager> channelManagerFactory)
+        public DtoService(ILogger logger, ILibraryManager libraryManager, IUserDataManager userDataRepository, IItemRepository itemRepo, IImageProcessor imageProcessor, IServerConfigurationManager config, IFileSystem fileSystem, IProviderManager providerManager, Func<IChannelManager> channelManagerFactory, ISyncManager syncManager)
         {
             _logger = logger;
             _libraryManager = libraryManager;
@@ -50,6 +52,7 @@ namespace MediaBrowser.Server.Implementations.Dto
             _fileSystem = fileSystem;
             _providerManager = providerManager;
             _channelManagerFactory = channelManagerFactory;
+            _syncManager = syncManager;
         }
 
         /// <summary>
@@ -63,22 +66,35 @@ namespace MediaBrowser.Server.Implementations.Dto
         /// <exception cref="System.ArgumentNullException">item</exception>
         public BaseItemDto GetBaseItemDto(BaseItem item, List<ItemFields> fields, User user = null, BaseItem owner = null)
         {
+            var dto = GetBaseItemDtoInternal(item, fields, user, owner);
+
             var byName = item as IItemByName;
 
-            if (byName != null)
+            if (byName != null && !(item is LiveTvChannel))
             {
-                var libraryItems = user != null ?
-                    user.RootFolder.GetRecursiveChildren(user) :
-                    _libraryManager.RootFolder.RecursiveChildren;
+                IEnumerable<BaseItem> libraryItems;
 
-                var dto = GetBaseItemDtoInternal(item, fields, user);
+                var artist = item as MusicArtist;
+
+                if (artist == null || artist.IsAccessedByName)
+                {
+                    libraryItems = user != null ?
+                       user.RootFolder.GetRecursiveChildren(user) :
+                       _libraryManager.RootFolder.RecursiveChildren;
+                }
+                else
+                {
+                    libraryItems = user != null ?
+                       artist.GetRecursiveChildren(user) :
+                       artist.RecursiveChildren;
+                }
 
                 SetItemByNameInfo(item, dto, byName.GetTaggedItems(libraryItems).ToList(), user);
 
                 return dto;
             }
 
-            return GetBaseItemDtoInternal(item, fields, user, owner);
+            return dto;
         }
 
         private BaseItemDto GetBaseItemDtoInternal(BaseItem item, List<ItemFields> fields, User user = null, BaseItem owner = null)
@@ -145,6 +161,11 @@ namespace MediaBrowser.Server.Implementations.Dto
             }
 
             AttachBasicFields(dto, item, owner, fields);
+
+            if (fields.Contains(ItemFields.SyncInfo))
+            {
+                dto.SupportsSync = _syncManager.SupportsSync(item);
+            }
 
             if (fields.Contains(ItemFields.SoundtrackIds))
             {

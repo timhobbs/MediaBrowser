@@ -16,7 +16,7 @@
     -moz-border-radius: 2px;
     -webkit-border-radius: 2px;
     border-radius: 2px;
-    padding: 6px 12px;
+    padding: 4px 12px 5px;
     text-align: center;
     text-decoration: none !important;
     -moz-user-select: none;
@@ -30,7 +30,6 @@
     background-image: linear-gradient(top,#444,#313131);
     color: #fff;
     font-size: 12px;
-    font-family: "Open Sans";
     font-weight: normal;
 }
 

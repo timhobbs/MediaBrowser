@@ -188,6 +188,7 @@ namespace MediaBrowser.ServerApplication
 
         private IEncodingManager EncodingManager { get; set; }
         private IChannelManager ChannelManager { get; set; }
+        private ISyncManager SyncManager { get; set; }
 
         /// <summary>
         /// Gets or sets the user data repository.
@@ -208,12 +209,14 @@ namespace MediaBrowser.ServerApplication
         private IUserViewManager UserViewManager { get; set; }
 
         private IAuthenticationRepository AuthenticationRepository { get; set; }
-        
+        private ISyncRepository SyncRepository { get; set; }
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="ApplicationHost"/> class.
+        /// Initializes a new instance of the <see cref="ApplicationHost" /> class.
         /// </summary>
         /// <param name="applicationPaths">The application paths.</param>
         /// <param name="logManager">The log manager.</param>
+        /// <param name="isRunningAsService">if set to <c>true</c> [is running as service].</param>
         public ApplicationHost(ServerApplicationPaths applicationPaths, ILogManager logManager, bool isRunningAsService)
             : base(applicationPaths, logManager)
         {
@@ -284,7 +287,6 @@ namespace MediaBrowser.ServerApplication
             await base.Init(progress).ConfigureAwait(false);
 
             MigrateModularConfigurations();
-            ApplyDefaultMetadataSettings();
         }
 
         private void PerformVersionMigration()
@@ -324,25 +326,17 @@ namespace MediaBrowser.ServerApplication
                 saveConfig = true;
             }
 
+            if (ServerConfigurationManager.Configuration.LiveTvOptions != null)
+            {
+                ServerConfigurationManager.SaveConfiguration("livetv", ServerConfigurationManager.Configuration.LiveTvOptions);
+                ServerConfigurationManager.Configuration.LiveTvOptions = null;
+                saveConfig = true;
+            }
+
             if (saveConfig)
             {
                 ServerConfigurationManager.SaveConfiguration();
             }
-        }
-
-        private void ApplyDefaultMetadataSettings()
-        {
-            if (!ServerConfigurationManager.Configuration.DefaultMetadataSettingsApplied &&
-                ServerConfigurationManager.Configuration.IsStartupWizardCompleted)
-            {
-                // Make sure xbmc metadata is disabled for existing users.
-                // New users will be handled by the startup wizard.
-
-                ServerConfigurationManager.DisableMetadataService("Xbmc Nfo");
-            }
-
-            ServerConfigurationManager.Configuration.DefaultMetadataSettingsApplied = true;
-            ServerConfigurationManager.SaveConfiguration();
         }
 
         private void DeleteDeprecatedModules()
@@ -539,6 +533,9 @@ namespace MediaBrowser.ServerApplication
             AuthenticationRepository = await GetAuthenticationRepository().ConfigureAwait(false);
             RegisterSingleInstance(AuthenticationRepository);
 
+            SyncRepository = await GetSyncRepository().ConfigureAwait(false);
+            RegisterSingleInstance(SyncRepository);
+
             UserManager = new UserManager(LogManager.GetLogger("UserManager"), ServerConfigurationManager, UserRepository, XmlSerializer);
             RegisterSingleInstance(UserManager);
 
@@ -575,7 +572,10 @@ namespace MediaBrowser.ServerApplication
             ImageProcessor = new ImageProcessor(LogManager.GetLogger("ImageProcessor"), ServerConfigurationManager.ApplicationPaths, FileSystemManager, JsonSerializer, MediaEncoder);
             RegisterSingleInstance(ImageProcessor);
 
-            DtoService = new DtoService(Logger, LibraryManager, UserDataManager, ItemRepository, ImageProcessor, ServerConfigurationManager, FileSystemManager, ProviderManager, () => ChannelManager);
+            SyncManager = new SyncManager(LibraryManager, SyncRepository, ImageProcessor, LogManager.GetLogger("SyncManager"));
+            RegisterSingleInstance(SyncManager);
+
+            DtoService = new DtoService(Logger, LibraryManager, UserDataManager, ItemRepository, ImageProcessor, ServerConfigurationManager, FileSystemManager, ProviderManager, () => ChannelManager, SyncManager);
             RegisterSingleInstance(DtoService);
 
             SessionManager = new SessionManager(UserDataManager, ServerConfigurationManager, Logger, UserRepository, LibraryManager, UserManager, musicManager, DtoService, ImageProcessor, ItemRepository, JsonSerializer, this, HttpClient, AuthenticationRepository);
@@ -627,8 +627,6 @@ namespace MediaBrowser.ServerApplication
             EncodingManager = new EncodingManager(ServerConfigurationManager, FileSystemManager, Logger,
                 MediaEncoder, ChapterManager);
             RegisterSingleInstance(EncodingManager);
-
-            RegisterSingleInstance<ISyncManager>(new SyncManager());
 
             var authContext = new AuthorizationContext();
             RegisterSingleInstance<IAuthorizationContext>(authContext);
@@ -713,6 +711,15 @@ namespace MediaBrowser.ServerApplication
         private async Task<IAuthenticationRepository> GetAuthenticationRepository()
         {
             var repo = new AuthenticationRepository(LogManager.GetLogger("AuthenticationRepository"), ServerConfigurationManager.ApplicationPaths);
+
+            await repo.Initialize().ConfigureAwait(false);
+
+            return repo;
+        }
+
+        private async Task<ISyncRepository> GetSyncRepository()
+        {
+            var repo = new SyncRepository(LogManager.GetLogger("SyncRepository"), ServerConfigurationManager.ApplicationPaths);
 
             await repo.Initialize().ConfigureAwait(false);
 
@@ -838,6 +845,7 @@ namespace MediaBrowser.ServerApplication
             ChannelManager.AddParts(GetExports<IChannel>(), GetExports<IChannelFactory>());
 
             NotificationManager.AddParts(GetExports<INotificationService>(), GetExports<INotificationTypeFactory>());
+            SyncManager.AddParts(GetExports<ISyncProvider>());
         }
 
         /// <summary>
@@ -1000,6 +1008,11 @@ namespace MediaBrowser.ServerApplication
 
         private readonly string _systemId = Environment.MachineName.GetMD5().ToString();
 
+        public string ServerId
+        {
+            get { return _systemId; }
+        }
+
         /// <summary>
         /// Gets the system status.
         /// </summary>
@@ -1016,7 +1029,7 @@ namespace MediaBrowser.ServerApplication
                 FailedPluginAssemblies = FailedAssemblies.ToList(),
                 InProgressInstallations = InstallationManager.CurrentInstallations.Select(i => i.Item1).ToList(),
                 CompletedInstallations = InstallationManager.CompletedInstallations.ToList(),
-                Id = _systemId,
+                Id = ServerId,
                 ProgramDataPath = ApplicationPaths.ProgramDataPath,
                 LogPath = ApplicationPaths.LogDirectoryPath,
                 ItemsByNamePath = ApplicationPaths.ItemsByNamePath,
@@ -1111,7 +1124,6 @@ namespace MediaBrowser.ServerApplication
                 ServerAuthorization.AuthorizeServer(
                     ServerConfigurationManager.Configuration.HttpServerPortNumber,
                     HttpServerUrlPrefixes.First(),
-                    ServerConfigurationManager.Configuration.LegacyWebSocketPortNumber,
                     UdpServerEntryPoint.PortNumber,
                     ConfigurationManager.CommonApplicationPaths.TempDirectory);
             }
@@ -1155,15 +1167,16 @@ namespace MediaBrowser.ServerApplication
 
             var versionObject = version == null || string.IsNullOrWhiteSpace(version.versionStr) ? null : new Version(version.versionStr);
 
-            HasUpdateAvailable = versionObject != null && versionObject >= ApplicationVersion;
+            var isUpdateAvailable = versionObject != null && versionObject > ApplicationVersion;
+            HasUpdateAvailable = isUpdateAvailable;
 
-            if (versionObject != null && versionObject >= ApplicationVersion)
+            if (isUpdateAvailable)
             {
                 Logger.Info("New application version is available: {0}", versionObject);
             }
 
-            return versionObject != null ? 
-                new CheckForUpdateResult { AvailableVersion = versionObject.ToString(), IsUpdateAvailable = versionObject > ApplicationVersion, Package = version } :
+            return versionObject != null ?
+                new CheckForUpdateResult { AvailableVersion = versionObject.ToString(), IsUpdateAvailable = isUpdateAvailable, Package = version } :
                 new CheckForUpdateResult { AvailableVersion = ApplicationVersion.ToString(), IsUpdateAvailable = false };
         }
 
