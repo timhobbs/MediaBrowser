@@ -726,7 +726,10 @@
 
                 $('#childrenContent', page).html(LibraryBrowser.getListViewHtml({
                     items: result.Items,
-                    smallIcon: true
+                    smallIcon: true,
+                    showIndex: true,
+                    index: 'disc',
+                    showIndexNumber: true
 
                 })).trigger('create').createCardMenus();
 
@@ -1377,7 +1380,7 @@
 
             if (cast.PrimaryImageTag) {
 
-                imgUrl = ApiClient.getPersonImageUrl(cast.Name, {
+                imgUrl = ApiClient.getScaledImageUrl(cast.Id, {
                     width: 100,
                     tag: cast.PrimaryImageTag,
                     type: "primary"

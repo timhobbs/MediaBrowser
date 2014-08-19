@@ -179,7 +179,7 @@
         var playerInfo = MediaController.getPlayerInfo();
 
         var supportedCommands = playerInfo.supportedCommands;
-        
+
         if (supportedCommands.indexOf('SetVolume') == -1) {
             volumeSlider.prop('disabled', 'disabled');
         } else {
@@ -268,7 +268,7 @@
     var currentImgUrl;
     function updateNowPlayingInfo(state) {
 
-        var nameHtml = MediaPlayer.getNowPlayingNameHtml(state);
+        var nameHtml = MediaPlayer.getNowPlayingNameHtml(state) || '';
 
         if (nameHtml.indexOf('<br/>') != -1) {
             nowPlayingTextElement.addClass('nowPlayingDoubleText');

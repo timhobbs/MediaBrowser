@@ -11,7 +11,6 @@ using MediaBrowser.Model.IO;
 using ServiceStack;
 using System;
 using System.IO;
-using System.Threading;
 
 namespace MediaBrowser.Api.Playback.Progressive
 {
@@ -154,7 +153,7 @@ namespace MediaBrowser.Api.Playback.Progressive
             // Add resolution params, if specified
             if (!hasGraphicalSubs)
             {
-                args += GetOutputSizeParam(state, codec, CancellationToken.None);
+                args += GetOutputSizeParam(state, codec);
             }
 
             var qualityParam = GetVideoQualityParam(state, codec, false);

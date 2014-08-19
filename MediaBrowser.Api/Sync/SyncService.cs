@@ -94,9 +94,9 @@ namespace MediaBrowser.Api.Sync
             Task.WaitAll(task);
         }
 
-        public object Post(CreateSyncJob request)
+        public async Task<object> Post(CreateSyncJob request)
         {
-            var result = _syncManager.CreateJob(request);
+            var result = await _syncManager.CreateJob(request).ConfigureAwait(false);
 
             return ToOptimizedResult(result);
         }

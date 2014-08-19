@@ -395,21 +395,24 @@ namespace MediaBrowser.Api.Session
         public void Post(SendSystemCommand request)
         {
             GeneralCommandType commandType;
+            var name = request.Command;
 
-            if (Enum.TryParse(request.Command, true, out commandType))
+            if (Enum.TryParse(name, true, out commandType))
             {
-                var currentSession = GetSession();
-
-                var command = new GeneralCommand
-                {
-                    Name = commandType.ToString(),
-                    ControllingUserId = currentSession.UserId.HasValue ? currentSession.UserId.Value.ToString("N") : null
-                };
-
-                var task = _sessionManager.SendGeneralCommand(currentSession.Id, request.Id, command, CancellationToken.None);
-
-                Task.WaitAll(task);
+                name = commandType.ToString();
             }
+
+            var currentSession = GetSession();
+
+            var command = new GeneralCommand
+            {
+                Name = name,
+                ControllingUserId = currentSession.UserId.HasValue ? currentSession.UserId.Value.ToString("N") : null
+            };
+
+            var task = _sessionManager.SendGeneralCommand(currentSession.Id, request.Id, command, CancellationToken.None);
+
+            Task.WaitAll(task);
         }
 
         /// <summary>

@@ -468,23 +468,11 @@ namespace MediaBrowser.Api.Library
         /// <param name="request">The request.</param>
         public void Delete(DeleteItem request)
         {
-            var task = DeleteItem(request);
-
-            Task.WaitAll(task);
-        }
-
-        private Task DeleteItem(DeleteItem request)
-        {
             var item = _libraryManager.GetItemById(request.Id);
 
-            var session = GetSession();
+            var task = _libraryManager.DeleteItem(item);
 
-            if (!session.UserId.HasValue || !_userManager.GetUserById(session.UserId.Value).Configuration.EnableContentDeletion)
-            {
-                throw new UnauthorizedAccessException("This operation requires a logged in user with delete access.");
-            }
-
-            return _libraryManager.DeleteItem(item);
+            Task.WaitAll(task);
         }
 
         /// <summary>
