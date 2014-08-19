@@ -7,6 +7,7 @@ using MediaBrowser.Controller.Channels;
 using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Channels;
+using MediaBrowser.Model.Configuration;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.MediaInfo;
@@ -71,7 +72,7 @@ namespace MediaBrowser.Server.Implementations.Channels
                 var startingPercent = numComplete * percentPerUser * 100;
 
                 var innerProgress = new ActionableProgress<double>();
-                innerProgress.RegisterAction(p => progress.Report(startingPercent + (.8 * p)));
+                innerProgress.RegisterAction(p => progress.Report(startingPercent + (percentPerUser * p)));
 
                 await DownloadContent(user, cancellationToken, innerProgress).ConfigureAwait(false);
 
@@ -154,7 +155,7 @@ namespace MediaBrowser.Server.Implementations.Channels
                 {
                     try
                     {
-                        await DownloadChannelItem(item, cancellationToken, path);
+                        await DownloadChannelItem(item, options, cancellationToken, path);
                     }
                     catch (OperationCanceledException)
                     {
@@ -176,9 +177,18 @@ namespace MediaBrowser.Server.Implementations.Channels
         }
 
         private async Task DownloadChannelItem(BaseItemDto item,
+            ChannelOptions channelOptions,
             CancellationToken cancellationToken,
             string path)
         {
+            if (channelOptions.DownloadSizeLimit.HasValue)
+            {
+                if (IsSizeLimitReached(path, channelOptions.DownloadSizeLimit.Value))
+                {
+                    return;
+                }    
+            }
+
             var sources = await _manager.GetChannelItemMediaSources(item.Id, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -239,7 +249,7 @@ namespace MediaBrowser.Server.Implementations.Channels
                 throw new ApplicationException("Unexpected response type encountered: " + response.ContentType);
             }
 
-            File.Move(response.TempFilePath, destination);
+            File.Copy(response.TempFilePath, destination, true);
 
             await RefreshMediaSourceItem(destination, cancellationToken).ConfigureAwait(false);
 
@@ -251,6 +261,25 @@ namespace MediaBrowser.Server.Implementations.Channels
             {
                 
             }
+        }
+
+        private bool IsSizeLimitReached(string path, double gbLimit)
+        {
+            var byteLimit = gbLimit*1000000000;
+
+            long total = 0;
+
+            foreach (var file in new DirectoryInfo(path).EnumerateFiles("*", SearchOption.AllDirectories))
+            {
+                total += file.Length;
+
+                if (total >= byteLimit)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private async Task RefreshMediaSourceItems(IEnumerable<MediaSourceInfo> items, CancellationToken cancellationToken)

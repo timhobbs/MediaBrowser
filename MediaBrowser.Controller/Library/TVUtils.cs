@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using MediaBrowser.Model.Logging;
 
 namespace MediaBrowser.Controller.Library
 {
@@ -125,7 +126,7 @@ namespace MediaBrowser.Controller.Library
         {
             var filename = Path.GetFileName(path);
 
-            if (string.Equals(path, "specials", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(filename, "specials", StringComparison.OrdinalIgnoreCase))
             {
                 return 0;
             }
@@ -134,6 +135,16 @@ namespace MediaBrowser.Controller.Library
             if (int.TryParse(filename, NumberStyles.Integer, CultureInfo.InvariantCulture, out val))
             {
                 return val;
+            }
+
+            if (filename.StartsWith("s", StringComparison.OrdinalIgnoreCase))
+            {
+                var testFilename = filename.Substring(1);
+
+                if (int.TryParse(testFilename, NumberStyles.Integer, CultureInfo.InvariantCulture, out val))
+                {
+                    return val;
+                }
             }
 
             // Look for one of the season folder names
@@ -182,7 +193,7 @@ namespace MediaBrowser.Controller.Library
                 return null;
             }
 
-            return int.Parse(path.Substring(numericStart, length));
+            return int.Parse(path.Substring(numericStart, length), CultureInfo.InvariantCulture);
         }
 
         /// <summary>
@@ -194,21 +205,60 @@ namespace MediaBrowser.Controller.Library
         /// <returns><c>true</c> if [is season folder] [the specified path]; otherwise, <c>false</c>.</returns>
         private static bool IsSeasonFolder(string path, IDirectoryService directoryService, IFileSystem fileSystem)
         {
+            var seasonNumber = GetSeasonNumberFromPath(path);
+            var hasSeasonNumber = seasonNumber != null;
+
+            if (!hasSeasonNumber)
+            {
+                return false;
+            }
+
             // It's a season folder if it's named as such and does not contain any audio files, apart from theme.mp3
-            return GetSeasonNumberFromPath(path) != null && 
-                !directoryService.GetFiles(path)
-                .Any(i => EntityResolutionHelper.IsAudioFile(i.FullName) && !string.Equals(fileSystem.GetFileNameWithoutExtension(i), BaseItem.ThemeSongFilename));
+            foreach (var fileSystemInfo in directoryService.GetFileSystemEntries(path))
+            {
+                var attributes = fileSystemInfo.Attributes;
+
+                if ((attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
+                {
+                    continue;
+                }
+
+                // Can't enforce this because files saved by Bitcasa are always marked System
+                //if ((attributes & FileAttributes.System) == FileAttributes.System)
+                //{
+                //    continue;
+                //}
+
+                if ((attributes & FileAttributes.Directory) == FileAttributes.Directory)
+                {
+                    //if (IsBadFolder(fileSystemInfo.Name))
+                    //{
+                    //    return false;
+                    //}
+                }
+                else
+                {
+                    if (EntityResolutionHelper.IsAudioFile(fileSystemInfo.FullName) &&
+                        !string.Equals(fileSystem.GetFileNameWithoutExtension(fileSystemInfo), BaseItem.ThemeSongFilename))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
         }
 
         /// <summary>
         /// Determines whether [is series folder] [the specified path].
         /// </summary>
         /// <param name="path">The path.</param>
-        /// <param name="considerSeasonlessSeries">if set to <c>true</c> [consider seasonless series].</param>
+        /// <param name="considerSeasonlessEntries">if set to <c>true</c> [consider seasonless entries].</param>
         /// <param name="fileSystemChildren">The file system children.</param>
         /// <param name="directoryService">The directory service.</param>
+        /// <param name="fileSystem">The file system.</param>
         /// <returns><c>true</c> if [is series folder] [the specified path]; otherwise, <c>false</c>.</returns>
-        public static bool IsSeriesFolder(string path, bool considerSeasonlessSeries, IEnumerable<FileSystemInfo> fileSystemChildren, IDirectoryService directoryService, IFileSystem fileSystem)
+        public static bool IsSeriesFolder(string path, bool considerSeasonlessEntries, IEnumerable<FileSystemInfo> fileSystemChildren, IDirectoryService directoryService, IFileSystem fileSystem, ILogger logger)
         {
             // A folder with more than 3 non-season folders in will not becounted as a series
             var nonSeriesFolders = 0;
@@ -219,27 +269,35 @@ namespace MediaBrowser.Controller.Library
 
                 if ((attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
                 {
+                    //logger.Debug("Igoring series file or folder marked hidden: {0}", child.FullName);
                     continue;
                 }
 
-                if ((attributes & FileAttributes.System) == FileAttributes.System)
-                {
-                    continue;
-                }
+                // Can't enforce this because files saved by Bitcasa are always marked System
+                //if ((attributes & FileAttributes.System) == FileAttributes.System)
+                //{
+                //    logger.Debug("Igoring series subfolder marked system: {0}", child.FullName);
+                //    continue;
+                //}
 
                 if ((attributes & FileAttributes.Directory) == FileAttributes.Directory)
                 {
                     if (IsSeasonFolder(child.FullName, directoryService, fileSystem))
                     {
+                        logger.Debug("{0} is a series because of season folder {1}.", path, child.FullName);
                         return true;
                     }
-                    if (!EntityResolutionHelper.IgnoreFolders.Contains(child.Name, StringComparer.OrdinalIgnoreCase))
+
+                    if (IsBadFolder(child.Name))
                     {
+                        logger.Debug("Invalid folder under series: {0}", child.FullName);
+
                         nonSeriesFolders++;
                     }
 
                     if (nonSeriesFolders >= 3)
                     {
+                        logger.Debug("{0} not a series due to 3 or more invalid folders.", path);
                         return false;
                     }
                 }
@@ -249,7 +307,7 @@ namespace MediaBrowser.Controller.Library
 
                     if (EntityResolutionHelper.IsVideoFile(fullName) || EntityResolutionHelper.IsVideoPlaceHolder(fullName))
                     {
-                        if (GetEpisodeNumberFromFile(fullName, considerSeasonlessSeries).HasValue)
+                        if (GetEpisodeNumberFromFile(fullName, considerSeasonlessEntries).HasValue)
                         {
                             return true;
                         }
@@ -257,7 +315,26 @@ namespace MediaBrowser.Controller.Library
                 }
             }
 
+            logger.Debug("{0} is not a series folder.", path);
             return false;
+        }
+
+        private static bool IsBadFolder(string name)
+        {
+            if (string.Equals(name, BaseItem.ThemeSongsFolderName, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+            if (string.Equals(name, BaseItem.ThemeVideosFolderName, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+            if (string.Equals(name, BaseItem.TrailerFolderName, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            return !EntityResolutionHelper.IgnoreFolders.Contains(name, StringComparer.OrdinalIgnoreCase);
         }
 
         /// <summary>

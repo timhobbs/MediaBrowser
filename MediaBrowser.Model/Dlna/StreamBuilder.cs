@@ -2,6 +2,7 @@
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Extensions;
 using MediaBrowser.Model.MediaInfo;
+using MediaBrowser.Model.Session;
 using System;
 using System.Collections.Generic;
 
@@ -9,7 +10,7 @@ namespace MediaBrowser.Model.Dlna
 {
     public class StreamBuilder
     {
-        private string[] _serverTextSubtitleOutputs = new string[] { "srt", "vtt" };
+        private readonly string[] _serverTextSubtitleOutputs = { "srt", "vtt", "ttml" };
 
         public StreamInfo BuildAudioItem(AudioOptions options)
         {
@@ -158,7 +159,7 @@ namespace MediaBrowser.Model.Dlna
 
                         if (all)
                         {
-                            playlistItem.IsDirectStream = true;
+                            playlistItem.PlayMethod = PlayMethod.DirectStream;
                             playlistItem.Container = item.Container;
 
                             return playlistItem;
@@ -179,7 +180,7 @@ namespace MediaBrowser.Model.Dlna
 
             if (transcodingProfile != null)
             {
-                playlistItem.IsDirectStream = false;
+                playlistItem.PlayMethod = PlayMethod.Transcode;
                 playlistItem.TranscodeSeekInfo = transcodingProfile.TranscodeSeekInfo;
                 playlistItem.EstimateContentLength = transcodingProfile.EstimateContentLength;
                 playlistItem.Container = transcodingProfile.Container;
@@ -216,10 +217,11 @@ namespace MediaBrowser.Model.Dlna
                     playlistItem.MaxAudioChannels = Math.Min(options.MaxAudioChannels.Value, currentValue);
                 }
 
-                if (!playlistItem.AudioBitrate.HasValue)
-                {
-                    playlistItem.AudioBitrate = 128000;
-                }
+                var configuredBitrate = options.AudioTranscodingBitrate ??
+                    (options.Context == EncodingContext.Static ? options.Profile.MusicSyncBitrate : options.Profile.MusicStreamingTranscodingBitrate) ??
+                    128000;
+
+                playlistItem.AudioBitrate = Math.Min(configuredBitrate, playlistItem.AudioBitrate ?? configuredBitrate);
             }
 
             return playlistItem;
@@ -252,12 +254,12 @@ namespace MediaBrowser.Model.Dlna
 
                 if (directPlay != null)
                 {
-                    playlistItem.IsDirectStream = true;
+                    playlistItem.PlayMethod = PlayMethod.DirectStream;
                     playlistItem.Container = item.Container;
 
                     if (subtitleStream != null)
                     {
-                        playlistItem.SubtitleDeliveryMethod = GetDirectStreamSubtitleDeliveryMethod(subtitleStream, options);
+                        playlistItem.SubtitleDeliveryMethod = GetSubtitleDeliveryMethod(subtitleStream, options);
                     }
 
                     return playlistItem;
@@ -279,10 +281,10 @@ namespace MediaBrowser.Model.Dlna
             {
                 if (subtitleStream != null)
                 {
-                    playlistItem.SubtitleDeliveryMethod = GetTranscodedSubtitleDeliveryMethod(subtitleStream, options);
+                    playlistItem.SubtitleDeliveryMethod = GetSubtitleDeliveryMethod(subtitleStream, options);
                 }
 
-                playlistItem.IsDirectStream = false;
+                playlistItem.PlayMethod = PlayMethod.Transcode;
                 playlistItem.Container = transcodingProfile.Container;
                 playlistItem.EstimateContentLength = transcodingProfile.EstimateContentLength;
                 playlistItem.TranscodeSeekInfo = transcodingProfile.TranscodeSeekInfo;
@@ -499,9 +501,9 @@ namespace MediaBrowser.Model.Dlna
                     return false;
                 }
 
-                SubtitleDeliveryMethod subtitleMethod = GetDirectStreamSubtitleDeliveryMethod(subtitleStream, options);
+                SubtitleDeliveryMethod subtitleMethod = GetSubtitleDeliveryMethod(subtitleStream, options);
 
-                if (subtitleMethod != SubtitleDeliveryMethod.External && subtitleMethod != SubtitleDeliveryMethod.Direct)
+                if (subtitleMethod != SubtitleDeliveryMethod.External && subtitleMethod != SubtitleDeliveryMethod.Embed)
                 {
                     return false;
                 }
@@ -510,41 +512,14 @@ namespace MediaBrowser.Model.Dlna
             return IsAudioEligibleForDirectPlay(item, maxBitrate);
         }
 
-        private SubtitleDeliveryMethod GetDirectStreamSubtitleDeliveryMethod(MediaStream subtitleStream,
-            VideoOptions options)
-        {
-            if (subtitleStream.IsTextSubtitleStream)
-            {
-                string subtitleFormat = NormalizeSubtitleFormat(subtitleStream.Codec);
-
-                bool supportsDirect = ContainsSubtitleFormat(options.Profile.SoftSubtitleProfiles, new[] { subtitleFormat });
-
-                if (supportsDirect)
-                {
-                    return SubtitleDeliveryMethod.Direct;
-                }
-                
-                // See if the device can retrieve the subtitles externally
-                bool supportsSubsExternally = options.Context == EncodingContext.Streaming &&
-                    ContainsSubtitleFormat(options.Profile.ExternalSubtitleProfiles, _serverTextSubtitleOutputs);
-
-                if (supportsSubsExternally)
-                {
-                    return SubtitleDeliveryMethod.External;
-                }
-            }
-
-            return SubtitleDeliveryMethod.Encode;
-        }
-
-        private SubtitleDeliveryMethod GetTranscodedSubtitleDeliveryMethod(MediaStream subtitleStream,
+        private SubtitleDeliveryMethod GetSubtitleDeliveryMethod(MediaStream subtitleStream,
             VideoOptions options)
         {
             if (subtitleStream.IsTextSubtitleStream)
             {
                 // See if the device can retrieve the subtitles externally
                 bool supportsSubsExternally = options.Context == EncodingContext.Streaming &&
-                    ContainsSubtitleFormat(options.Profile.ExternalSubtitleProfiles, _serverTextSubtitleOutputs);
+                    ContainsSubtitleFormat(options.Profile.SubtitleProfiles, SubtitleDeliveryMethod.External, _serverTextSubtitleOutputs);
 
                 if (supportsSubsExternally)
                 {
@@ -552,7 +527,7 @@ namespace MediaBrowser.Model.Dlna
                 }
 
                 // See if the device can retrieve the subtitles externally
-                bool supportsEmbedded = ContainsSubtitleFormat(options.Profile.SoftSubtitleProfiles, _serverTextSubtitleOutputs);
+                bool supportsEmbedded = ContainsSubtitleFormat(options.Profile.SubtitleProfiles, SubtitleDeliveryMethod.Embed, _serverTextSubtitleOutputs);
 
                 if (supportsEmbedded)
                 {
@@ -563,21 +538,11 @@ namespace MediaBrowser.Model.Dlna
             return SubtitleDeliveryMethod.Encode;
         }
 
-        private string NormalizeSubtitleFormat(string codec)
-        {
-            if (StringHelper.EqualsIgnoreCase(codec, "subrip"))
-            {
-                return SubtitleFormat.SRT;
-            }
-
-            return codec;
-        }
-
-        private bool ContainsSubtitleFormat(SubtitleProfile[] profiles, string[] formats)
+        private bool ContainsSubtitleFormat(SubtitleProfile[] profiles, SubtitleDeliveryMethod method, string[] formats)
         {
             foreach (SubtitleProfile profile in profiles)
             {
-                if (ListHelper.ContainsIgnoreCase(formats, profile.Format))
+                if (method == profile.Method && ListHelper.ContainsIgnoreCase(formats, profile.Format))
                 {
                     return true;
                 }

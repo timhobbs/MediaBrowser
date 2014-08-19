@@ -5,6 +5,7 @@ using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Resolvers;
 using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.Logging;
 using System;
 using System.IO;
 
@@ -16,10 +17,12 @@ namespace MediaBrowser.Server.Implementations.Library.Resolvers.TV
     public class SeriesResolver : FolderResolver<Series>
     {
         private readonly IFileSystem _fileSystem;
+        private readonly ILogger _logger;
 
-        public SeriesResolver(IFileSystem fileSystem)
+        public SeriesResolver(IFileSystem fileSystem, ILogger logger)
         {
             _fileSystem = fileSystem;
+            _logger = logger;
         }
 
         /// <summary>
@@ -57,26 +60,18 @@ namespace MediaBrowser.Server.Implementations.Library.Resolvers.TV
 
                 var collectionType = args.GetCollectionType();
 
+                var isTvShowsFolder = string.Equals(collectionType, CollectionType.TvShows,
+                    StringComparison.OrdinalIgnoreCase);
+
                 // If there's a collection type and it's not tv, it can't be a series
                 if (!string.IsNullOrEmpty(collectionType) &&
-                    !string.Equals(collectionType, CollectionType.TvShows, StringComparison.OrdinalIgnoreCase) &&
+                    !isTvShowsFolder &&
                     !string.Equals(collectionType, CollectionType.BoxSets, StringComparison.OrdinalIgnoreCase))
                 {
                     return null;
                 }
-                
-                // It's a Series if any of the following conditions are met:
-                // series.xml exists
-                // [tvdbid= is present in the path
-                // TVUtils.IsSeriesFolder returns true
-                var filename = Path.GetFileName(args.Path);
 
-                if (string.IsNullOrEmpty(filename))
-                {
-                    return null;
-                }
-
-                if (TVUtils.IsSeriesFolder(args.Path, collectionType == CollectionType.TvShows, args.FileSystemChildren, args.DirectoryService, _fileSystem))
+                if (TVUtils.IsSeriesFolder(args.Path, isTvShowsFolder, args.FileSystemChildren, args.DirectoryService, _fileSystem, _logger))
                 {
                     return new Series();
                 }

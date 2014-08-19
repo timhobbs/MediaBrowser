@@ -9,6 +9,7 @@ using MediaBrowser.Common.IO;
 using MediaBrowser.Common.Net;
 using MediaBrowser.Common.Progress;
 using MediaBrowser.Controller;
+using MediaBrowser.Controller.Activity;
 using MediaBrowser.Controller.Channels;
 using MediaBrowser.Controller.Chapters;
 using MediaBrowser.Controller.Collections;
@@ -26,6 +27,7 @@ using MediaBrowser.Controller.Net;
 using MediaBrowser.Controller.News;
 using MediaBrowser.Controller.Notifications;
 using MediaBrowser.Controller.Persistence;
+using MediaBrowser.Controller.Playlists;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Controller.Resolvers;
@@ -43,6 +45,7 @@ using MediaBrowser.LocalMetadata.Providers;
 using MediaBrowser.MediaEncoding.BdInfo;
 using MediaBrowser.MediaEncoding.Encoder;
 using MediaBrowser.MediaEncoding.Subtitles;
+using MediaBrowser.Model.FileOrganization;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.MediaInfo;
 using MediaBrowser.Model.System;
@@ -51,6 +54,7 @@ using MediaBrowser.Providers.Chapters;
 using MediaBrowser.Providers.Manager;
 using MediaBrowser.Providers.Subtitles;
 using MediaBrowser.Server.Implementations;
+using MediaBrowser.Server.Implementations.Activity;
 using MediaBrowser.Server.Implementations.Channels;
 using MediaBrowser.Server.Implementations.Collections;
 using MediaBrowser.Server.Implementations.Configuration;
@@ -67,6 +71,7 @@ using MediaBrowser.Server.Implementations.Localization;
 using MediaBrowser.Server.Implementations.MediaEncoder;
 using MediaBrowser.Server.Implementations.Notifications;
 using MediaBrowser.Server.Implementations.Persistence;
+using MediaBrowser.Server.Implementations.Playlists;
 using MediaBrowser.Server.Implementations.Security;
 using MediaBrowser.Server.Implementations.ServerManager;
 using MediaBrowser.Server.Implementations.Session;
@@ -333,6 +338,20 @@ namespace MediaBrowser.ServerApplication
                 saveConfig = true;
             }
 
+            if (ServerConfigurationManager.Configuration.TvFileOrganizationOptions != null)
+            {
+                ServerConfigurationManager.SaveConfiguration("autoorganize", new AutoOrganizeOptions { TvOptions = ServerConfigurationManager.Configuration.TvFileOrganizationOptions });
+                ServerConfigurationManager.Configuration.TvFileOrganizationOptions = null;
+                saveConfig = true;
+            }
+
+            if (ServerConfigurationManager.Configuration.SubtitleOptions != null)
+            {
+                ServerConfigurationManager.SaveConfiguration("subtitles", ServerConfigurationManager.Configuration.SubtitleOptions);
+                ServerConfigurationManager.Configuration.SubtitleOptions = null;
+                saveConfig = true;
+            }
+
             if (saveConfig)
             {
                 ServerConfigurationManager.SaveConfiguration();
@@ -533,10 +552,10 @@ namespace MediaBrowser.ServerApplication
             AuthenticationRepository = await GetAuthenticationRepository().ConfigureAwait(false);
             RegisterSingleInstance(AuthenticationRepository);
 
-            SyncRepository = await GetSyncRepository().ConfigureAwait(false);
-            RegisterSingleInstance(SyncRepository);
+            //SyncRepository = await GetSyncRepository().ConfigureAwait(false);
+            //RegisterSingleInstance(SyncRepository);
 
-            UserManager = new UserManager(LogManager.GetLogger("UserManager"), ServerConfigurationManager, UserRepository, XmlSerializer);
+            UserManager = new UserManager(LogManager.GetLogger("UserManager"), ServerConfigurationManager, UserRepository, XmlSerializer, NetworkManager, () => ImageProcessor, () => DtoService);
             RegisterSingleInstance(UserManager);
 
             LibraryManager = new LibraryManager(Logger, TaskManager, UserManager, ServerConfigurationManager, UserDataManager, () => LibraryMonitor, FileSystemManager, () => ProviderManager);
@@ -598,20 +617,23 @@ namespace MediaBrowser.ServerApplication
             var dlnaManager = new DlnaManager(XmlSerializer, FileSystemManager, ApplicationPaths, LogManager.GetLogger("Dlna"), JsonSerializer);
             RegisterSingleInstance<IDlnaManager>(dlnaManager);
 
-            var contentDirectory = new ContentDirectory(dlnaManager, UserDataManager, ImageProcessor, LibraryManager, ServerConfigurationManager, UserManager, LogManager.GetLogger("UpnpContentDirectory"), HttpClient);
-            RegisterSingleInstance<IContentDirectory>(contentDirectory);
-
             var connectionManager = new ConnectionManager(dlnaManager, ServerConfigurationManager, LogManager.GetLogger("UpnpConnectionManager"), HttpClient);
             RegisterSingleInstance<IConnectionManager>(connectionManager);
 
             var collectionManager = new CollectionManager(LibraryManager, FileSystemManager, LibraryMonitor, LogManager.GetLogger("CollectionManager"));
             RegisterSingleInstance<ICollectionManager>(collectionManager);
 
-            LiveTvManager = new LiveTvManager(ServerConfigurationManager, FileSystemManager, Logger, ItemRepository, ImageProcessor, UserDataManager, DtoService, UserManager, LibraryManager, TaskManager, LocalizationManager);
+            var playlistManager = new PlaylistManager(LibraryManager, FileSystemManager, LibraryMonitor, LogManager.GetLogger("PlaylistManager"), UserManager);
+            RegisterSingleInstance<IPlaylistManager>(playlistManager);
+
+            LiveTvManager = new LiveTvManager(ServerConfigurationManager, FileSystemManager, Logger, ItemRepository, ImageProcessor, UserDataManager, DtoService, UserManager, LibraryManager, TaskManager, LocalizationManager, JsonSerializer);
             RegisterSingleInstance(LiveTvManager);
 
-            UserViewManager = new UserViewManager(LibraryManager, LocalizationManager, FileSystemManager, UserManager, ChannelManager, LiveTvManager);
+            UserViewManager = new UserViewManager(LibraryManager, LocalizationManager, FileSystemManager, UserManager, ChannelManager, LiveTvManager, ApplicationPaths, playlistManager);
             RegisterSingleInstance(UserViewManager);
+
+            var contentDirectory = new ContentDirectory(dlnaManager, UserDataManager, ImageProcessor, LibraryManager, ServerConfigurationManager, UserManager, LogManager.GetLogger("UpnpContentDirectory"), HttpClient, UserViewManager, ChannelManager);
+            RegisterSingleInstance<IContentDirectory>(contentDirectory);
 
             NotificationManager = new NotificationManager(LogManager, UserManager, ServerConfigurationManager);
             RegisterSingleInstance(NotificationManager);
@@ -627,6 +649,10 @@ namespace MediaBrowser.ServerApplication
             EncodingManager = new EncodingManager(ServerConfigurationManager, FileSystemManager, Logger,
                 MediaEncoder, ChapterManager);
             RegisterSingleInstance(EncodingManager);
+
+            var activityLogRepo = await GetActivityLogRepository().ConfigureAwait(false);
+            RegisterSingleInstance(activityLogRepo);
+            RegisterSingleInstance<IActivityManager>(new ActivityManager(LogManager.GetLogger("ActivityManager"), activityLogRepo));
 
             var authContext = new AuthorizationContext();
             RegisterSingleInstance<IAuthorizationContext>(authContext);
@@ -717,6 +743,15 @@ namespace MediaBrowser.ServerApplication
             return repo;
         }
 
+        private async Task<IActivityRepository> GetActivityLogRepository()
+        {
+            var repo = new ActivityRepository(LogManager.GetLogger("ActivityRepository"), ServerConfigurationManager.ApplicationPaths);
+
+            await repo.Initialize().ConfigureAwait(false);
+
+            return repo;
+        }
+
         private async Task<ISyncRepository> GetSyncRepository()
         {
             var repo = new SyncRepository(LogManager.GetLogger("SyncRepository"), ServerConfigurationManager.ApplicationPaths);
@@ -795,6 +830,8 @@ namespace MediaBrowser.ServerApplication
             BaseItem.FileSystem = FileSystemManager;
             BaseItem.UserDataManager = UserDataManager;
             ChannelVideoItem.ChannelManager = ChannelManager;
+            BaseItem.LiveTvManager = LiveTvManager;
+            UserView.UserViewManager = UserViewManager;
         }
 
         /// <summary>
@@ -1024,7 +1061,7 @@ namespace MediaBrowser.ServerApplication
                 HasPendingRestart = HasPendingRestart,
                 Version = ApplicationVersion.ToString(),
                 IsNetworkDeployed = CanSelfUpdate,
-                WebSocketPortNumber = ServerManager.WebSocketPortNumber,
+                WebSocketPortNumber = HttpServerPort,
                 SupportsNativeWebSocket = true,
                 FailedPluginAssemblies = FailedAssemblies.ToList(),
                 InProgressInstallations = InstallationManager.CurrentInstallations.Select(i => i.Item1).ToList(),
@@ -1045,8 +1082,18 @@ namespace MediaBrowser.ServerApplication
                 SupportsAutoRunAtStartup = SupportsAutoRunAtStartup,
                 TranscodingTempPath = ApplicationPaths.TranscodingTempPath,
                 IsRunningAsService = IsRunningAsService,
-                ServerName = string.IsNullOrWhiteSpace(ServerConfigurationManager.Configuration.ServerName) ? Environment.MachineName : ServerConfigurationManager.Configuration.ServerName
+                ServerName = FriendlyName
             };
+        }
+
+        public string FriendlyName
+        {
+            get
+            {
+                return string.IsNullOrWhiteSpace(ServerConfigurationManager.Configuration.ServerName)
+                    ? Environment.MachineName
+                    : ServerConfigurationManager.Configuration.ServerName;
+            }
         }
 
         public int HttpServerPort
@@ -1160,24 +1207,18 @@ namespace MediaBrowser.ServerApplication
         /// <returns>Task{CheckForUpdateResult}.</returns>
         public override async Task<CheckForUpdateResult> CheckForApplicationUpdate(CancellationToken cancellationToken, IProgress<double> progress)
         {
-            var availablePackages = await InstallationManager.GetAvailablePackagesWithoutRegistrationInfo(cancellationToken).ConfigureAwait(false);
+            var result = await NativeApp.CheckForApplicationUpdate(ApplicationVersion,
+                        ConfigurationManager.CommonConfiguration.SystemUpdateLevel, InstallationManager,
+                        cancellationToken, progress).ConfigureAwait(false);
 
-            var version = InstallationManager.GetLatestCompatibleVersion(availablePackages, "MBServer", null, ApplicationVersion,
-                                                           ConfigurationManager.CommonConfiguration.SystemUpdateLevel);
+            HasUpdateAvailable = result.IsUpdateAvailable;
 
-            var versionObject = version == null || string.IsNullOrWhiteSpace(version.versionStr) ? null : new Version(version.versionStr);
-
-            var isUpdateAvailable = versionObject != null && versionObject > ApplicationVersion;
-            HasUpdateAvailable = isUpdateAvailable;
-
-            if (isUpdateAvailable)
+            if (result.IsUpdateAvailable)
             {
-                Logger.Info("New application version is available: {0}", versionObject);
+                Logger.Info("New application version is available: {0}", result.AvailableVersion);
             }
 
-            return versionObject != null ?
-                new CheckForUpdateResult { AvailableVersion = versionObject.ToString(), IsUpdateAvailable = isUpdateAvailable, Package = version } :
-                new CheckForUpdateResult { AvailableVersion = ApplicationVersion.ToString(), IsUpdateAvailable = false };
+            return result;
         }
 
         /// <summary>

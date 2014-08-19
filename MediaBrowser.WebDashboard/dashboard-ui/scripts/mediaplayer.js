@@ -84,7 +84,7 @@
             }
 
             // Chrome or IE with plugin installed
-            if (canPlayWebm()) {
+            if (self.canPlayWebm()) {
                 return '.webm';
             }
 
@@ -139,7 +139,7 @@
                     if (finalParams.isStatic) {
                         currentSrc = currentSrc.replace('.webm', '.mp4').replace('.m3u8', '.mp4');
                     } else {
-                        currentSrc = currentSrc.replace('.mp4', transcodingExtension).replace('.m4v', transcodingExtension);
+                        currentSrc = currentSrc.replace('.mp4', transcodingExtension).replace('.m4v', transcodingExtension).replace('.mkv', transcodingExtension);
                     }
 
                     currentSrc = replaceQueryString(currentSrc, 'AudioBitrate', finalParams.audioBitrate);
@@ -289,7 +289,7 @@
                 //return false;
             }
 
-            if (extension == 'm4v') {
+            if (extension == 'm4v' || extension == 'mkv') {
                 return $.browser.chrome;
             }
 
@@ -347,14 +347,10 @@
             var firstItem = items[0];
             var promise;
 
-            if (firstItem.IsFolder) {
+            if (firstItem.Type == "Playlist") {
 
                 promise = self.getItemsForPlayback({
                     ParentId: firstItem.Id,
-                    Filters: "IsNotFolder",
-                    Recursive: true,
-                    SortBy: "SortName",
-                    MediaTypes: "Audio,Video"
                 });
             }
             else if (firstItem.Type == "MusicArtist") {
@@ -378,6 +374,16 @@
                     MediaTypes: "Audio"
                 });
             }
+            else if (firstItem.IsFolder) {
+
+                promise = self.getItemsForPlayback({
+                    ParentId: firstItem.Id,
+                    Filters: "IsNotFolder",
+                    Recursive: true,
+                    SortBy: "SortName",
+                    MediaTypes: "Audio,Video"
+                });
+            }
 
             if (promise) {
                 promise.done(function (result) {
@@ -399,10 +405,7 @@
 
                     translateItemsForPlayback(options.items).done(function (items) {
 
-                        self.playInternal(items[0], options.startPositionTicks, user);
-
-                        self.playlist = items;
-                        currentPlaylistIndex = 0;
+                        self.playWithIntros(items, options, user);
                     });
 
                 } else {
@@ -415,10 +418,7 @@
 
                         translateItemsForPlayback(result.Items).done(function (items) {
 
-                            self.playInternal(items[0], options.startPositionTicks, user);
-
-                            self.playlist = items;
-                            currentPlaylistIndex = 0;
+                            self.playWithIntros(items, options, user);
                         });
 
                     });
@@ -426,6 +426,27 @@
 
             });
 
+        };
+
+        self.playWithIntros = function (items, options, user) {
+
+            var firstItem = items[0];
+
+            if (options.startPositionTicks || firstItem.MediaType !== 'Video' || !self.canAutoPlayVideo()) {
+                self.playInternal(firstItem, options.startPositionTicks, user);
+
+                self.playlist = items;
+                currentPlaylistIndex = 0;
+            }
+
+            ApiClient.getJSON(ApiClient.getUrl('Users/' + user.Id + '/Items/' + firstItem.Id + '/Intros')).done(function (intros) {
+
+                items = intros.Items.concat(items);
+                self.playInternal(items[0], options.startPositionTicks, user);
+
+                self.playlist = items;
+                currentPlaylistIndex = 0;
+            });
         };
 
         self.getBitrateSetting = function () {
@@ -584,6 +605,8 @@
             var newItem = self.playlist[newIndex];
 
             if (newItem) {
+
+                console.log('playing next track');
 
                 Dashboard.getCurrentUser().done(function (user) {
 
@@ -786,11 +809,7 @@
                     SortBy: "Random"
                 };
 
-                if (item.IsFolder) {
-                    query.ParentId = id;
-
-                }
-                else if (item.Type == "MusicArtist") {
+                if (item.Type == "MusicArtist") {
 
                     query.MediaTypes = "Audio";
                     query.Artists = item.Name;
@@ -801,7 +820,12 @@
                     query.MediaTypes = "Audio";
                     query.Genres = item.Name;
 
-                } else {
+                }
+                else if (item.IsFolder) {
+                    query.ParentId = id;
+
+                }
+                else {
                     return;
                 }
 
@@ -1070,13 +1094,21 @@
             $(self).trigger('volumechange', [state]);
         };
 
+        self.cleanup = function () {
+
+        };
+
         self.onPlaybackStopped = function () {
+
+            console.log('playback stopped');
 
             $('body').removeClass('bodyWithPopupOpen');
 
             var playerElement = this;
 
             $(playerElement).off('.mediaplayerevent').off('ended.playbackstopped');
+
+            self.cleanup(playerElement);
 
             clearProgressInterval();
 
@@ -1135,10 +1167,10 @@
             }
         }
 
-        function canPlayWebm() {
+        self.canPlayWebm = function() {
 
             return testableVideoElement.canPlayType('video/webm').replace(/no/, '');
-        }
+        };
 
         self.canAutoPlayAudio = function () {
 
@@ -1231,19 +1263,30 @@
 
             }).on("volumechange.mediaplayerevent", function () {
 
+                console.log('audio element event: volumechange');
+
                 self.onVolumeChanged(this);
 
             }).one("playing.mediaplayerevent", function () {
 
+                console.log('audio element event: playing');
+
                 $('.mediaPlayerAudioContainer').hide();
+
+                // For some reason this is firing at the start, so don't bind until playback has begun
+                $(this).on("ended.playbackstopped", self.onPlaybackStopped).one('ended.playnext', self.playNextAfterEnded);
 
                 self.onPlaybackStart(this, item, mediaSource);
 
             }).on("pause.mediaplayerevent", function () {
 
+                console.log('audio element event: pause');
+
                 self.onPlaystateChange(this);
 
             }).on("playing.mediaplayerevent", function () {
+
+                console.log('audio element event: playing');
 
                 self.onPlaystateChange(this);
 
@@ -1251,7 +1294,7 @@
 
                 self.setCurrentTime(self.getCurrentTicks(this));
 
-            }).on("ended.playbackstopped", self.onPlaybackStopped).one('ended.playnext', self.playNextAfterEnded)[0];
+            })[0];
         };
 
         function canPlayAudioStreamDirect(audioStream) {

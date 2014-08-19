@@ -126,34 +126,34 @@
                             <p class="itemGenres desktopGenres"></p>
                             <p class="itemOverview desktopOverview"></p>
                             <div class="detailButtonsContainer desktopDetailButtons" style="text-align: left;">
-                                <span class="missingIndicator" style="margin-left: .5em; display: none;">
+                                <span class="missingIndicator" style="margin: 0 .5em; display: none;">
                                     <span style="background: #cc3333; padding: 5px 1em; border-radius: 5px;">${LabelMissing}</span>
                                 </span>
-                                <span class="offlineIndicator" style="margin-left: .5em; display: none;">
+                                <span class="offlineIndicator" style="margin: 0 .5em; display: none;">
                                     <span style="background: #cc3333; padding: 5px 1em; border-radius: 5px;">${LabelOffline}</span>
                                 </span>
                                 <button class="btnPlay hide" type="button" data-icon="play" data-inline="true" data-mini="true">${ButtonPlay}</button>
                                 <button class="btnPlayTrailer hide" type="button" data-icon="video" data-inline="true" data-mini="true">${ButtonPlayTrailer}</button>
                                 <a class="btnPlayExternalTrailer hide" data-role="button" data-icon="video" data-inline="true" data-mini="true" href="#" target="_blank">${ButtonPlayTrailer}</a>
                                 <a class="btnPlayExternal hide" data-role="button" data-icon="play" data-inline="true" data-mini="true" href="#" target="_blank">${ButtonPlay}</a>
-                                <a class="btnEdit hide" data-role="button" data-icon="edit" data-inline="true" data-mini="true" href="#">${ButtonEdit}</a>
+                                <button class="btnMoreCommands hide" type="button" data-icon="ellipsis-v" data-inline="true" data-mini="true">${ButtonMore}</button>
                                 <a class="btnSync hide" data-role="button" data-icon="refresh" data-inline="true" data-mini="true" href="#">${ButtonSync}</a>
                             </div>
                         </td>
                     </tr>
                 </table>
                 <div class="detailButtonsContainer mobileDetailButtons">
-                    <span class="missingIndicator" style="margin-left: .5em; display: none;">
+                    <span class="missingIndicator" style="margin: 0 .5em; display: none;">
                         <span style="background: #cc3333; padding: 5px 1em; border-radius: 5px;">${LabelMissing}</span>
                     </span>
-                    <span class="offlineIndicator" style="margin-left: .5em; display: none;">
+                    <span class="offlineIndicator" style="margin: 0 .5em; display: none;">
                         <span style="background: #cc3333; padding: 5px 1em; border-radius: 5px;">${LabelOffline}</span>
                     </span>
                     <button class="btnPlay hide" type="button" data-icon="play" data-inline="true" data-mini="true">${ButtonPlay}</button>
                     <button class="btnPlayTrailer hide" type="button" data-icon="video" data-inline="true" data-mini="true">${ButtonPlayTrailer}</button>
                     <a class="btnPlayExternalTrailer hide" data-role="button" data-icon="video" data-inline="true" data-mini="true" href="#" target="_blank">${ButtonPlayTrailer}</a>
                     <a class="btnPlayExternal hide" data-role="button" data-icon="play" data-inline="true" data-mini="true" href="#" target="_blank">${ButtonPlay}</a>
-                    <a class="btnEdit hide" data-role="button" data-icon="edit" data-inline="true" data-mini="true" href="#">${ButtonEdit}</a>
+                    <button class="btnMoreCommands hide" type="button" data-icon="ellipsis-v" data-inline="true" data-mini="true">${ButtonMore}</button>
                     <a class="btnSync hide" data-role="button" data-icon="refresh" data-inline="true" data-mini="true" href="#">${ButtonSync}</a>
                 </div>
                 <p class="itemGenres mobileGenres"></p>
@@ -225,12 +225,6 @@
                         ${HeaderMusicVideos}
                     </div>
                     <div id="musicVideosContent" class="detailSectionContent smallItemsContainer"></div>
-                </div>
-                <div id="soundtracksCollapsible" style="display: none;" class="detailSection">
-                    <div id="soundtracksHeader" class="detailSectionHeader">
-                        ${HeaderSoundtracks}
-                    </div>
-                    <div id="soundtracksContent" class="detailSectionContent"></div>
                 </div>
                 <div id="similarCollapsible" style="display: none;" class="detailSection">
                     <div class="detailSectionHeader">

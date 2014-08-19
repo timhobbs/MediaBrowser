@@ -12,6 +12,10 @@
     margin-left: .5em;
 }
 
+.libraryPage {
+    background-color: #202020;
+}
+
 .backdropPage {
     background-color: rgba(15, 15,15, .94) !important;
 }
@@ -33,7 +37,19 @@
 
 .libraryPage > .ui-content {
     padding-top: 10px;
-    padding-bottom: 120px;
+}
+
+@media all and (max-width: 1200px) {
+
+    .libraryPage > .ui-content {
+        padding-left: .4em !important;
+        padding-right: .4em !important;
+    }
+
+    .detailSection {
+        margin-left: .25em;
+        margin-right: .25em;
+    }
 }
 
 .libraryPage .currentUsername {
@@ -42,8 +58,8 @@
 
 .listHeader {
     margin-top: .7em;
-    margin-bottom: 0;
-    padding-left: 4px;
+    margin-bottom: .15em;
+    padding-left: 2px;
 }
 
 .firstListHeader {
@@ -51,16 +67,8 @@
 }
 
 .ehsContent {
-    padding: 0;
-    border-spacing: 0;
-    border-collapse: collapse;
     margin: 0 auto;
 }
-
-    .ehsContent td {
-        padding: 0;
-        border-spacing: 0;
-    }
 
 .homePageSection + .homePageSection {
     margin-top: 1em;
@@ -96,35 +104,9 @@
     top: 3px;
 }
 
-@media all and (min-width: 800px) {
-
-    .ehsContent {
-        width: 770px;
-    }
-
-    .squareEhsContent {
-        width: 760px;
-    }
-}
-
-@media all and (min-width: 1000px) {
-
-    .ehsContent {
-        width: 900px;
-    }
-
-    .squareEhsContent {
-        width: 900px;
-    }
-}
-
 @media all and (min-width: 1200px) {
 
     .ehsContent {
-        width: 1000px;
-    }
-
-    .squareEhsContent {
         width: 1000px;
     }
 }
@@ -132,11 +114,14 @@
 @media all and (min-width: 1600px) {
 
     .ehsContent {
-        width: 1200px;
+        width: 1280px;
     }
+}
 
-    .squareEhsContent {
-        width: 1200px;
+@media all and (min-width: 1600px) {
+
+    .ehsContent {
+        width: 1500px;
     }
 }
 
@@ -379,7 +364,7 @@ a.itemTag:hover {
 
 .itemBackdrop {
     background-size: cover;
-    background-position: center 13%;
+    background-position: center 15%;
     background-repeat: no-repeat;
     height: 600px;
     position: relative;
@@ -664,13 +649,6 @@ a.itemTag:hover {
     }
 }
 
-@media all and (min-width: 1000px) {
-
-    .itemBackdrop {
-        background-size: 100% auto;
-    }
-}
-
 @media all and (min-width: 750px) {
     .detailPageContent {
         max-width: 900px;
@@ -924,7 +902,7 @@ a.itemTag:hover {
     width: 27px;
     z-index: 1000;
     text-align: center;
-    font-size: 14px;
+    font-size: 13px;
     display: none;
     line-height: 1;
 }
@@ -933,17 +911,16 @@ a.itemTag:hover {
         display: block;
         text-decoration: none;
         padding: 1px 0;
-        color: #bbb !important;
+        font-weight: 500;
     }
 
-        .alphabetPicker a:hover:not(.selectedCharacter) {
-            background: #666 !important;
-            color: #fff !important;
+        .alphabetPicker a:not(.selectedCharacter) {
+            color: #bbb !important;
         }
 
+
 .selectedCharacter {
-    color: #fff !important;
-    background: #4d90fe;
+    color: #4d90fe !important;
 }
 
 .itemOverlayContent {
@@ -997,7 +974,7 @@ a.itemTag:hover {
     }
 
     .itemsContainerWithAlphaPicker {
-        margin-right: 15px;
+        margin-right: 20px;
     }
 }
 
@@ -1208,15 +1185,20 @@ a.itemTag:hover {
     }
 }
 
-.itemsListview {
+
+.itemsContainer .itemsListview {
     max-width: 800px;
+}
+
+.itemsListview {
     margin: 0 auto !important;
 }
 
     .itemsListview .ui-li-aside {
-        right: 1.3em;
-        font-weight: normal;
+        right: 70px;
         font-size: 13px;
+        top: 35%;
+        font-weight: 300 !important;
     }
 
     .itemsListview .ui-li-count {
@@ -1238,6 +1220,57 @@ a.itemTag:hover {
     background-repeat: no-repeat;
     background-size: cover;
     background-position: center center;
+}
+
+.listviewIcon {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 70px;
+    height: 70px;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center center;
+}
+
+.ui-li-has-icon > .ui-btn {
+    padding-left: 5.25em !important;
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
+}
+
+.listItem h3 {
+    font-weight: 400;
+}
+
+.listItem p {
+    font-weight: 300 !important;
+}
+
+.ui-li-has-icon h3 {
+    margin-bottom: 10px !important;
+}
+
+.listItem > .ui-btn + .ui-btn {
+    border: 0 !important;
+    width: 60px !important;
+    height: 90% !important;
+    top: 5% !important;
+    padding-left: 0 !important;
+}
+
+.listItem a:first-child {
+    margin-right: 0 !important;
+    background-color: transparent !important;
+    border-color: #282828 !important;
+}
+
+.listItem a + a {
+    background-color: #202020 !important;
+}
+
+.listItem:hover a {
+    background-color: #333 !important;
 }
 
 @media all and (max-width: 600px) {

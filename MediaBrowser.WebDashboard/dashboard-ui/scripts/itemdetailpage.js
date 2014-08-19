@@ -28,8 +28,6 @@
 
             reloadFromItem(page, item);
         });
-
-        $('.btnEdit', page).attr('href', "edititemmetadata.html?id=" + id);
     }
 
     function reloadFromItem(page, item) {
@@ -50,13 +48,6 @@
             setInitialCollapsibleState(page, item, context, user);
             renderDetails(page, item, context);
             LibraryBrowser.renderDetailPageBackdrop(page, item);
-
-            if (user.Configuration.IsAdministrator) {
-                $('.btnEdit', page).removeClass('hide');
-
-            } else {
-                $('.btnEdit', page).addClass('hide');
-            }
 
             var externalPlayUrl = getExternalPlayUrl(item);
             $('.btnPlayExternal', page).attr('href', externalPlayUrl || '#');
@@ -103,6 +94,12 @@
                 $('.splitVersionContainer', page).show();
             } else {
                 $('.splitVersionContainer', page).hide();
+            }
+
+            if (LibraryBrowser.getMoreCommands(item, user).length) {
+                $('.btnMoreCommands', page).show();
+            } else {
+                $('.btnMoreCommands', page).show();
             }
         });
 
@@ -343,13 +340,6 @@
         $('#themeSongsCollapsible', page).hide();
         $('#themeVideosCollapsible', page).hide();
 
-        if (!item.SoundtrackIds || !item.SoundtrackIds.length) {
-            $('#soundtracksCollapsible', page).hide();
-        } else {
-            $('#soundtracksCollapsible', page).show();
-            renderSoundtracks(page, item);
-        }
-
         if (item.Type == "MusicAlbum") {
             renderMusicVideos(page, item, user);
         } else {
@@ -507,31 +497,6 @@
         return html;
     }
 
-    function renderSoundtracks(page, item) {
-
-        if (item.Type == "MusicAlbum") {
-            $('#soundtracksHeader', page).html("This album is the soundtrack for ...");
-        } else {
-            $('#soundtracksHeader', page).html("Soundtrack(s)");
-        }
-
-        ApiClient.getItems(Dashboard.getCurrentUserId(), {
-
-            Ids: item.SoundtrackIds.join(","),
-            ItemFields: "PrimaryImageAspectRatio,ItemCounts,AudioInfo",
-            SortBy: "SortName"
-
-        }).done(function (result) {
-
-            var html = LibraryBrowser.getPosterViewHtml({
-                items: result.Items,
-                shape: item.Type == "MusicAlbum" ? "portrait" : "square"
-            });
-
-            $('#soundtracksContent', page).html(html);
-        });
-    }
-
     function renderSiblingLinks(page, item, context) {
 
         $('.lnkSibling', page).addClass('hide');
@@ -597,7 +562,7 @@
 
         var options = {
             userId: Dashboard.getCurrentUserId(),
-            limit: item.Type == "MusicAlbum" ? 4 : 5,
+            limit: 5,
             fields: "PrimaryImageAspectRatio,UserData"
         };
 
@@ -634,15 +599,16 @@
 
             var html = LibraryBrowser.getPosterViewHtml({
                 items: result.Items,
-                shape: item.Type == "MusicAlbum" ? "square" : "portrait",
+                shape: item.Type == "MusicAlbum" ? "detailPageSquare" : "detailPagePortrait",
                 showParentTitle: item.Type == "MusicAlbum",
                 centerText: item.Type != "MusicAlbum",
                 showTitle: item.Type == "MusicAlbum" || item.Type == "Game",
                 borderless: item.Type == "Game",
-                context: context
+                context: context,
+                overlayText: item.Type != "MusicAlbum"
             });
 
-            $('#similarContent', page).html(html).createPosterItemMenus();
+            $('#similarContent', page).html(html).createCardMenus();
         });
     }
 
@@ -758,7 +724,11 @@
 
             if (item.Type == "MusicAlbum") {
 
-                $('#childrenContent', page).html(LibraryBrowser.getSongTableHtml(result.Items, { showArtist: true })).trigger('create');
+                $('#childrenContent', page).html(LibraryBrowser.getListViewHtml({
+                    items: result.Items,
+                    smallIcon: true
+
+                })).trigger('create').createCardMenus();
 
             } else {
 
@@ -767,19 +737,21 @@
                 if (item.Type == "Series") {
                     html = LibraryBrowser.getPosterViewHtml({
                         items: result.Items,
-                        shape: "portrait",
-                        showTitle: true,
+                        shape: "detailPagePortrait",
+                        showTitle: false,
                         centerText: true,
-                        context: context
+                        context: context,
+                        overlayText: true
                     });
                 }
                 else if (item.Type == "Season") {
                     html = LibraryBrowser.getPosterViewHtml({
                         items: result.Items,
-                        shape: "smallBackdrop",
+                        shape: "detailPage169",
                         showTitle: true,
                         displayAsSpecial: item.Type == "Season" && item.IndexNumber,
-                        context: context
+                        context: context,
+                        overlayText: true
                     });
                 }
                 else if (item.Type == "GameSystem") {
@@ -792,7 +764,7 @@
                     });
                 }
 
-                $('#childrenContent', page).html(html).createPosterItemMenus();
+                $('#childrenContent', page).html(html).trigger('create').createCardMenus();
 
                 if (item.Type == "BoxSet") {
 
@@ -865,7 +837,7 @@
             renderCollectionItemType(page, { name: 'Titles' }, items, user);
         }
 
-        $('.collectionItems', page).trigger('create').createPosterItemMenus();
+        $('.collectionItems', page).trigger('create').createCardMenus();
     }
 
     function renderCollectionItemType(page, type, items, user, context) {
@@ -885,7 +857,7 @@
 
         html += '<div class="detailSectionContent">';
 
-        var shape = type.type == 'MusicAlbum' ? 'square' : 'portrait';
+        var shape = type.type == 'MusicAlbum' ? 'detailPageSquare' : 'detailPagePortrait';
 
         html += LibraryBrowser.getPosterViewHtml({
             items: items,
@@ -1028,7 +1000,12 @@
 
             $('#themeSongsCollapsible', page).show();
 
-            $('#themeSongsContent', page).html(LibraryBrowser.getSongTableHtml(items, { showArtist: true, showAlbum: true, showAlbumArtist: true })).trigger('create');
+            var html = LibraryBrowser.getListViewHtml({
+                items: items,
+                smallIcon: true
+            });
+
+            $('#themeSongsContent', page).html(html).trigger('create');
         } else {
             $('#themeSongsCollapsible', page).hide();
         }
@@ -1101,7 +1078,7 @@
 
             var onclick = item.PlayAccess == 'Full' ? ' onclick="ItemDetailPage.play(' + chapter.StartPositionTicks + ');"' : '';
 
-            html += '<a class="card card-16-9 manualSize detailPage169Card" href="#play-Chapter-' + i + '"' + onclick + '>';
+            html += '<a class="card detailPage169Card" href="#play-Chapter-' + i + '"' + onclick + '>';
 
             html += '<div class="cardBox">';
             html += '<div class="cardScalable">';
@@ -1306,7 +1283,7 @@
 
             var item = items[i];
 
-            var cssClass = "card card-16-9 manualSize detailPage169Card";
+            var cssClass = "card detailPage169Card";
 
             var href = "itemdetails.html?id=" + item.Id;
 
@@ -1521,6 +1498,16 @@
         $('.btnSync', page).on('click', function () {
 
             SyncManager.showMenu([currentItem]);
+        });
+
+        $('.btnMoreCommands', page).on('click', function () {
+
+            var button = this;
+
+            Dashboard.getCurrentUser().done(function (user) {
+
+                LibraryBrowser.showMoreCommands(button, currentItem.Id, LibraryBrowser.getMoreCommands(currentItem, user));
+            });
         });
 
     }).on('pageshow', "#itemDetailPage", function () {

@@ -2,6 +2,7 @@
 using MediaBrowser.Common.IO;
 using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.LiveTv;
 using MediaBrowser.Controller.Localization;
 using MediaBrowser.Controller.Persistence;
 using MediaBrowser.Controller.Providers;
@@ -52,11 +53,28 @@ namespace MediaBrowser.Controller.Entities
 
         public List<ItemImageInfo> ImageInfos { get; set; }
 
+        public virtual bool SupportsAddingToPlaylist
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         /// <summary>
         /// Gets a value indicating whether this instance is in mixed folder.
         /// </summary>
         /// <value><c>true</c> if this instance is in mixed folder; otherwise, <c>false</c>.</value>
         public bool IsInMixedFolder { get; set; }
+
+        [IgnoreDataMember]
+        public virtual bool SupportsRemoteImageDownloading
+        {
+            get
+            {
+                return true;
+            }
+        }
 
         private string _name;
         /// <summary>
@@ -219,6 +237,7 @@ namespace MediaBrowser.Controller.Entities
         public static IItemRepository ItemRepository { get; set; }
         public static IFileSystem FileSystem { get; set; }
         public static IUserDataManager UserDataManager { get; set; }
+        public static ILiveTvManager LiveTvManager { get; set; }
 
         /// <summary>
         /// Returns a <see cref="System.String" /> that represents this instance.
@@ -1006,6 +1025,18 @@ namespace MediaBrowser.Controller.Entities
 
         private BaseItem FindLinkedChild(LinkedChild info)
         {
+            if (!string.IsNullOrWhiteSpace(info.ItemName))
+            {
+                if (string.Equals(info.ItemType, "musicgenre", StringComparison.OrdinalIgnoreCase))
+                {
+                    return LibraryManager.GetMusicGenre(info.ItemName);
+                }
+                if (string.Equals(info.ItemType, "musicartist", StringComparison.OrdinalIgnoreCase))
+                {
+                    return LibraryManager.GetArtist(info.ItemName);
+                }
+            }
+
             if (!string.IsNullOrEmpty(info.Path))
             {
                 var itemByPath = LibraryManager.RootFolder.FindByPath(info.Path);
@@ -1028,7 +1059,10 @@ namespace MediaBrowser.Controller.Entities
                         {
                             if (info.ItemYear.HasValue)
                             {
-                                return info.ItemYear.Value == (i.ProductionYear ?? -1);
+                                if (info.ItemYear.Value != (i.ProductionYear ?? -1))
+                                {
+                                    return false;
+                                }
                             }
                             return true;
                         }

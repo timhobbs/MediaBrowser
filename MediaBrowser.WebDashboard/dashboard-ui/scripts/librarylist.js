@@ -9,7 +9,7 @@
             showOverlayTimeout = null;
         }
 
-        $('.posterItemOverlayTarget:visible', this).each(function () {
+        $('.cardOverlayTarget:visible', this).each(function () {
 
             var elem = this;
 
@@ -21,28 +21,30 @@
 
         });
 
-        $('.posterItemOverlayTarget:visible', this).stop().animate({ "height": "0" }, function () {
+        $('.cardOverlayTarget:visible', this).stop().animate({ "height": "0" }, function () {
 
             $(this).hide();
 
         });
     }
 
-    function getOverlayHtml(item, currentUser, posterItem, commands) {
+    function getOverlayHtml(item, currentUser, card, commands) {
 
         var html = '';
 
-        html += '<div class="posterItemOverlayInner">';
+        html += '<div class="cardOverlayInner">';
 
-        var isSmallItem = $(posterItem).hasClass('smallBackdropPosterItem') || $(posterItem).hasClass('miniBackdropPosterItem');
-        var isMiniItem = $(posterItem).hasClass('miniBackdropPosterItem');
-        var isPortrait = $(posterItem).hasClass('portraitPosterItem');
-        var isSquare = $(posterItem).hasClass('squarePosterItem');
+        var className = card.className.toLowerCase();
+
+        var isMiniItem = className.indexOf('mini') != -1;
+        var isSmallItem = isMiniItem || className.indexOf('small') != -1;
+        var isPortrait = className.indexOf('portrait') != -1;
+        var isSquare = className.indexOf('square') != -1;
 
         var parentName = isSmallItem || isMiniItem || isPortrait ? null : item.SeriesName;
         var name = LibraryBrowser.getPosterViewDisplayName(item, true);
 
-        html += '<div style="font-weight:bold;margin-bottom:1em;">';
+        html += '<div style="margin-bottom:1em;">';
         var logoHeight = isSmallItem || isMiniItem ? 20 : 26;
         var maxLogoWidth = isPortrait ? 100 : 200;
         var imgUrl;
@@ -121,10 +123,8 @@
             buttonCount++;
         }
 
-        if (currentUser.Configuration.IsAdministrator && commands.indexOf('edit') != -1) {
-            html += '<a data-role="button" data-mini="true" data-inline="true" data-icon="edit" data-iconpos="notext" title="' + Globalize.translate('ButtonEdit') + '" href="edititemmetadata.html?id=' + item.Id + '" style="' + buttonMargin + '">' + Globalize.translate('ButtonEdit') + '</button>';
-            buttonCount++;
-        }
+        html += '<button data-role="button" class="btnMoreCommands" data-mini="true" data-inline="true" data-icon="ellipsis-v" data-iconpos="notext" title="' + Globalize.translate('ButtonMore') + '" style="' + buttonMargin + '">' + Globalize.translate('ButtonMore') + '</button>';
+        buttonCount++;
 
         html += '</div>';
 
@@ -140,6 +140,46 @@
         ApiClient.getLocalTrailers(Dashboard.getCurrentUserId(), id).done(function (trailers) {
             MediaController.play({ items: trailers });
         });
+
+        // Used by the tab menu, not the slide up
+        $('.tapHoldMenu').popup('close');
+
+        return false;
+    }
+
+    function onMoreButtonClick() {
+
+        var card = $(this).parents('.card')[0];
+
+        // Used by the tab menu
+        $('.tapHoldMenu').popup('close');
+
+        showContextMenu(card, {
+            showPlayOptions: false
+        });
+
+        return false;
+    }
+
+    function onAddToPlaylistButtonClick() {
+
+        var id = this.getAttribute('data-itemid');
+
+        // Used by the tab menu, not the slide up
+        $('.tapHoldMenu').popup('close');
+
+        PlaylistManager.showPanel([id]);
+
+        return false;
+    }
+
+    function onRemoveFromPlaylistButtonClick() {
+
+        var playlistItemId = this.getAttribute('data-playlistitemid');
+
+        var page = $(this).parents('.page');
+
+        $('.itemsContainer', page).trigger('removefromplaylist', [playlistItemId]);
 
         // Used by the tab menu, not the slide up
         $('.tapHoldMenu').popup('close');
@@ -210,34 +250,35 @@
         return false;
     }
 
-    function onPosterItemTapHold(e) {
+    function onCardTapHold(e) {
 
-        showContextMenu(this);
+        showContextMenu(this, {});
 
         e.preventDefault();
         return false;
     }
 
-    function showContextMenu(posterItem) {
+    function showContextMenu(card, options) {
 
         $('.tapHoldMenu').popup("close").remove();
 
-        var displayContextItem = posterItem;
+        var displayContextItem = card;
 
-        if ($(posterItem).hasClass('listviewMenuButton')) {
-            posterItem = $(posterItem).parents('.listItem')[0];
+        if ($(card).hasClass('listviewMenuButton')) {
+            card = $(card).parents('.listItem')[0];
         }
 
-        var itemId = posterItem.getAttribute('data-itemid');
-        var commands = posterItem.getAttribute('data-commands').split(',');
-        var itemType = posterItem.getAttribute('data-itemtype');
-        var mediaType = posterItem.getAttribute('data-mediatype');
-        var playbackPositionTicks = parseInt(posterItem.getAttribute('data-positionticks') || '0');
-        var playAccess = posterItem.getAttribute('data-playaccess');
-        var locationType = posterItem.getAttribute('data-locationtype');
-        var isPlaceHolder = posterItem.getAttribute('data-placeholder') == 'true';
+        var itemId = card.getAttribute('data-itemid');
+        var playlistItemId = card.getAttribute('data-playlistitemid');
+        var commands = card.getAttribute('data-commands').split(',');
+        var itemType = card.getAttribute('data-itemtype');
+        var mediaType = card.getAttribute('data-mediatype');
+        var playbackPositionTicks = parseInt(card.getAttribute('data-positionticks') || '0');
+        var playAccess = card.getAttribute('data-playaccess');
+        var locationType = card.getAttribute('data-locationtype');
+        var isPlaceHolder = card.getAttribute('data-placeholder') == 'true';
 
-        $(posterItem).addClass('hasContextMenu');
+        $(card).addClass('hasContextMenu');
 
         Dashboard.getCurrentUser().done(function (user) {
 
@@ -246,7 +287,7 @@
             html += '<ul data-role="listview" style="min-width: 240px;">';
             html += '<li data-role="list-divider">' + Globalize.translate('HeaderMenu') + '</li>';
 
-            var href = posterItem.getAttribute('data-href') || posterItem.href;
+            var href = card.getAttribute('data-href') || card.href;
 
             html += '<li><a href="' + href + '">' + Globalize.translate('ButtonOpen') + '</a></li>';
             html += '<li><a href="' + href + '" target="_blank">' + Globalize.translate('ButtonOpenInNewTab') + '</a></li>';
@@ -255,16 +296,18 @@
                 html += '<li data-icon="edit"><a href="edititemmetadata.html?id=' + itemId + '">' + Globalize.translate('ButtonEdit') + '</a></li>';
             }
 
-            if (MediaController.canPlayByAttributes(itemType, mediaType, playAccess, locationType, isPlaceHolder)) {
-                html += '<li data-icon="play"><a href="#" class="btnPlay" data-itemid="' + itemId + '">' + Globalize.translate('ButtonPlay') + '</a></li>';
-            }
+            if (options.showPlayOptions !== false) {
+                if (MediaController.canPlayByAttributes(itemType, mediaType, playAccess, locationType, isPlaceHolder)) {
+                    html += '<li data-icon="play"><a href="#" class="btnPlay" data-itemid="' + itemId + '">' + Globalize.translate('ButtonPlay') + '</a></li>';
+                }
 
-            if (playbackPositionTicks && mediaType != "Audio") {
-                html += '<li data-icon="play"><a href="#" class="btnResume" data-ticks="' + playbackPositionTicks + '" data-itemid="' + itemId + '">' + Globalize.translate('ButtonResume') + '</a></li>';
-            }
+                if (playbackPositionTicks && mediaType != "Audio") {
+                    html += '<li data-icon="play"><a href="#" class="btnResume" data-ticks="' + playbackPositionTicks + '" data-itemid="' + itemId + '">' + Globalize.translate('ButtonResume') + '</a></li>';
+                }
 
-            if (commands.indexOf('trailer') != -1) {
-                html += '<li data-icon="video"><a href="#" class="btnPlayTrailer" data-itemid="' + itemId + '">' + Globalize.translate('ButtonPlayTrailer') + '</a></li>';
+                if (commands.indexOf('trailer') != -1) {
+                    html += '<li data-icon="video"><a href="#" class="btnPlayTrailer" data-itemid="' + itemId + '">' + Globalize.translate('ButtonPlayTrailer') + '</a></li>';
+                }
             }
 
             if (MediaController.canQueueMediaType(mediaType, itemType)) {
@@ -279,6 +322,14 @@
                 html += '<li data-icon="recycle"><a href="#" class="btnShuffle" data-itemid="' + itemId + '">' + Globalize.translate('ButtonShuffle') + '</a></li>';
             }
 
+            if (commands.indexOf('playlist') != -1) {
+                html += '<li data-icon="plus"><a href="#" class="btnAddToPlaylist" data-itemid="' + itemId + '">' + Globalize.translate('ButtonAddToPlaylist') + '</a></li>';
+            }
+
+            if (commands.indexOf('removefromplaylist') != -1) {
+                html += '<li data-icon="delete"><a href="#" class="btnRemoveFromPlaylist" data-playlistitemid="' + playlistItemId + '">' + Globalize.translate('ButtonRemoveFromPlaylist') + '</a></li>';
+            }
+
             html += '</ul>';
 
             html += '</div>';
@@ -288,7 +339,7 @@
             var elem = $('.tapHoldMenu').popup({ positionTo: displayContextItem }).trigger('create').popup("open").on("popupafterclose", function () {
 
                 $(this).off("popupafterclose").remove();
-                $(posterItem).removeClass('hasContextMenu');
+                $(card).removeClass('hasContextMenu');
             });
 
             $('.btnPlay', elem).on('click', onPlayButtonClick);
@@ -297,26 +348,28 @@
             $('.btnInstantMix', elem).on('click', onInstantMixButtonClick);
             $('.btnShuffle', elem).on('click', onShuffleButtonClick);
             $('.btnPlayTrailer', elem).on('click', onTrailerButtonClick);
+            $('.btnAddToPlaylist', elem).on('click', onAddToPlaylistButtonClick);
+            $('.btnRemoveFromPlaylist', elem).on('click', onRemoveFromPlaylistButtonClick);
         });
     }
 
     function onListViewMenuButtonClick(e) {
 
-        showContextMenu(this);
+        showContextMenu(this, {});
 
         e.preventDefault();
         return false;
     }
 
-    function onGroupedPosterItemClick(e) {
+    function onGroupedCardClick(e) {
 
         var target = $(e.target);
 
-        var posterItem = this;
-        var itemId = posterItem.getAttribute('data-itemid');
-        var context = posterItem.getAttribute('data-context');
+        var card = this;
+        var itemId = card.getAttribute('data-itemid');
+        var context = card.getAttribute('data-context');
 
-        $(posterItem).addClass('hasContextMenu');
+        $(card).addClass('hasContextMenu');
 
         var userId = Dashboard.getCurrentUserId();
 
@@ -324,14 +377,13 @@
 
         var options = {
 
-            Limit: parseInt($('.playedIndicator', posterItem).html() || '10'),
+            Limit: parseInt($('.playedIndicator', card).html() || '10'),
             Fields: "PrimaryImageAspectRatio,DateCreated",
             ParentId: itemId,
-            IsFolder: false,
             GroupItems: false
         };
 
-        if ($(posterItem).hasClass('unplayedGroupings')) {
+        if ($(card).hasClass('unplayedGroupings')) {
             options.IsPlayed = false;
         }
 
@@ -357,7 +409,7 @@
             html += '<div>';
             html += '<ul data-role="listview">';
 
-            var href = posterItem.href || LibraryBrowser.getHref(item, context);
+            var href = card.href || LibraryBrowser.getHref(item, context);
             var header = Globalize.translate('HeaderLatestFromChannel').replace('{0}', '<a href="' + href + '">' + item.Name + '</a>');
             html += '<li data-role="list-divider">' + header + '</li>';
 
@@ -418,7 +470,7 @@
             var elem = $('.groupingMenu').popup().trigger('create').popup("open").on("popupafterclose", function () {
 
                 $(this).off("popupafterclose").remove();
-                $(posterItem).removeClass('hasContextMenu');
+                $(card).removeClass('hasContextMenu');
 
             });
         });
@@ -428,7 +480,7 @@
     }
 
 
-    $.fn.createPosterItemMenus = function () {
+    $.fn.createCardMenus = function () {
 
         var preventHover = false;
 
@@ -442,7 +494,7 @@
                 return;
             }
 
-            var innerElem = $('.posterItemOverlayTarget', elem);
+            var innerElem = $('.cardOverlayTarget', elem);
             var id = elem.getAttribute('data-itemid');
             var commands = elem.getAttribute('data-commands').split(',');
 
@@ -457,6 +509,7 @@
                 innerElem.html(getOverlayHtml(item, user, elem, commands)).trigger('create');
 
                 $('.btnPlayTrailer', innerElem).on('click', onTrailerButtonClick);
+                $('.btnMoreCommands', innerElem).on('click', onMoreButtonClick);
             });
 
             innerElem.show().each(function () {
@@ -491,18 +544,19 @@
             preventHover = true;
         }
 
-        var elems = '.backdropPosterItem,.smallBackdropPosterItem,.portraitPosterItem,.squarePosterItem,.miniBackdropPosterItem';
+        var elems = '.card:not(.bannerCard)';
 
-        $('.posterItem', this).on('contextmenu.posterItemMenu', onPosterItemTapHold);
+        $('.card', this).on('contextmenu.cardMenu', onCardTapHold);
 
         $('.listviewMenuButton', this).on('click', onListViewMenuButtonClick);
 
-        $('.groupedPosterItem', this).on('click', onGroupedPosterItemClick);
+        $('.groupedCard', this).on('click', onGroupedCardClick);
 
-        return this.off('.posterItemHoverMenu')
-            .on('mouseenter.posterItemHoverMenu', elems, onHoverIn)
-            .on('mouseleave.posterItemHoverMenu', elems, onHoverOut)
-            .on("touchstart.posterItemHoverMenu", elems, preventTouchHover);
+        return this.off('.cardHoverMenu')
+            .on('mouseenter.cardHoverMenu', elems, onHoverIn)
+            .on('mouseleave.cardHoverMenu', elems, onHoverOut)
+            .on("touchstart.cardHoverMenu", elems, preventTouchHover)
+            .trigger('itemsrendered');
     };
 
     function toggleSelections(page) {
@@ -539,7 +593,7 @@
 
         var selection = $('.chkItemSelect:checked', page);
 
-        return selection.parents('.posterItem')
+        return selection.parents('.card')
             .map(function () {
 
                 return this.getAttribute('data-itemid');
@@ -561,9 +615,9 @@
             return;
         }
 
-        var names = $('.chkItemSelect:checked', page).parents('.posterItem').get().reverse().map(function (e) {
+        var names = $('.chkItemSelect:checked', page).parents('.card').get().reverse().map(function (e) {
 
-            return $('.posterItemText', e).html();
+            return $('.cardText', e).html();
 
         }).join('<br/>');
 
@@ -611,9 +665,30 @@
         BoxSetEditor.showPanel(page, selection);
     }
 
+    function addToPlaylist(page) {
+
+        var selection = getSelectedItems(page);
+
+        if (selection.length < 1) {
+
+            Dashboard.alert({
+                message: Globalize.translate('MessagePleaseSelectOneItem'),
+                title: Globalize.translate('HeaderError')
+            });
+
+            return;
+        }
+
+        PlaylistManager.showPanel(selection);
+    }
+
     $(document).on('pageinit', ".libraryPage", function () {
 
         var page = this;
+
+        $('.btnAddToPlaylist', page).on('click', function () {
+            addToPlaylist(page);
+        });
 
         $('.btnMergeVersions', page).on('click', function () {
             combineVersions(page);
@@ -640,7 +715,7 @@
 
         }).join('')).selectmenu('refresh');
 
-        $('.itemsContainer', page).on('itemsrendered', function() {
+        $('.itemsContainer', page).on('itemsrendered', function () {
 
             $('.btnToggleSelections', page).off('click.toggleselections').on('click.toggleselections', function () {
                 toggleSelections(page);
@@ -657,32 +732,32 @@
         $('.viewTabButton:first', page).trigger('click');
     });
 
-    function renderUserDataChanges(posterItem, userData) {
+    function renderUserDataChanges(card, userData) {
 
         if (userData.Played) {
 
-            if (!$('.playedIndicator', posterItem).length) {
+            if (!$('.playedIndicator', card).length) {
 
-                $('<div class="playedIndicator"></div>').insertAfter($('.posterItemOverlayTarget', posterItem));
+                $('<div class="playedIndicator"></div>').insertAfter($('.cardOverlayTarget', card));
             }
-            $('.playedIndicator', posterItem).html('<div class="ui-icon-check ui-btn-icon-notext"></div>');
-            $('.posterItemProgress', posterItem).remove();
+            $('.playedIndicator', card).html('<div class="ui-icon-check ui-btn-icon-notext"></div>');
+            $('.cardProgress', card).remove();
         }
         else if (userData.UnplayedItemCount) {
 
-            if (!$('.playedIndicator', posterItem).length) {
+            if (!$('.playedIndicator', card).length) {
 
-                $('<div class="playedIndicator"></div>').insertAfter($('.posterItemOverlayTarget', posterItem));
+                $('<div class="playedIndicator"></div>').insertAfter($('.cardOverlayTarget', card));
             }
-            $('.playedIndicator', posterItem).html(userData.UnplayedItemCount);
+            $('.playedIndicator', card).html(userData.UnplayedItemCount);
         }
         else {
 
-            $('.playedIndicator', posterItem).remove();
+            $('.playedIndicator', card).remove();
 
             var progressHtml = LibraryBrowser.getItemProgressBarHtml(userData);
 
-            $('.posterItemProgress', posterItem).html(progressHtml);
+            $('.cardProgress', card).html(progressHtml);
         }
     }
 
@@ -694,7 +769,7 @@
 
             this.setAttribute('data-positionticks', (userData.PlaybackPositionTicks || 0));
 
-            if ($(this).hasClass('posterItem')) {
+            if ($(this).hasClass('card')) {
                 renderUserDataChanges(this, userData);
             }
         });

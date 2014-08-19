@@ -83,6 +83,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\MediaBrowser.Model\Activity\ActivityLogEntry.cs">
+      <Link>Activity\ActivityLogEntry.cs</Link>
+    </Compile>
     <Compile Include="..\MediaBrowser.Model\ApiClient\ApiClientExtensions.cs">
       <Link>ApiClient\ApiClientExtensions.cs</Link>
     </Compile>
@@ -131,6 +134,9 @@
     <Compile Include="..\MediaBrowser.Model\Chapters\RemoteChapterResult.cs">
       <Link>Chapters\RemoteChapterResult.cs</Link>
     </Compile>
+    <Compile Include="..\MediaBrowser.Model\Collections\CollectionCreationResult.cs">
+      <Link>Collections\CollectionCreationResult.cs</Link>
+    </Compile>
     <Compile Include="..\MediaBrowser.Model\Configuration\BaseApplicationConfiguration.cs">
       <Link>Configuration\BaseApplicationConfiguration.cs</Link>
     </Compile>
@@ -152,9 +158,6 @@
     <Compile Include="..\MediaBrowser.Model\Configuration\ImageSavingConvention.cs">
       <Link>Configuration\ImageSavingConvention.cs</Link>
     </Compile>
-    <Compile Include="..\MediaBrowser.Model\Configuration\LiveTvOptions.cs">
-      <Link>Configuration\LiveTvOptions.cs</Link>
-    </Compile>
     <Compile Include="..\MediaBrowser.Model\Configuration\MetadataOptions.cs">
       <Link>Configuration\MetadataOptions.cs</Link>
     </Compile>
@@ -173,14 +176,8 @@
     <Compile Include="..\MediaBrowser.Model\Configuration\ServerConfiguration.cs">
       <Link>Configuration\ServerConfiguration.cs</Link>
     </Compile>
-    <Compile Include="..\MediaBrowser.Model\Configuration\SubtitleOptions.cs">
-      <Link>Configuration\SubtitleOptions.cs</Link>
-    </Compile>
     <Compile Include="..\MediaBrowser.Model\Configuration\SubtitlePlaybackMode.cs">
       <Link>Configuration\SubtitlePlaybackMode.cs</Link>
-    </Compile>
-    <Compile Include="..\MediaBrowser.Model\Configuration\TvFileOrganizationOptions.cs">
-      <Link>Configuration\TvFileOrganizationOptions.cs</Link>
     </Compile>
     <Compile Include="..\MediaBrowser.Model\Configuration\UnratedItem.cs">
       <Link>Configuration\UnratedItem.cs</Link>
@@ -473,6 +470,9 @@
     <Compile Include="..\MediaBrowser.Model\Extensions\StringHelper.cs">
       <Link>Extensions\StringHelper.cs</Link>
     </Compile>
+    <Compile Include="..\MediaBrowser.Model\FileOrganization\AutoOrganizeOptions.cs">
+      <Link>FileOrganization\AutoOrganizeOptions.cs</Link>
+    </Compile>
     <Compile Include="..\MediaBrowser.Model\FileOrganization\EpisodeFileOrganizationRequest.cs">
       <Link>FileOrganization\EpisodeFileOrganizationRequest.cs</Link>
     </Compile>
@@ -487,6 +487,9 @@
     </Compile>
     <Compile Include="..\MediaBrowser.Model\FileOrganization\FileSortingStatus.cs">
       <Link>FileOrganization\FileSortingStatus.cs</Link>
+    </Compile>
+    <Compile Include="..\MediaBrowser.Model\FileOrganization\TvFileOrganizationOptions.cs">
+      <Link>FileOrganization\TvFileOrganizationOptions.cs</Link>
     </Compile>
     <Compile Include="..\MediaBrowser.Model\Games\GameSystem.cs">
       <Link>Games\GameSystem.cs</Link>
@@ -541,6 +544,9 @@
     </Compile>
     <Compile Include="..\MediaBrowser.Model\LiveTv\LiveTvInfo.cs">
       <Link>LiveTv\LiveTvInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\MediaBrowser.Model\LiveTv\LiveTvOptions.cs">
+      <Link>LiveTv\LiveTvOptions.cs</Link>
     </Compile>
     <Compile Include="..\MediaBrowser.Model\LiveTv\LiveTvServiceInfo.cs">
       <Link>LiveTv\LiveTvServiceInfo.cs</Link>
@@ -689,6 +695,9 @@
     <Compile Include="..\MediaBrowser.Model\Notifications\SendToUserType.cs">
       <Link>Notifications\SendToUserType.cs</Link>
     </Compile>
+    <Compile Include="..\MediaBrowser.Model\Playlists\PlaylistCreationResult.cs">
+      <Link>Playlists\PlaylistCreationResult.cs</Link>
+    </Compile>
     <Compile Include="..\MediaBrowser.Model\Plugins\BasePluginConfiguration.cs">
       <Link>Plugins\BasePluginConfiguration.cs</Link>
     </Compile>
@@ -719,6 +728,9 @@
     <Compile Include="..\MediaBrowser.Model\Providers\RemoteSubtitleInfo.cs">
       <Link>Providers\RemoteSubtitleInfo.cs</Link>
     </Compile>
+    <Compile Include="..\MediaBrowser.Model\Providers\SubtitleOptions.cs">
+      <Link>Providers\SubtitleOptions.cs</Link>
+    </Compile>
     <Compile Include="..\MediaBrowser.Model\Querying\AllThemeMediaResult.cs">
       <Link>Querying\AllThemeMediaResult.cs</Link>
     </Compile>
@@ -748,6 +760,9 @@
     </Compile>
     <Compile Include="..\MediaBrowser.Model\Querying\ItemsResult.cs">
       <Link>Querying\ItemsResult.cs</Link>
+    </Compile>
+    <Compile Include="..\MediaBrowser.Model\Querying\LatestItemsQuery.cs">
+      <Link>Querying\LatestItemsQuery.cs</Link>
     </Compile>
     <Compile Include="..\MediaBrowser.Model\Querying\NextUpQuery.cs">
       <Link>Querying\NextUpQuery.cs</Link>

@@ -432,10 +432,9 @@
 
             if (query.IncludeItemTypes == "Audio") {
 
-                html += LibraryBrowser.getSongTableHtml(result.Items, {
-                    showAlbum: true,
-                    showArtist: true,
-                    showAlbumArtist: true
+                html = LibraryBrowser.getListViewHtml({
+                    items: result.Items,
+                    smallIcon: true
                 });
 
             }
@@ -494,7 +493,7 @@
 
             html += LibraryBrowser.getPagingHtml(query, result.TotalRecordCount);
 
-            $('#items', page).html(html).trigger('create').createPosterItemMenus();
+            $('#items', page).html(html).trigger('create').createCardMenus();
 
             $('.btnNextPage', page).on('click', function () {
 

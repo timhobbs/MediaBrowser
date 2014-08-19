@@ -29,7 +29,9 @@
         html += '<div>';
         html += LibraryBrowser.getPosterViewHtml({
             items: recommendation.Items,
-            lazy: true
+            lazy: true,
+            shape: 'homePagePortrait',
+            overlayText: true
         });
         html += '</div>';
 
@@ -50,7 +52,7 @@
             SortOrder: "Descending",
             IncludeItemTypes: "Movie",
             Filters: "IsResumable",
-            Limit: screenWidth >= 1600 ? 8 : (screenWidth >= 1200 ? 6 : 3),
+            Limit: screenWidth >= 1920 ? 10 : (screenWidth >= 1600 ? 8 : (screenWidth >= 1200 ? 6 : 3)),
             Recursive: true,
             Fields: "PrimaryImageAspectRatio",
             CollapseBoxSetItems: false,
@@ -68,12 +70,12 @@
             $('#resumableItems', page).html(LibraryBrowser.getPosterViewHtml({
                 items: result.Items,
                 preferBackdrop: true,
-                shape: 'backdrop',
-                overlayText: screenWidth >= 600,
+                shape: 'homePageBackdrop',
+                overlayText: true,
                 showTitle: true,
                 lazy: true
 
-            })).trigger('create').createPosterItemMenus();
+            })).trigger('create').createCardMenus();
 
         });
 
@@ -81,7 +83,7 @@
 
             userId: Dashboard.getCurrentUserId(),
             categoryLimit: screenWidth >= 1200 ? 4 : 3,
-            ItemLimit: screenWidth >= 1600 ? 7 : (screenWidth >= 1200 ? 6 : 5),
+            ItemLimit: screenWidth >= 1920 ? 9 : (screenWidth >= 1600 ? 7 : (screenWidth >= 1200 ? 6 : 5)),
             Fields: "PrimaryImageAspectRatio"
         });
 
@@ -97,7 +99,7 @@
             var html = recommendations.map(getRecommendationHtml).join('');
 
             $('.noItemsMessage', page).hide();
-            $('.recommendations', page).html(html).trigger('create').createPosterItemMenus();
+            $('.recommendations', page).html(html).trigger('create').createCardMenus();
         });
 
     });

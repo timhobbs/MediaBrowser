@@ -255,6 +255,7 @@
      * Loads media into a running receiver application
      * @param {Number} mediaIndex An index number to indicate current media content
      */
+<<<<<<< HEAD
     CastPlayer.prototype.loadMedia = function (userId, options, command) {
         var cPlayer = this;
         if (!this.session) {
@@ -294,7 +295,23 @@
               cPlayer.onLoadMediaError.bind(cPlayer));
         });
 
+=======
+    CastPlayer.prototype.loadMedia = function (userId, options, command) {
 
+        if (!this.session) {
+            console.log("no session");
+            return;
+        }
+
+        options.userId = userId;
+
+        var message = {
+            playOptions: options,
+            command: command
+        };
+>>>>>>> upstream/master
+
+        this.session.sendMessage('urn:x-cast:com.google.cast.sample.playlist', JSON.stringify(message));
     };
 
     /**
@@ -600,6 +617,7 @@
     // Create Cast Player
     var castPlayer = new CastPlayer();
 
+<<<<<<< HEAD
     function getCodecLimits() {
 
         return {
@@ -802,6 +820,9 @@
     }
 
     function getCustomData(item, mediaSourceId, startTimeTicks) {
+=======
+    function getCustomData(item, mediaSourceId, startTimeTicks) {
+>>>>>>> upstream/master
 
         return {
 
@@ -819,6 +840,7 @@
 
     }
 
+<<<<<<< HEAD
     function getMetadata(item) {
 
         var metadata = {};
@@ -984,6 +1006,66 @@
     }
 
     function chromecastPlayer() {
+=======
+    function translateItemsForPlayback(items) {
+
+        var deferred = $.Deferred();
+
+        var firstItem = items[0];
+        var promise;
+
+        if (firstItem.Type == "Playlist") {
+
+            promise = self.getItemsForPlayback({
+                ParentId: firstItem.Id,
+            });
+        }
+        else if (firstItem.Type == "MusicArtist") {
+
+            promise = self.getItemsForPlayback({
+                Artists: firstItem.Name,
+                Filters: "IsNotFolder",
+                Recursive: true,
+                SortBy: "SortName",
+                MediaTypes: "Audio"
+            });
+
+        }
+        else if (firstItem.Type == "MusicGenre") {
+
+            promise = self.getItemsForPlayback({
+                Genres: firstItem.Name,
+                Filters: "IsNotFolder",
+                Recursive: true,
+                SortBy: "SortName",
+                MediaTypes: "Audio"
+            });
+        }
+        else if (firstItem.IsFolder) {
+
+            promise = self.getItemsForPlayback({
+                ParentId: firstItem.Id,
+                Filters: "IsNotFolder",
+                Recursive: true,
+                SortBy: "SortName",
+                MediaTypes: "Audio,Video"
+            });
+        }
+
+        if (promise) {
+            promise.done(function (result) {
+
+                deferred.resolveWith(null, [result.Items]);
+            });
+        } else {
+            deferred.resolveWith(null, [items]);
+        }
+
+        return deferred.promise();
+    }
+
+    function chromecastPlayer() {
+>>>>>>> upstream/master
 
         var self = this;
 
@@ -1017,8 +1099,62 @@
             $(self).trigger("positionchange", [state]);
         });
 
+<<<<<<< HEAD
         self.play = function (options) {
             castPlayer.loadMedia(Dashboard.getCurrentUserId(), options, 'PlayNow');
+=======
+        self.play = function (options) {
+
+            Dashboard.getCurrentUser().done(function (user) {
+
+                if (options.items) {
+
+                    translateItemsForPlayback(options.items).done(function (items) {
+
+                        self.playWithIntros(items, options, user);
+                    });
+
+                } else {
+
+                    self.getItemsForPlayback({
+
+                        Ids: options.ids.join(',')
+
+                    }).done(function (result) {
+
+                        translateItemsForPlayback(result.Items).done(function (items) {
+
+                            self.playWithIntros(items, options, user);
+                        });
+
+                    });
+                }
+
+            });
+
+        };
+
+        self.playWithIntros = function (items, options, user) {
+
+            var firstItem = items[0];
+
+            if (options.startPositionTicks || firstItem.MediaType !== 'Video' || !self.canAutoPlayVideo()) {
+                self.playWithCommand(options, 'PlayNow');
+
+             }
+
+            ApiClient.getJSON(ApiClient.getUrl('Users/' + user.Id + '/Items/' + firstItem.Id + '/Intros')).done(function (intros) {
+
+                items = intros.Items.concat(items);
+                options.items = items;
+                self.playWithCommand(options, 'PlayNow');
+            });
+        };
+
+        self.playWithCommand = function (options, command) {
+
+            castPlayer.loadMedia(Dashboard.getCurrentUserId(), options, command);
+>>>>>>> upstream/master
         };
 
         self.unpause = function () {
@@ -1031,6 +1167,7 @@
             castPlayer.pauseMedia();
         };
 
+<<<<<<< HEAD
         self.shuffle = function (id) {
             var userId = Dashboard.getCurrentUserId();
             ApiClient.getItem(userId, id).done(function (item) {
@@ -1106,17 +1243,130 @@
                 });
             });
         };
+=======
+        self.shuffle = function (id) {
+
+            var userId = Dashboard.getCurrentUserId();
+
+            ApiClient.getItem(userId, id).done(function (item) {
+
+                var query = {
+                    UserId: userId,
+                    Fields: getItemFields,
+                    Limit: 50,
+                    Filters: "IsNotFolder",
+                    Recursive: true,
+                    SortBy: "Random"
+                };
+
+                if (item.Type == "MusicArtist") {
+
+                    query.MediaTypes = "Audio";
+                    query.Artists = item.Name;
+
+                }
+                else if (item.Type == "MusicGenre") {
+
+                    query.MediaTypes = "Audio";
+                    query.Genres = item.Name;
+
+                }
+                else if (item.IsFolder) {
+                    query.ParentId = id;
+
+                }
+                else {
+                    return;
+                }
+
+                self.getItemsForPlayback(query).done(function (result) {
+
+                    self.play({ items: result.Items });
+
+                });
+
+            });
+
+        };
+
+        self.instantMix = function (id) {
+
+            var userId = Dashboard.getCurrentUserId();
+
+            ApiClient.getItem(userId, id).done(function (item) {
+
+                var promise;
+
+                if (item.Type == "MusicArtist") {
+
+                    promise = ApiClient.getInstantMixFromArtist(name, {
+                        UserId: Dashboard.getCurrentUserId(),
+                        Fields: getItemFields,
+                        Limit: 50
+                    });
+
+                }
+                else if (item.Type == "MusicGenre") {
+
+                    promise = ApiClient.getInstantMixFromMusicGenre(name, {
+                        UserId: Dashboard.getCurrentUserId(),
+                        Fields: getItemFields,
+                        Limit: 50
+                    });
+
+                }
+                else if (item.Type == "MusicAlbum") {
+
+                    promise = ApiClient.getInstantMixFromAlbum(id, {
+                        UserId: Dashboard.getCurrentUserId(),
+                        Fields: getItemFields,
+                        Limit: 50
+                    });
+
+                }
+                else if (item.Type == "Audio") {
+
+                    promise = ApiClient.getInstantMixFromSong(id, {
+                        UserId: Dashboard.getCurrentUserId(),
+                        Fields: getItemFields,
+                        Limit: 50
+                    });
+
+                }
+                else {
+                    return;
+                }
+
+                promise.done(function (result) {
+
+                    self.play({ items: result.Items });
+
+                });
+
+            });
+
+        };
+>>>>>>> upstream/master
 
         self.canQueueMediaType = function (mediaType) {
             return mediaType == "Audio";
         };
 
+<<<<<<< HEAD
         self.queue = function (options) {
             castPlayer.loadMedia(Dashboard.getCurrentUserId(), options, 'PlayLast');
         };
 
         self.queueNext = function (options) {
             castPlayer.loadMedia(Dashboard.getCurrentUserId(), options, 'PlayNext');
+=======
+        self.queue = function (options) {
+            self.playWithCommnd(options, 'PlayLast');
+        };
+
+        self.queueNext = function (options) {
+            self.playWithCommand(options, 'PlayNext');
+>>>>>>> upstream/master
         };
 
         self.stop = function () {

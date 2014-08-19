@@ -969,6 +969,25 @@
             $('.itemVideo').off('mousemove.videoplayer keydown.videoplayer scroll.videoplayer');
         }
 
+        self.canAutoPlayVideo = function () {
+
+            if ($.browser.msie || $.browser.mobile) {
+                return false;
+            }
+
+            return true;
+        };
+
+        // Replace audio version
+        self.cleanup = function (playerElement) {
+
+            if (playerElement.tagName.toLowerCase() == 'video') {
+                currentTimeElement.html('--:--');
+
+                unbindEventsForPlayback();
+            }
+        };
+
         self.playVideo = function (item, mediaSource, startPosition) {
 
             var mediaStreams = mediaSource.MediaStreams || [];
@@ -1061,7 +1080,7 @@
             // Create video player
             var html = '';
 
-            var requiresNativeControls = $.browser.msie || $.browser.mobile;
+            var requiresNativeControls = !self.canAutoPlayVideo();
 
             // Can't autoplay in these browsers so we need to use the full controls
             if (requiresNativeControls) {
@@ -1195,6 +1214,10 @@
 
             }).one("playing.mediaplayerevent", function () {
 
+
+                // For some reason this is firing at the start, so don't bind until playback has begun
+                $(this).on("ended.playbackstopped", self.onPlaybackStopped).one('ended.playnext', self.playNextAfterEnded);
+
                 self.onPlaybackStart(this, item, mediaSource);
 
             }).on("pause.mediaplayerevent", function (e) {
@@ -1237,7 +1260,7 @@
                     errorMsg += '</p>';
                 }
 
-                if ($.browser.msie && !$.browser.mobile) {
+                if ($.browser.msie && !$.browser.mobile && !self.canPlayWebm()) {
                     errorMsg += '<p>';
                     errorMsg += '<a href="https://tools.google.com/dlpage/webmmf/" target="_blank">';
                     errorMsg += Globalize.translate('MessageInternetExplorerWebm');
@@ -1263,15 +1286,7 @@
 
                 self.toggleFullscreen();
 
-            }).on("ended.playbackstopped", function () {
-
-                currentTimeElement.html('--:--');
-
-                self.onPlaybackStopped.call(this);
-
-                unbindEventsForPlayback();
-
-            }).one('ended.playnext', self.playNextAfterEnded);
+            });
 
             bindEventsForPlayback();
 

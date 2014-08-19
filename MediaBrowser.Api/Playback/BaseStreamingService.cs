@@ -626,7 +626,7 @@ namespace MediaBrowser.Api.Playback
         /// <param name="state">The state.</param>
         /// <param name="outputVideoCodec">The output video codec.</param>
         /// <returns>System.String.</returns>
-        protected string GetInternalGraphicalSubtitleParam(StreamState state, string outputVideoCodec)
+        protected string GetGraphicalSubtitleParam(StreamState state, string outputVideoCodec)
         {
             var outputSizeParam = string.Empty;
 
@@ -806,6 +806,8 @@ namespace MediaBrowser.Api.Playback
 
             if (string.IsNullOrEmpty(state.MediaPath))
             {
+                var checkCodecs = false;
+
                 if (string.Equals(state.ItemType, typeof(LiveTvChannel).Name))
                 {
                     var streamInfo = await LiveTvManager.GetChannelStream(state.Request.Id, cancellationTokenSource.Token).ConfigureAwait(false);
@@ -824,6 +826,9 @@ namespace MediaBrowser.Api.Playback
                         state.MediaPath = streamInfo.Url;
                         state.InputProtocol = MediaProtocol.Http;
                     }
+
+                    AttachMediaStreamInfo(state, streamInfo.MediaStreams, state.VideoRequest, state.RequestedUrl);
+                    checkCodecs = true;
                 }
 
                 else if (string.Equals(state.ItemType, typeof(LiveTvVideoRecording).Name) ||
@@ -844,6 +849,24 @@ namespace MediaBrowser.Api.Playback
                     {
                         state.MediaPath = streamInfo.Url;
                         state.InputProtocol = MediaProtocol.Http;
+                    }
+
+                    AttachMediaStreamInfo(state, streamInfo.MediaStreams, state.VideoRequest, state.RequestedUrl);
+                    checkCodecs = true;
+                }
+
+                var videoRequest = state.VideoRequest;
+
+                if (videoRequest != null && checkCodecs)
+                {
+                    if (state.VideoStream != null && CanStreamCopyVideo(videoRequest, state.VideoStream))
+                    {
+                        state.OutputVideoCodec = "copy";
+                    }
+
+                    if (state.AudioStream != null && CanStreamCopyAudio(videoRequest, state.AudioStream, state.SupportedAudioCodecs))
+                    {
+                        state.OutputAudioCodec = "copy";
                     }
                 }
             }
@@ -1605,6 +1628,8 @@ namespace MediaBrowser.Api.Playback
             {
                 state.AudioStream = GetMediaStream(mediaStreams, null, MediaStreamType.Audio, true);
             }
+
+            state.AllMediaStreams = mediaStreams;
         }
 
         private async Task<MediaSourceInfo> GetChannelMediaInfo(string id,
@@ -1640,7 +1665,10 @@ namespace MediaBrowser.Api.Playback
             // Can't stream copy if we're burning in subtitles
             if (request.SubtitleStreamIndex.HasValue)
             {
-                return false;
+                if (request.SubtitleMethod == SubtitleDeliveryMethod.Encode)
+                {
+                    return false;
+                }
             }
 
             // Source and target codecs must match
@@ -1917,7 +1945,8 @@ namespace MediaBrowser.Api.Playback
                     state.TargetPacketLength,
                     state.TranscodeSeekInfo,
                     state.IsTargetAnamorphic
-                    );
+
+                    ).FirstOrDefault() ?? string.Empty;
             }
 
             foreach (var item in responseHeaders)

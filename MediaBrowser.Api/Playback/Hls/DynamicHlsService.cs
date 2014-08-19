@@ -5,6 +5,8 @@ using MediaBrowser.Controller.Dlna;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.LiveTv;
 using MediaBrowser.Controller.MediaEncoding;
+using MediaBrowser.Model.Dlna;
+using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.IO;
 using ServiceStack;
 using System;
@@ -18,14 +20,18 @@ using System.Threading.Tasks;
 
 namespace MediaBrowser.Api.Playback.Hls
 {
-    [Route("/Videos/{Id}/master.m3u8", "GET")]
-    [Api(Description = "Gets a video stream using HTTP live streaming.")]
+    [Route("/Videos/{Id}/master.m3u8", "GET", Summary = "Gets a video stream using HTTP live streaming.")]
     public class GetMasterHlsVideoStream : VideoStreamRequest
     {
+        public bool EnableAdaptiveBitrateStreaming { get; set; }
+
+        public GetMasterHlsVideoStream()
+        {
+            EnableAdaptiveBitrateStreaming = true;
+        }
     }
 
-    [Route("/Videos/{Id}/main.m3u8", "GET")]
-    [Api(Description = "Gets a video stream using HTTP live streaming.")]
+    [Route("/Videos/{Id}/main.m3u8", "GET", Summary = "Gets a video stream using HTTP live streaming.")]
     public class GetMainHlsVideoStream : VideoStreamRequest
     {
     }
@@ -55,21 +61,6 @@ namespace MediaBrowser.Api.Playback.Hls
 
         public object Get(GetMasterHlsVideoStream request)
         {
-            if (string.Equals(request.AudioCodec, "copy", StringComparison.OrdinalIgnoreCase))
-            {
-                throw new ArgumentException("Audio codec copy is not allowed here.");
-            }
-
-            if (string.Equals(request.VideoCodec, "copy", StringComparison.OrdinalIgnoreCase))
-            {
-                throw new ArgumentException("Video codec copy is not allowed here.");
-            }
-
-            if (string.IsNullOrEmpty(request.MediaSourceId))
-            {
-                throw new ArgumentException("MediaSourceId is required");
-            }
-
             var result = GetAsync(request).Result;
 
             return result;
@@ -332,6 +323,21 @@ namespace MediaBrowser.Api.Playback.Hls
         {
             var state = await GetState(request, CancellationToken.None).ConfigureAwait(false);
 
+            if (string.Equals(request.AudioCodec, "copy", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("Audio codec copy is not allowed here.");
+            }
+
+            if (string.Equals(request.VideoCodec, "copy", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("Video codec copy is not allowed here.");
+            }
+
+            if (string.IsNullOrEmpty(request.MediaSourceId))
+            {
+                throw new ArgumentException("MediaSourceId is required");
+            }
+
             var audioBitrate = state.OutputAudioBitrate ?? 0;
             var videoBitrate = state.OutputVideoBitrate ?? 0;
 
@@ -353,7 +359,17 @@ namespace MediaBrowser.Api.Playback.Hls
             var playlistUrl = (state.RunTimeTicks ?? 0) > 0 ? "main.m3u8" : "live.m3u8";
             playlistUrl += queryString;
 
-            AppendPlaylist(builder, playlistUrl, totalBitrate);
+            var request = (GetMasterHlsVideoStream) state.Request;
+
+            var subtitleStreams = state.AllMediaStreams
+                .Where(i => i.IsTextSubtitleStream)
+                .ToList();
+
+            var subtitleGroup = subtitleStreams.Count > 0 && request.SubtitleMethod == SubtitleDeliveryMethod.Hls ? 
+                "subs" : 
+                null;
+
+            AppendPlaylist(builder, playlistUrl, totalBitrate, subtitleGroup);
 
             if (EnableAdaptiveBitrateStreaming(state))
             {
@@ -363,18 +379,61 @@ namespace MediaBrowser.Api.Playback.Hls
                 var variation = GetBitrateVariation(totalBitrate);
 
                 var newBitrate = totalBitrate - variation;
-                AppendPlaylist(builder, playlistUrl.Replace(requestedVideoBitrate.ToString(UsCulture), (requestedVideoBitrate - variation).ToString(UsCulture)), newBitrate);
+                AppendPlaylist(builder, playlistUrl.Replace(requestedVideoBitrate.ToString(UsCulture), (requestedVideoBitrate - variation).ToString(UsCulture)), newBitrate, subtitleGroup);
 
                 variation *= 2;
                 newBitrate = totalBitrate - variation;
-                AppendPlaylist(builder, playlistUrl.Replace(requestedVideoBitrate.ToString(UsCulture), (requestedVideoBitrate - variation).ToString(UsCulture)), newBitrate);
+                AppendPlaylist(builder, playlistUrl.Replace(requestedVideoBitrate.ToString(UsCulture), (requestedVideoBitrate - variation).ToString(UsCulture)), newBitrate, subtitleGroup);
+            }
+
+            if (!string.IsNullOrWhiteSpace(subtitleGroup))
+            {
+                AddSubtitles(state, subtitleStreams, builder);
             }
 
             return builder.ToString();
         }
 
+        private void AddSubtitles(StreamState state, IEnumerable<MediaStream> subtitles, StringBuilder builder)
+        {
+            var selectedIndex = state.SubtitleStream == null ? (int?)null : state.SubtitleStream.Index;
+
+            foreach (var stream in subtitles)
+            {
+                const string format = "#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID=\"subs\",NAME=\"{0}\",DEFAULT={1},FORCED={2},URI=\"{3}\",LANGUAGE=\"{4}\"";
+
+                var name = stream.Language;
+
+                var isDefault = selectedIndex.HasValue && selectedIndex.Value == stream.Index;
+                var isForced = stream.IsForced;
+
+                if (string.IsNullOrWhiteSpace(name)) name = stream.Codec ?? "Unknown";
+
+                var url = string.Format("{0}/Subtitles/{1}/subtitles.m3u8?SegmentLength={2}",
+                    state.Request.MediaSourceId,
+                    stream.Index.ToString(UsCulture),
+                    30.ToString(UsCulture));
+
+                var line = string.Format(format,
+                    name,
+                    isDefault ? "YES" : "NO",
+                    isForced ? "YES" : "NO",
+                    url,
+                    stream.Language ?? "Unknown");
+
+                builder.AppendLine(line);
+            }
+        }
+
         private bool EnableAdaptiveBitrateStreaming(StreamState state)
         {
+            var request = state.Request as GetMasterHlsVideoStream;
+
+            if (request != null && !request.EnableAdaptiveBitrateStreaming)
+            {
+                return false;
+            }
+
             if (string.IsNullOrWhiteSpace(state.MediaPath))
             {
                 // Opening live streams is so slow it's not even worth it
@@ -384,9 +443,16 @@ namespace MediaBrowser.Api.Playback.Hls
             return state.VideoRequest.VideoBitRate.HasValue;
         }
 
-        private void AppendPlaylist(StringBuilder builder, string url, int bitrate)
+        private void AppendPlaylist(StringBuilder builder, string url, int bitrate, string subtitleGroup)
         {
-            builder.AppendLine("#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=" + bitrate.ToString(UsCulture));
+            var header = "#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=" + bitrate.ToString(UsCulture);
+
+            if (!string.IsNullOrWhiteSpace(subtitleGroup))
+            {
+                header += string.Format(",SUBTITLES=\"{0}\"", subtitleGroup);
+            }
+
+            builder.AppendLine(header);
             builder.AppendLine(url);
         }
 
@@ -522,7 +588,7 @@ namespace MediaBrowser.Api.Playback.Hls
             // This is for internal graphical subs
             if (hasGraphicalSubs)
             {
-                args += GetInternalGraphicalSubtitleParam(state, codec);
+                args += GetGraphicalSubtitleParam(state, codec);
             }
 
             return args;

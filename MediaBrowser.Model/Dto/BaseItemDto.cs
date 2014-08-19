@@ -30,6 +30,12 @@ namespace MediaBrowser.Model.Dto
         public string Id { get; set; }
 
         /// <summary>
+        /// Gets or sets the playlist item identifier.
+        /// </summary>
+        /// <value>The playlist item identifier.</value>
+        public string PlaylistItemId { get; set; }
+        
+        /// <summary>
         /// Gets or sets the date created.
         /// </summary>
         /// <value>The date created.</value>
@@ -526,6 +532,12 @@ namespace MediaBrowser.Model.Dto
         }
 
         /// <summary>
+        /// Gets or sets a value indicating whether [supports playlists].
+        /// </summary>
+        /// <value><c>true</c> if [supports playlists]; otherwise, <c>false</c>.</value>
+        public bool SupportsPlaylists { get; set; }
+
+        /// <summary>
         /// Determines whether the specified type is type.
         /// </summary>
         /// <param name="type">The type.</param>
@@ -594,7 +606,19 @@ namespace MediaBrowser.Model.Dto
         /// </summary>
         /// <value>The parent thumb image tag.</value>
         public string ParentThumbImageTag { get; set; }
-        
+
+        /// <summary>
+        /// Gets or sets the parent primary image item identifier.
+        /// </summary>
+        /// <value>The parent primary image item identifier.</value>
+        public string ParentPrimaryImageItemId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the parent primary image tag.
+        /// </summary>
+        /// <value>The parent primary image tag.</value>
+        public string ParentPrimaryImageTag { get; set; }
+
         /// <summary>
         /// Gets or sets the chapters.
         /// </summary>
@@ -618,12 +642,6 @@ namespace MediaBrowser.Model.Dto
         /// </summary>
         /// <value>The type of the media.</value>
         public string MediaType { get; set; }
-
-        /// <summary>
-        /// Gets or sets the overview HTML.
-        /// </summary>
-        /// <value>The overview HTML.</value>
-        public string OverviewHtml { get; set; }
 
         /// <summary>
         /// Gets or sets the end date.

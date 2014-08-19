@@ -4,12 +4,13 @@ using MediaBrowser.Controller;
 using MediaBrowser.Controller.Net;
 using MediaBrowser.Model.System;
 using ServiceStack;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace MediaBrowser.Api
+namespace MediaBrowser.Api.System
 {
     /// <summary>
     /// Class GetSystemInfo
@@ -71,7 +72,9 @@ namespace MediaBrowser.Api
         /// Initializes a new instance of the <see cref="SystemService" /> class.
         /// </summary>
         /// <param name="appHost">The app host.</param>
-        /// <exception cref="System.ArgumentNullException">jsonSerializer</exception>
+        /// <param name="appPaths">The application paths.</param>
+        /// <param name="fileSystem">The file system.</param>
+        /// <exception cref="ArgumentNullException">jsonSerializer</exception>
         public SystemService(IServerApplicationHost appHost, IApplicationPaths appPaths, IFileSystem fileSystem)
         {
             _appHost = appHost;
@@ -87,7 +90,7 @@ namespace MediaBrowser.Api
             {
                 files = new DirectoryInfo(_appPaths.LogDirectoryPath)
                     .EnumerateFiles("*", SearchOption.AllDirectories)
-                    .Where(i => string.Equals(i.Extension, ".txt", System.StringComparison.OrdinalIgnoreCase))
+                    .Where(i => string.Equals(i.Extension, ".txt", global::System.StringComparison.OrdinalIgnoreCase))
                     .ToList();
             }
             catch (DirectoryNotFoundException)
@@ -114,7 +117,7 @@ namespace MediaBrowser.Api
         {
             var file = new DirectoryInfo(_appPaths.LogDirectoryPath)
                 .EnumerateFiles("*", SearchOption.AllDirectories)
-                .First(i => string.Equals(i.Name, request.Name, System.StringComparison.OrdinalIgnoreCase));
+                .First(i => string.Equals(i.Name, request.Name, global::System.StringComparison.OrdinalIgnoreCase));
 
             return ResultFactory.GetStaticFileResult(Request, file.FullName, FileShare.ReadWrite);
         }

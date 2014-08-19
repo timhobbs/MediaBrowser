@@ -221,6 +221,16 @@ namespace MediaBrowser.WebDashboard.Api
             var contentType = MimeTypes.GetMimeType(path);
 
             var isHtml = IsHtml(path);
+
+            if (isHtml && !_serverConfigurationManager.Configuration.IsStartupWizardCompleted)
+            {
+                if (path.IndexOf("wizard", StringComparison.OrdinalIgnoreCase) == -1)
+                {
+                    Request.Response.Redirect("wizardstart.html");
+                    return null;
+                }    
+            }
+
             var localizationCulture = GetLocalizationCulture();
 
             // Don't cache if not configured to do so
@@ -528,6 +538,7 @@ namespace MediaBrowser.WebDashboard.Api
                                 "chromecast.js",
                                 "backdrops.js",
                                 "sync.js",
+                                "playlistmanager.js",
 
                                 "mediaplayer.js",
                                 "mediaplayer-video.js",
@@ -621,6 +632,9 @@ namespace MediaBrowser.WebDashboard.Api
                                 "notificationsetting.js",
                                 "notificationsettings.js",
                                 "playlist.js",
+                                "playlists.js",
+                                "playlistedit.js",
+
                                 "plugincatalogpage.js",
                                 "pluginspage.js",
                                 "remotecontrol.js",
@@ -676,7 +690,6 @@ namespace MediaBrowser.WebDashboard.Api
                                       "librarymenu.css",
                                       "librarybrowser.css",
                                       "detailtable.css",
-                                      "posteritem.css",
                                       "card.css",
                                       "tileitem.css",
                                       "metadataeditor.css",

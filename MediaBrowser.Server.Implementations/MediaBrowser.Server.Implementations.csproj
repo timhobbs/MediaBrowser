@@ -93,7 +93,8 @@
       <HintPath>..\ThirdParty\ServiceStack.Text\ServiceStack.Text.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Posix" Condition=" '$(ConfigurationName)' == 'Release Mono' " />
-    <Reference Include="websocket-sharp">
+    <Reference Include="websocket-sharp, Version=1.0.2.508, Culture=neutral, PublicKeyToken=5660b08a1845a91e, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\ThirdParty\WebsocketSharp\websocket-sharp.dll</HintPath>
     </Reference>
   </ItemGroup>
@@ -101,6 +102,8 @@
     <Compile Include="..\SharedVersion.cs">
       <Link>Properties\SharedVersion.cs</Link>
     </Compile>
+    <Compile Include="Activity\ActivityManager.cs" />
+    <Compile Include="Activity\ActivityRepository.cs" />
     <Compile Include="Branding\BrandingConfigurationFactory.cs" />
     <Compile Include="Channels\ChannelConfigurations.cs" />
     <Compile Include="Channels\ChannelDownloadScheduledTask.cs" />
@@ -117,6 +120,7 @@
     <Compile Include="Drawing\PlayedIndicatorDrawer.cs" />
     <Compile Include="Drawing\UnplayedCountIndicator.cs" />
     <Compile Include="Dto\DtoService.cs" />
+    <Compile Include="EntryPoints\ActivityLogEntryPoint.cs" />
     <Compile Include="EntryPoints\AutomaticRestartEntryPoint.cs" />
     <Compile Include="EntryPoints\ExternalPortForwarding.cs" />
     <Compile Include="EntryPoints\LibraryChangedNotifier.cs" />
@@ -127,6 +131,7 @@
     <Compile Include="EntryPoints\RefreshUsersMetadata.cs" />
     <Compile Include="EntryPoints\UsageEntryPoint.cs" />
     <Compile Include="FileOrganization\EpisodeFileOrganizer.cs" />
+    <Compile Include="FileOrganization\Extensions.cs" />
     <Compile Include="FileOrganization\FileOrganizationService.cs" />
     <Compile Include="FileOrganization\NameUtils.cs" />
     <Compile Include="FileOrganization\TvFolderOrganizer.cs" />
@@ -165,6 +170,7 @@
     <Compile Include="Library\LibraryManager.cs" />
     <Compile Include="Library\MusicManager.cs" />
     <Compile Include="Library\Resolvers\PhotoResolver.cs" />
+    <Compile Include="Library\Resolvers\PlaylistResolver.cs" />
     <Compile Include="Library\SearchEngine.cs" />
     <Compile Include="Library\ResolverHelper.cs" />
     <Compile Include="Library\Resolvers\Audio\AudioResolver.cs" />
@@ -220,6 +226,9 @@
     <Compile Include="Persistence\SqliteProviderInfoRepository.cs" />
     <Compile Include="Persistence\SqliteShrinkMemoryTimer.cs" />
     <Compile Include="Persistence\TypeMapper.cs" />
+    <Compile Include="Playlists\ManualPlaylistsFolder.cs" />
+    <Compile Include="Playlists\PlaylistImageEnhancer.cs" />
+    <Compile Include="Playlists\PlaylistManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ScheduledTasks\PeopleValidationTask.cs" />
     <Compile Include="ScheduledTasks\ChapterImagesTask.cs" />
@@ -370,6 +379,9 @@
     <EmbeddedResource Include="Localization\JavaScript\es_ES.json" />
     <EmbeddedResource Include="Localization\Server\es_ES.json" />
     <EmbeddedResource Include="Localization\Server\ko.json" />
+    <EmbeddedResource Include="Localization\JavaScript\en_GB.json" />
+    <EmbeddedResource Include="Localization\JavaScript\tr.json" />
+    <EmbeddedResource Include="Localization\Server\tr.json" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
@@ -477,7 +489,7 @@
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="$(SolutionDir)\.nuget\nuget.targets" Condition=" '$(ConfigurationName)' != 'Release Mono' " />
+  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

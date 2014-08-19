@@ -60,7 +60,6 @@
                 case "channels":
                     imgUrl = "css/images/items/folders/channels.png";
                     break;
-                case "boxsets":
                 default:
                     imgUrl = "css/images/items/folders/folder.png";
                     break;
@@ -131,8 +130,7 @@
 
             Limit: screenWidth >= 2400 ? 24 : (screenWidth >= 1600 ? 20 : (screenWidth >= 1440 ? 12 : (screenWidth >= 800 ? 9 : 8))),
             Fields: "PrimaryImageAspectRatio",
-            IsPlayed: false,
-            IsFolder: false
+            IsPlayed: false
         };
 
         ApiClient.getJSON(ApiClient.getUrl('Users/' + userId + '/Items/Latest', options)).done(function (items) {
@@ -145,7 +143,7 @@
                 html += LibraryBrowser.getPosterViewHtml({
                     items: items,
                     preferThumb: true,
-                    shape: 'backdrop',
+                    shape: 'homePageBackdrop',
                     context: 'home',
                     showUnplayedIndicator: false,
                     showChildCountIndicator: true,
@@ -154,7 +152,7 @@
                 html += '</div>';
             }
 
-            $(elem).html(html).trigger('create').createPosterItemMenus();
+            $(elem).html(html).trigger('create').createCardMenus();
         });
     }
 
@@ -180,7 +178,7 @@
                 html += LibraryBrowser.getPosterViewHtml({
                     items: result.Items,
                     preferThumb: true,
-                    shape: 'autosmall',
+                    shape: 'auto',
                     showTitle: true,
                     centerText: true,
                     lazy: true
@@ -188,7 +186,7 @@
                 html += '</div>';
             }
 
-            $(elem).html(html).trigger('create').createPosterItemMenus();
+            $(elem).html(html).trigger('create').createCardMenus();
         });
     }
 
@@ -227,7 +225,7 @@
             }
 
 
-            $(elem).html(html).trigger('create').createPosterItemMenus();
+            $(elem).html(html).trigger('create').createCardMenus();
 
             handleLibraryLinkNavigations(elem);
         });
@@ -263,7 +261,7 @@
                 html += '</div>';
             }
 
-            $(elem).html(html).trigger('create').createPosterItemMenus();
+            $(elem).html(html).trigger('create').createCardMenus();
 
             handleLibraryLinkNavigations(elem);
         });
@@ -279,7 +277,7 @@
             SortOrder: "Descending",
             MediaTypes: "Video",
             Filters: "IsResumable",
-            Limit: screenWidth >= 1600 ? 8 : (screenWidth >= 1200 ? 9 : 6),
+            Limit: screenWidth >= 1920 ? 10 : (screenWidth >= 1600 ? 8 : (screenWidth >= 1200 ? 9 : 6)),
             Recursive: true,
             Fields: "PrimaryImageAspectRatio",
             CollapseBoxSetItems: false,
@@ -296,7 +294,7 @@
                 html += LibraryBrowser.getPosterViewHtml({
                     items: result.Items,
                     preferBackdrop: true,
-                    shape: 'backdrop',
+                    shape: 'homePageBackdrop',
                     overlayText: screenWidth >= 600,
                     showTitle: true,
                     showParentTitle: true,
@@ -306,7 +304,7 @@
                 html += '</div>';
             }
 
-            $(elem).html(html).trigger('create').createPosterItemMenus();
+            $(elem).html(html).trigger('create').createCardMenus();
         });
     }
 
@@ -379,7 +377,7 @@
             }
             html += LibraryBrowser.getPosterViewHtml({
                 items: result.Items,
-                shape: 'auto',
+                shape: 'autohome',
                 defaultShape: 'square',
                 showTitle: true,
                 centerText: true,
@@ -387,7 +385,7 @@
                 lazy: true
             });
 
-            $('#channel' + channel.Id + '', page).html(html).trigger('create').createPosterItemMenus();
+            $('#channel' + channel.Id + '', page).html(html).trigger('create').createCardMenus();
         });
     }
 
@@ -417,7 +415,7 @@
 
             html += LibraryBrowser.getPosterViewHtml({
                 items: result.Items,
-                shape: "autosmall",
+                shape: "autohome",
                 showTitle: true,
                 showParentTitle: true,
                 overlayText: screenWidth >= 600,
@@ -425,7 +423,7 @@
                 lazy: true
             });
 
-            elem.html(html).trigger('create').createPosterItemMenus();
+            elem.html(html).trigger('create').createCardMenus();
 
         });
     }
@@ -473,13 +471,13 @@
             Sections.loadRecentlyAdded(elem, userId);
         }
         else if (section == 'librarytiles') {
-            Sections.loadLibraryTiles(elem, userId, 'backdrop', index);
+            Sections.loadLibraryTiles(elem, userId, 'homePageBackdrop', index);
         }
         else if (section == 'smalllibrarytiles') {
-            Sections.loadLibraryTiles(elem, userId, 'miniBackdrop', index);
+            Sections.loadLibraryTiles(elem, userId, 'homePageSmallBackdrop', index);
         }
         else if (section == 'smalllibrarytiles-automobile') {
-            Sections.loadLibraryTiles(elem, userId, 'miniBackdrop', index, true);
+            Sections.loadLibraryTiles(elem, userId, 'homePageSmallBackdrop', index, true);
         }
         else if (section == 'librarybuttons') {
             Sections.loadlibraryButtons(elem, userId, index);
@@ -493,7 +491,7 @@
         }
 
         else if (section == 'folders') {
-            Sections.loadLibraryFolders(elem, userId, 'backdrop', index);
+            Sections.loadLibraryFolders(elem, userId, 'homePageBackdrop', index);
 
         } else if (section == 'latestchannelmedia') {
             Sections.loadLatestChannelMedia(elem, userId);

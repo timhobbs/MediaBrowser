@@ -59,6 +59,7 @@
     <Compile Include="..\SharedVersion.cs">
       <Link>Properties\SharedVersion.cs</Link>
     </Compile>
+    <Compile Include="Activity\ActivityLogEntry.cs" />
     <Compile Include="ApiClient\HttpResponseEventArgs.cs" />
     <Compile Include="ApiClient\IApiClient.cs" />
     <Compile Include="ApiClient\ApiClientExtensions.cs" />
@@ -75,17 +76,19 @@
     <Compile Include="Channels\ChannelQuery.cs" />
     <Compile Include="Chapters\RemoteChapterInfo.cs" />
     <Compile Include="Chapters\RemoteChapterResult.cs" />
+    <Compile Include="Collections\CollectionCreationResult.cs" />
     <Compile Include="Configuration\ChannelOptions.cs" />
     <Compile Include="Configuration\ChapterOptions.cs" />
     <Compile Include="Configuration\XbmcMetadataOptions.cs" />
     <Compile Include="Configuration\SubtitlePlaybackMode.cs" />
-    <Compile Include="Configuration\TvFileOrganizationOptions.cs" />
+    <Compile Include="FileOrganization\AutoOrganizeOptions.cs" />
+    <Compile Include="FileOrganization\TvFileOrganizationOptions.cs" />
     <Compile Include="Configuration\BaseApplicationConfiguration.cs" />
     <Compile Include="Configuration\DlnaOptions.cs" />
     <Compile Include="Configuration\EncodingQuality.cs" />
     <Compile Include="Configuration\ImageOption.cs" />
     <Compile Include="Configuration\ImageSavingConvention.cs" />
-    <Compile Include="Configuration\LiveTvOptions.cs" />
+    <Compile Include="LiveTv\LiveTvOptions.cs" />
     <Compile Include="Configuration\MetadataPlugin.cs" />
     <Compile Include="Configuration\MetadataOptions.cs" />
     <Compile Include="Configuration\MetadataPluginSummary.cs" />
@@ -97,7 +100,7 @@
     <Compile Include="Configuration\PathSubstitution.cs" />
     <Compile Include="Notifications\SendToUserType.cs" />
     <Compile Include="Configuration\ServerConfiguration.cs" />
-    <Compile Include="Configuration\SubtitleOptions.cs" />
+    <Compile Include="Providers\SubtitleOptions.cs" />
     <Compile Include="Configuration\UnratedItem.cs" />
     <Compile Include="Dlna\AudioOptions.cs" />
     <Compile Include="Dlna\CodecProfile.cs" />
@@ -203,6 +206,7 @@
     <Compile Include="Notifications\NotificationRequest.cs" />
     <Compile Include="Notifications\NotificationServiceInfo.cs" />
     <Compile Include="Notifications\NotificationTypeInfo.cs" />
+    <Compile Include="Playlists\PlaylistCreationResult.cs" />
     <Compile Include="Providers\ExternalIdInfo.cs" />
     <Compile Include="Providers\ExternalUrl.cs" />
     <Compile Include="Providers\ImageProviderInfo.cs" />
@@ -239,6 +243,7 @@
     <Compile Include="Querying\ItemCountsQuery.cs" />
     <Compile Include="Querying\ItemsByNameQuery.cs" />
     <Compile Include="Entities\BaseItemInfo.cs" />
+    <Compile Include="Querying\LatestItemsQuery.cs" />
     <Compile Include="Querying\NextUpQuery.cs" />
     <Compile Include="Querying\QueryResult.cs" />
     <Compile Include="Querying\SeasonQuery.cs" />
@@ -366,7 +371,7 @@
 xcopy "$(TargetPath)" "$(SolutionDir)\Nuget\dlls\net45\" /y /d /r /i
 )</PostBuildEvent>
   </PropertyGroup>
-  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition=" '$(ConfigurationName)' != 'Release Mono' " />
+  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" />
   <Import Project="Fody.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

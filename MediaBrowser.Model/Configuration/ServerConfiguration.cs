@@ -1,7 +1,8 @@
 ﻿using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.FileOrganization;
+using MediaBrowser.Model.LiveTv;
 using MediaBrowser.Model.Notifications;
-using MediaBrowser.Model.Weather;
-using System;
+using MediaBrowser.Model.Providers;
 
 namespace MediaBrowser.Model.Configuration
 {
@@ -10,18 +11,6 @@ namespace MediaBrowser.Model.Configuration
     /// </summary>
     public class ServerConfiguration : BaseApplicationConfiguration
     {
-        /// <summary>
-        /// Gets or sets the zip code to use when displaying weather
-        /// </summary>
-        /// <value>The weather location.</value>
-        public string WeatherLocation { get; set; }
-
-        /// <summary>
-        /// Gets or sets the weather unit to use when displaying weather
-        /// </summary>
-        /// <value>The weather unit.</value>
-        public WeatherUnits WeatherUnit { get; set; }
-
         /// <summary>
         /// Gets or sets a value indicating whether [enable u pn p].
         /// </summary>
@@ -191,15 +180,13 @@ namespace MediaBrowser.Model.Configuration
 
         public SubtitleOptions SubtitleOptions { get; set; }
 
-        [Obsolete]
-        public string[] ManualLoginClients { get; set; }
-
         public ChannelOptions ChannelOptions { get; set; }
         public ChapterOptions ChapterOptions { get; set; }
 
         public bool DefaultMetadataSettingsApplied { get; set; }
 
         public bool EnableTokenAuthentication { get; set; }
+        public PeopleMetadataOptions PeopleMetadataOptions { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServerConfiguration" /> class.
@@ -237,13 +224,13 @@ namespace MediaBrowser.Model.Configuration
             SortRemoveCharacters = new[] { ",", "&", "-", "{", "}", "'" };
             SortRemoveWords = new[] { "the", "a", "an" };
 
-            ManualLoginClients = new string[] { };
-
             SeasonZeroDisplayName = "Specials";
 
             EnableRealtimeMonitor = true;
 
             UICulture = "en-us";
+
+            PeopleMetadataOptions = new PeopleMetadataOptions();
 
             MetadataOptions = new[]
             {
@@ -302,9 +289,23 @@ namespace MediaBrowser.Model.Configuration
 
                 new MetadataOptions(0, 1280) {ItemType = "Season"}
             };
+        }
+    }
 
-            SubtitleOptions = new SubtitleOptions();
-            TvFileOrganizationOptions = new TvFileOrganizationOptions();
+    public class PeopleMetadataOptions
+    {
+        public bool DownloadActorMetadata { get; set; }
+        public bool DownloadDirectorMetadata { get; set; }
+        public bool DownloadProducerMetadata { get; set; }
+        public bool DownloadWriterMetadata { get; set; }
+        public bool DownloadComposerMetadata { get; set; }
+        public bool DownloadOtherPeopleMetadata { get; set; }
+        public bool DownloadGuestStarMetadata { get; set; }
+
+        public PeopleMetadataOptions()
+        {
+            DownloadActorMetadata = true;
+            DownloadDirectorMetadata = true;
         }
     }
 }

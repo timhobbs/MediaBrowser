@@ -29,6 +29,20 @@ namespace MediaBrowser.Controller.Entities.TV
             }
         }
 
+        public override bool SupportsAddingToPlaylist
+        {
+            get { return true; }
+        }
+
+        [IgnoreDataMember]
+        public override bool IsPreSorted
+        {
+            get
+            {
+                return true;
+            }
+        }
+
         /// <summary>
         /// We want to group into our Series
         /// </summary>

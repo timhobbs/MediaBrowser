@@ -43,14 +43,17 @@ namespace MediaBrowser.Model.Dlna
 
         public string AlbumArtPn { get; set; }
 
-        public int? MaxAlbumArtWidth { get; set; }
-        public int? MaxAlbumArtHeight { get; set; }
+        public int MaxAlbumArtWidth { get; set; }
+        public int MaxAlbumArtHeight { get; set; }
 
         public int? MaxIconWidth { get; set; }
         public int? MaxIconHeight { get; set; }
 
         public int? MaxStreamingBitrate { get; set; }
         public int? MaxStaticBitrate { get; set; }
+
+        public int? MusicStreamingTranscodingBitrate { get; set; }
+        public int? MusicSyncBitrate { get; set; }
 
         /// <summary>
         /// Controls the content of the X_DLNADOC element in the urn:schemas-dlna-org:device-1-0 namespace.
@@ -90,8 +93,7 @@ namespace MediaBrowser.Model.Dlna
         public CodecProfile[] CodecProfiles { get; set; }
         public ResponseProfile[] ResponseProfiles { get; set; }
 
-        public SubtitleProfile[] SoftSubtitleProfiles { get; set; }
-        public SubtitleProfile[] ExternalSubtitleProfiles { get; set; }
+        public SubtitleProfile[] SubtitleProfiles { get; set; }
       
         public DeviceProfile()
         {
@@ -100,10 +102,8 @@ namespace MediaBrowser.Model.Dlna
             ResponseProfiles = new ResponseProfile[] { };
             CodecProfiles = new CodecProfile[] { };
             ContainerProfiles = new ContainerProfile[] { };
-
-            SoftSubtitleProfiles = new SubtitleProfile[] { };
-            ExternalSubtitleProfiles = new SubtitleProfile[] { };
-            
+            SubtitleProfiles = new SubtitleProfile[] { };
+         
             XmlRootAttributes = new XmlAttribute[] { };
             
             SupportedMediaTypes = "Audio,Photo,Video";

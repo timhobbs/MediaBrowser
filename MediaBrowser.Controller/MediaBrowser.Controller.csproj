@@ -68,6 +68,8 @@
     <Compile Include="..\SharedVersion.cs">
       <Link>Properties\SharedVersion.cs</Link>
     </Compile>
+    <Compile Include="Activity\IActivityManager.cs" />
+    <Compile Include="Activity\IActivityRepository.cs" />
     <Compile Include="Channels\ChannelFolderItem.cs" />
     <Compile Include="Channels\ChannelItemInfo.cs" />
     <Compile Include="Channels\ChannelItemResult.cs" />
@@ -166,6 +168,7 @@
     <Compile Include="Library\LibraryManagerExtensions.cs" />
     <Compile Include="Library\PlaybackStopEventArgs.cs" />
     <Compile Include="Library\UserDataSaveEventArgs.cs" />
+    <Compile Include="LiveTv\RecordingGroup.cs" />
     <Compile Include="LiveTv\RecordingStatusChangedEventArgs.cs" />
     <Compile Include="LiveTv\ILiveTvRecording.cs" />
     <Compile Include="LiveTv\LiveStreamInfo.cs" />
@@ -217,6 +220,9 @@
     <Compile Include="Notifications\UserNotification.cs" />
     <Compile Include="Persistence\IFileOrganizationRepository.cs" />
     <Compile Include="Persistence\MediaStreamQuery.cs" />
+    <Compile Include="Playlists\IPlaylistManager.cs" />
+    <Compile Include="Playlists\Playlist.cs" />
+    <Compile Include="Playlists\PlaylistCreationOptions.cs" />
     <Compile Include="Providers\DirectoryService.cs" />
     <Compile Include="Providers\ICustomMetadataProvider.cs" />
     <Compile Include="Providers\IExternalId.cs" />
@@ -238,6 +244,7 @@
     <Compile Include="Security\AuthenticationInfoQuery.cs" />
     <Compile Include="Security\IAuthenticationRepository.cs" />
     <Compile Include="Security\IEncryptionManager.cs" />
+    <Compile Include="Session\AuthenticationRequest.cs" />
     <Compile Include="Subtitles\ISubtitleManager.cs" />
     <Compile Include="Subtitles\ISubtitleProvider.cs" />
     <Compile Include="Providers\ItemIdentifier.cs" />
@@ -317,6 +324,7 @@
     <Compile Include="Sorting\IUserBaseItemComparer.cs" />
     <Compile Include="Providers\BaseItemXmlParser.cs" />
     <Compile Include="Sorting\SortExtensions.cs" />
+    <Compile Include="Subtitles\SubtitleDownloadEventArgs.cs" />
     <Compile Include="Subtitles\SubtitleResponse.cs" />
     <Compile Include="Subtitles\SubtitleSearchRequest.cs" />
     <Compile Include="Sync\ICloudSyncProvider.cs" />
@@ -349,7 +357,7 @@ xcopy "$(TargetPath)" "$(SolutionDir)\Nuget\dlls\" /y /d /r /i
     <PreBuildEvent>
     </PreBuildEvent>
   </PropertyGroup>
-  <Import Project="$(SolutionDir)\.nuget\nuget.targets" Condition=" '$(ConfigurationName)' != 'Release Mono' " />
+  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

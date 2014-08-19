@@ -38,6 +38,12 @@ namespace MediaBrowser.Controller.Entities
             Tags = new List<string>();
         }
 
+        [IgnoreDataMember]
+        public virtual bool IsPreSorted
+        {
+            get { return false; }
+        }
+
         /// <summary>
         /// Gets a value indicating whether this instance is folder.
         /// </summary>
@@ -834,7 +840,7 @@ namespace MediaBrowser.Controller.Entities
 
             if (includeLinkedChildren)
             {
-                foreach (var child in GetLinkedChildren())
+                foreach (var child in GetLinkedChildren(user))
                 {
                     if (child.IsVisible(user))
                     {
@@ -855,7 +861,7 @@ namespace MediaBrowser.Controller.Entities
         /// <param name="includeLinkedChildren">if set to <c>true</c> [include linked children].</param>
         /// <returns>IEnumerable{BaseItem}.</returns>
         /// <exception cref="System.ArgumentNullException"></exception>
-        public IEnumerable<BaseItem> GetRecursiveChildren(User user, bool includeLinkedChildren = true)
+        public virtual IEnumerable<BaseItem> GetRecursiveChildren(User user, bool includeLinkedChildren = true)
         {
             if (user == null)
             {
@@ -916,6 +922,74 @@ namespace MediaBrowser.Controller.Entities
             return LinkedChildren
                 .Select(GetLinkedChild)
                 .Where(i => i != null);
+        }
+
+        protected virtual bool FilterLinkedChildrenPerUser
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public IEnumerable<BaseItem> GetLinkedChildren(User user)
+        {
+            if (!FilterLinkedChildrenPerUser || user == null)
+            {
+                return GetLinkedChildren();
+            }
+
+            var locations = user.RootFolder
+                .GetChildren(user, true)
+                .OfType<CollectionFolder>()
+                .SelectMany(i => i.PhysicalLocations)
+                .ToList();
+            
+            return LinkedChildren
+                .Select(i =>
+                {
+                    var requiresPostFilter = true;
+
+                    if (!string.IsNullOrWhiteSpace(i.Path))
+                    {
+                        requiresPostFilter = false;
+
+                        if (!locations.Any(l => FileSystem.ContainsSubPath(l, i.Path)))
+                        {
+                            return null;
+                        }
+                    }
+
+                    var child = GetLinkedChild(i);
+
+                    if (requiresPostFilter && child != null)
+                    {
+                        if (string.IsNullOrWhiteSpace(child.Path))
+                        {
+                            Logger.Debug("Found LinkedChild with null path: {0}", child.Name);
+                            return child;
+                        }
+
+                        if (!locations.Any(l => FileSystem.ContainsSubPath(l, child.Path)))
+                        {
+                            return null;
+                        }
+                    }
+
+                    return child;
+                })
+                .Where(i => i != null);
+        }
+
+        /// <summary>
+        /// Gets the linked children.
+        /// </summary>
+        /// <returns>IEnumerable{BaseItem}.</returns>
+        public IEnumerable<Tuple<LinkedChild,BaseItem>> GetLinkedChildrenInfos()
+        {
+            return LinkedChildren
+                .Select(i => new Tuple<LinkedChild,BaseItem>(i, GetLinkedChild(i)))
+                .Where(i => i.Item2 != null);
         }
 
         protected override async Task<bool> RefreshedOwnedItems(MetadataRefreshOptions options, List<FileSystemInfo> fileSystemChildren, CancellationToken cancellationToken)
