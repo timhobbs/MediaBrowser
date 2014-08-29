@@ -62,7 +62,8 @@ namespace MediaBrowser.Dlna.Ssdp
         {
             if (string.Equals(args.Method, "M-SEARCH", StringComparison.OrdinalIgnoreCase))
             {
-                var mx = args.Headers["mx"];
+                string mx = null;
+                args.Headers.TryGetValue("mx", out mx);
                 int delaySeconds;
                 if (!string.IsNullOrWhiteSpace(mx) && 
                     int.TryParse(mx, NumberStyles.Any, CultureInfo.InvariantCulture, out delaySeconds)
@@ -145,21 +146,6 @@ namespace MediaBrowser.Dlna.Ssdp
             StartQueueTimer();
         }
 
-        public void SendDatagramFromDevices(string header,
-            Dictionary<string, string> values,
-            IPEndPoint endpoint,
-            string deviceType)
-        {
-            foreach (var d in RegisteredDevices)
-            {
-                if (string.Equals(deviceType, "ssdp:all", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(deviceType, d.Type, StringComparison.OrdinalIgnoreCase))
-                {
-                    SendDatagram(header, values, endpoint, new IPEndPoint(d.Address, 0));
-                }
-            }
-        }
-
         private void RespondToSearch(IPEndPoint endpoint, string deviceType)
         {
             if (_config.GetDlnaConfiguration().EnableDebugLogging)
@@ -184,7 +170,7 @@ namespace MediaBrowser.Dlna.Ssdp
                     values["ST"] = d.Type;
                     values["USN"] = d.USN;
 
-                    SendDatagram(header, values, endpoint, null);
+                    SendDatagram(header, values, endpoint, new IPEndPoint(d.Address, 0));
 
                     if (_config.GetDlnaConfiguration().EnableDebugLogging)
                     {

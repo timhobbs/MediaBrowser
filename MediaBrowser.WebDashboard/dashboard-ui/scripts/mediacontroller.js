@@ -1,19 +1,40 @@
-﻿(function ($, window) {
+﻿(function ($, window, store) {
 
-    var enableMirrorMode;
+    function setMirrorModeEnabled(enabled) {
+
+        var val = enabled ? '1' : '';
+
+        store.setItem('displaymirror-' + Dashboard.getCurrentUserId(), val);
+
+    }
+    function isMirrorModeEnabled() {
+        return (store.getItem('displaymirror-' + Dashboard.getCurrentUserId()) || '') == '1';
+    }
+
     var currentDisplayInfo;
-
     function mirrorItem(info) {
 
         var item = info.item;
 
         MediaController.getCurrentPlayer().displayContent({
 
-            itemName: item.Name,
-            itemId: item.Id,
-            itemType: item.Type,
-            context: info.context
+            ItemName: item.Name,
+            ItemId: item.Id,
+            ItemType: item.Type,
+            Context: info.context
         });
+    }
+
+    function mirrorIfEnabled(info) {
+
+        if (isMirrorModeEnabled()) {
+
+            var player = MediaController.getPlayerInfo();
+
+            if (!player.isLocalPlayer && player.supportedCommands.indexOf('DisplayContent') != -1) {
+                mirrorItem(info);
+            }
+        }
     }
 
     function monitorPlayer(player) {
@@ -457,7 +478,7 @@
             html += '<input type="radio" class="radioSelectPlayerTarget" name="radioSelectPlayerTarget" data-mirror="' + mirror + '" data-commands="' + target.supportedCommands.join(',') + '" data-mediatypes="' + target.playableMediaTypes.join(',') + '" data-playername="' + target.playerName + '" data-targetid="' + target.id + '" data-targetname="' + target.name + '" data-devicename="' + (target.deviceName || '') + '" id="' + id + '" value="' + target.id + '"' + checkedHtml + '>';
             html += '<label for="' + id + '" style="font-weight:normal;">' + target.name;
 
-            if (target.appName) {
+            if (target.appName && target.appName != target.name) {
                 html += '<br/><span>' + target.appName + '</span>';
             }
 
@@ -468,7 +489,7 @@
 
         html += '<p class="fieldDescription">' + Globalize.translate('LabelAllPlaysSentToPlayer') + '</p>';
 
-        checkedHtml = enableMirrorMode ? ' checked="checked"' : '';
+        checkedHtml = isMirrorModeEnabled() ? ' checked="checked"' : '';
         html += '<div style="margin-top:1.5em;" class="fldMirrorMode"><label for="chkEnableMirrorMode">Enable display mirroring</label><input type="checkbox" class="chkEnableMirrorMode" id="chkEnableMirrorMode" data-mini="true"' + checkedHtml + ' /></div>';
 
         html += '</form>';
@@ -501,7 +522,7 @@
             $('.players', elem).html(getTargetsHtml(targets)).trigger('create');
 
             $('.chkEnableMirrorMode', elem).on().on('change', function () {
-                enableMirrorMode = this.checked;
+                setMirrorModeEnabled(this.checked);
 
                 if (this.checked && currentDisplayInfo) {
 
@@ -519,7 +540,6 @@
                     $('.fldMirrorMode', elem).show();
                 } else {
                     $('.fldMirrorMode', elem).hide();
-                    $('.chkEnableMirrorMode', elem).checked(false).trigger('change').checkboxradio('refresh');
                 }
 
             }).each(function () {
@@ -545,6 +565,12 @@
                     deviceName: deviceName
 
                 });
+
+                if (currentDisplayInfo) {
+
+                    mirrorIfEnabled(currentDisplayInfo);
+                }
+
             });
         });
     }
@@ -858,13 +884,11 @@
 
         currentDisplayInfo = info;
 
-        if (enableMirrorMode) {
-            mirrorItem(info);
-        }
+        mirrorIfEnabled(info);
     });
 
     $(function () {
         positionSliderTooltip();
     });
 
-})(jQuery, window);
+})(jQuery, window, window.store);

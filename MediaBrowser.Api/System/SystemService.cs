@@ -1,5 +1,6 @@
 ﻿using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.IO;
+using MediaBrowser.Common.Net;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Net;
 using MediaBrowser.Model.System;
@@ -37,8 +38,10 @@ namespace MediaBrowser.Api.System
     {
     }
 
+    /// <summary>
+    /// This is currently not authenticated because the uninstaller needs to be able to shutdown the server.
+    /// </summary>
     [Route("/System/Shutdown", "POST", Summary = "Shuts down the application")]
-    [Authenticated]
     public class ShutdownApplication
     {
     }
@@ -47,6 +50,13 @@ namespace MediaBrowser.Api.System
     [Authenticated]
     public class GetServerLogs : IReturn<List<LogFile>>
     {
+    }
+
+    [Route("/System/Endpoint", "GET", Summary = "Gets information about the request endpoint")]
+    [Authenticated]
+    public class GetEndpointInfo : IReturn<EndpointInfo>
+    {
+        public string Endpoint { get; set; }
     }
 
     [Route("/System/Logs/Log", "GET", Summary = "Gets a log file")]
@@ -68,6 +78,8 @@ namespace MediaBrowser.Api.System
         private readonly IApplicationPaths _appPaths;
         private readonly IFileSystem _fileSystem;
 
+        private readonly INetworkManager _network;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SystemService" /> class.
         /// </summary>
@@ -75,11 +87,12 @@ namespace MediaBrowser.Api.System
         /// <param name="appPaths">The application paths.</param>
         /// <param name="fileSystem">The file system.</param>
         /// <exception cref="ArgumentNullException">jsonSerializer</exception>
-        public SystemService(IServerApplicationHost appHost, IApplicationPaths appPaths, IFileSystem fileSystem)
+        public SystemService(IServerApplicationHost appHost, IApplicationPaths appPaths, IFileSystem fileSystem, INetworkManager network)
         {
             _appHost = appHost;
             _appPaths = appPaths;
             _fileSystem = fileSystem;
+            _network = network;
         }
 
         public object Get(GetServerLogs request)
@@ -174,5 +187,19 @@ namespace MediaBrowser.Api.System
             });
         }
 
+        public object Get(GetEndpointInfo request)
+        {
+            return ToOptimizedResult(new EndpointInfo
+            {
+                IsLocal = Request.IsLocal,
+                IsInNetwork = _network.IsInLocalNetwork(request.Endpoint ?? Request.RemoteIp)
+            });
+        }
+    }
+
+    public class EndpointInfo
+    {
+        public bool IsLocal { get; set; }
+        public bool IsInNetwork { get; set; }
     }
 }

@@ -7,6 +7,7 @@ using MediaBrowser.Controller.MediaEncoding;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.MediaInfo;
+using MediaBrowser.Model.Serialization;
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -26,14 +27,16 @@ namespace MediaBrowser.MediaEncoding.Subtitles
         private readonly IApplicationPaths _appPaths;
         private readonly IFileSystem _fileSystem;
         private readonly IMediaEncoder _mediaEncoder;
+        private readonly IJsonSerializer _json;
 
-        public SubtitleEncoder(ILibraryManager libraryManager, ILogger logger, IApplicationPaths appPaths, IFileSystem fileSystem, IMediaEncoder mediaEncoder)
+        public SubtitleEncoder(ILibraryManager libraryManager, ILogger logger, IApplicationPaths appPaths, IFileSystem fileSystem, IMediaEncoder mediaEncoder, IJsonSerializer json)
         {
             _libraryManager = libraryManager;
             _logger = logger;
             _appPaths = appPaths;
             _fileSystem = fileSystem;
             _mediaEncoder = mediaEncoder;
+            _json = json;
         }
 
         private string SubtitleCachePath
@@ -191,15 +194,17 @@ namespace MediaBrowser.MediaEncoding.Subtitles
             MediaStream subtitleStream,
             CancellationToken cancellationToken)
         {
+            const string extractedFormat = "srt";
+
             if (!subtitleStream.IsExternal)
             {
                 // Extract    
-                var outputPath = GetSubtitleCachePath(mediaPath, subtitleStream.Index, ".ass");
+                var outputPath = GetSubtitleCachePath(mediaPath, subtitleStream.Index, "." + extractedFormat);
 
                 await ExtractTextSubtitle(inputFiles, protocol, subtitleStream.Index, false, outputPath, cancellationToken)
                         .ConfigureAwait(false);
 
-                return new Tuple<string, string>(outputPath, "ass");
+                return new Tuple<string, string>(outputPath, extractedFormat);
             }
 
             var currentFormat = (Path.GetExtension(subtitleStream.Path) ?? subtitleStream.Codec)
@@ -208,12 +213,12 @@ namespace MediaBrowser.MediaEncoding.Subtitles
             if (GetReader(currentFormat, false) == null)
             {
                 // Convert    
-                var outputPath = GetSubtitleCachePath(mediaPath, subtitleStream.Index, ".ass");
+                var outputPath = GetSubtitleCachePath(mediaPath, subtitleStream.Index, "." + extractedFormat);
 
-                await ConvertTextSubtitleToAss(subtitleStream.Path, outputPath, subtitleStream.Language, cancellationToken)
+                await ConvertTextSubtitleToSrt(subtitleStream.Path, outputPath, subtitleStream.Language, cancellationToken)
                         .ConfigureAwait(false);
 
-                return new Tuple<string, string>(outputPath, "ass");
+                return new Tuple<string, string>(outputPath, extractedFormat);
             }
 
             return new Tuple<string, string>(subtitleStream.Path, currentFormat);
@@ -239,10 +244,13 @@ namespace MediaBrowser.MediaEncoding.Subtitles
             {
                 return new SrtParser();
             }
-            if (string.Equals(format, SubtitleFormat.SSA, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(format, SubtitleFormat.ASS, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(format, SubtitleFormat.SSA, StringComparison.OrdinalIgnoreCase))
             {
                 return new SsaParser();
+            }
+            if (string.Equals(format, SubtitleFormat.ASS, StringComparison.OrdinalIgnoreCase))
+            {
+                return new AssParser();
             }
 
             if (throwIfMissing)
@@ -260,6 +268,10 @@ namespace MediaBrowser.MediaEncoding.Subtitles
                 throw new ArgumentNullException("format");
             }
 
+            if (string.Equals(format, "json", StringComparison.OrdinalIgnoreCase))
+            {
+                return new JsonWriter(_json);
+            }
             if (string.Equals(format, SubtitleFormat.SRT, StringComparison.OrdinalIgnoreCase))
             {
                 return new SrtWriter();
@@ -293,14 +305,14 @@ namespace MediaBrowser.MediaEncoding.Subtitles
         }
 
         /// <summary>
-        /// Converts the text subtitle to ass.
+        /// Converts the text subtitle to SRT.
         /// </summary>
         /// <param name="inputPath">The input path.</param>
         /// <param name="outputPath">The output path.</param>
         /// <param name="language">The language.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>Task.</returns>
-        public async Task ConvertTextSubtitleToAss(string inputPath, string outputPath, string language,
+        public async Task ConvertTextSubtitleToSrt(string inputPath, string outputPath, string language,
             CancellationToken cancellationToken)
         {
             var semaphore = GetLock(outputPath);
@@ -311,7 +323,7 @@ namespace MediaBrowser.MediaEncoding.Subtitles
             {
                 if (!File.Exists(outputPath))
                 {
-                    await ConvertTextSubtitleToAssInternal(inputPath, outputPath, language).ConfigureAwait(false);
+                    await ConvertTextSubtitleToSrtInternal(inputPath, outputPath, language).ConfigureAwait(false);
                 }
             }
             finally
@@ -321,17 +333,19 @@ namespace MediaBrowser.MediaEncoding.Subtitles
         }
 
         /// <summary>
-        /// Converts the text subtitle to ass.
+        /// Converts the text subtitle to SRT internal.
         /// </summary>
         /// <param name="inputPath">The input path.</param>
         /// <param name="outputPath">The output path.</param>
         /// <param name="language">The language.</param>
         /// <returns>Task.</returns>
-        /// <exception cref="System.ArgumentNullException">inputPath
+        /// <exception cref="System.ArgumentNullException">
+        /// inputPath
         /// or
-        /// outputPath</exception>
+        /// outputPath
+        /// </exception>
         /// <exception cref="System.ApplicationException"></exception>
-        private async Task ConvertTextSubtitleToAssInternal(string inputPath, string outputPath, string language)
+        private async Task ConvertTextSubtitleToSrtInternal(string inputPath, string outputPath, string language)
         {
             if (string.IsNullOrEmpty(inputPath))
             {
@@ -365,7 +379,7 @@ namespace MediaBrowser.MediaEncoding.Subtitles
                     CreateNoWindow = true,
                     UseShellExecute = false,
                     FileName = _mediaEncoder.EncoderPath,
-                    Arguments = string.Format("{0} -i \"{1}\" -c:s ass \"{2}\"", encodingParam, inputPath, outputPath),
+                    Arguments = string.Format("{0} -i \"{1}\" -c:s srt \"{2}\"", encodingParam, inputPath, outputPath),
 
                     WindowStyle = ProcessWindowStyle.Hidden,
                     ErrorDialog = false
@@ -519,7 +533,7 @@ namespace MediaBrowser.MediaEncoding.Subtitles
 
             Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
 
-            var processArgs = string.Format("-i {0} -map 0:{1} -an -vn -c:s ass \"{2}\"", inputPath,
+            var processArgs = string.Format("-i {0} -map 0:{1} -an -vn -c:s srt \"{2}\"", inputPath,
                 subtitleStreamIndex, outputPath);
 
             if (copySubtitleStream)

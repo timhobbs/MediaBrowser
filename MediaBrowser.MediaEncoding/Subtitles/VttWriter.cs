@@ -21,7 +21,8 @@ namespace MediaBrowser.MediaEncoding.Subtitles
                     writer.WriteLine(@"{0:hh\:mm\:ss\.fff} --> {1:hh\:mm\:ss\.fff}", TimeSpan.FromTicks(trackEvent.StartPositionTicks), TimeSpan.FromTicks(trackEvent.EndPositionTicks));
 
                     var text = trackEvent.Text;
-                    text = Regex.Replace(text, @"\\N", "\r\n", RegexOptions.IgnoreCase);
+
+                    text = Regex.Replace(text, @"\\n", "\r\n", RegexOptions.IgnoreCase);
 
                     writer.WriteLine(text);
                     writer.WriteLine(string.Empty);

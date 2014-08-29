@@ -48,6 +48,9 @@
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="MoreLinq">
+      <HintPath>..\packages\morelinq.1.0.16006\lib\net35\MoreLinq.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
@@ -57,9 +60,6 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
-    <Reference Include="MoreLinq">
-      <HintPath>..\packages\morelinq.1.0.16006\lib\net35\MoreLinq.dll</HintPath>
-    </Reference>
     <Reference Include="ServiceStack.Interfaces">
       <HintPath>..\ThirdParty\ServiceStack\ServiceStack.Interfaces.dll</HintPath>
     </Reference>
@@ -99,6 +99,7 @@
     <Compile Include="Collections\CollectionCreationOptions.cs" />
     <Compile Include="Collections\CollectionEvents.cs" />
     <Compile Include="Collections\ICollectionManager.cs" />
+    <Compile Include="Connect\IConnectManager.cs" />
     <Compile Include="Dlna\ControlRequest.cs" />
     <Compile Include="Dlna\ControlResponse.cs" />
     <Compile Include="Dlna\DlnaIconResponse.cs" />
@@ -150,6 +151,7 @@
     <Compile Include="Entities\ISupportsBoxSetGrouping.cs" />
     <Compile Include="Entities\ISupportsPlaceHolders.cs" />
     <Compile Include="Entities\ItemImageInfo.cs" />
+    <Compile Include="Entities\IThemeMedia.cs" />
     <Compile Include="Entities\LinkedChild.cs" />
     <Compile Include="Entities\MusicVideo.cs" />
     <Compile Include="Entities\IHasAwards.cs" />
@@ -222,7 +224,6 @@
     <Compile Include="Persistence\MediaStreamQuery.cs" />
     <Compile Include="Playlists\IPlaylistManager.cs" />
     <Compile Include="Playlists\Playlist.cs" />
-    <Compile Include="Playlists\PlaylistCreationOptions.cs" />
     <Compile Include="Providers\DirectoryService.cs" />
     <Compile Include="Providers\ICustomMetadataProvider.cs" />
     <Compile Include="Providers\IExternalId.cs" />

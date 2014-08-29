@@ -1,5 +1,4 @@
-﻿using System.Net;
-using MediaBrowser.Api;
+﻿using MediaBrowser.Api;
 using MediaBrowser.Common;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Events;
@@ -15,6 +14,7 @@ using MediaBrowser.Controller.Channels;
 using MediaBrowser.Controller.Chapters;
 using MediaBrowser.Controller.Collections;
 using MediaBrowser.Controller.Configuration;
+using MediaBrowser.Controller.Connect;
 using MediaBrowser.Controller.Dlna;
 using MediaBrowser.Controller.Drawing;
 using MediaBrowser.Controller.Dto;
@@ -59,6 +59,7 @@ using MediaBrowser.Server.Implementations.Activity;
 using MediaBrowser.Server.Implementations.Channels;
 using MediaBrowser.Server.Implementations.Collections;
 using MediaBrowser.Server.Implementations.Configuration;
+using MediaBrowser.Server.Implementations.Connect;
 using MediaBrowser.Server.Implementations.Drawing;
 using MediaBrowser.Server.Implementations.Dto;
 using MediaBrowser.Server.Implementations.EntryPoints;
@@ -78,7 +79,6 @@ using MediaBrowser.Server.Implementations.ServerManager;
 using MediaBrowser.Server.Implementations.Session;
 using MediaBrowser.Server.Implementations.Sync;
 using MediaBrowser.Server.Implementations.Themes;
-using MediaBrowser.ServerApplication.EntryPoints;
 using MediaBrowser.ServerApplication.FFMpeg;
 using MediaBrowser.ServerApplication.IO;
 using MediaBrowser.ServerApplication.Native;
@@ -186,6 +186,7 @@ namespace MediaBrowser.ServerApplication
         /// <value>The media encoder.</value>
         private IMediaEncoder MediaEncoder { get; set; }
 
+        private IConnectManager ConnectManager { get; set; }
         private ISessionManager SessionManager { get; set; }
 
         private ILiveTvManager LiveTvManager { get; set; }
@@ -311,13 +312,6 @@ namespace MediaBrowser.ServerApplication
                 saveConfig = true;
             }
 
-            if (ServerConfigurationManager.Configuration.NotificationOptions != null)
-            {
-                ServerConfigurationManager.SaveConfiguration("notifications", ServerConfigurationManager.Configuration.NotificationOptions);
-                ServerConfigurationManager.Configuration.NotificationOptions = null;
-                saveConfig = true;
-            }
-
             if (ServerConfigurationManager.Configuration.LiveTvOptions != null)
             {
                 ServerConfigurationManager.SaveConfiguration("livetv", ServerConfigurationManager.Configuration.LiveTvOptions);
@@ -329,13 +323,6 @@ namespace MediaBrowser.ServerApplication
             {
                 ServerConfigurationManager.SaveConfiguration("autoorganize", new AutoOrganizeOptions { TvOptions = ServerConfigurationManager.Configuration.TvFileOrganizationOptions });
                 ServerConfigurationManager.Configuration.TvFileOrganizationOptions = null;
-                saveConfig = true;
-            }
-
-            if (ServerConfigurationManager.Configuration.SubtitleOptions != null)
-            {
-                ServerConfigurationManager.SaveConfiguration("subtitles", ServerConfigurationManager.Configuration.SubtitleOptions);
-                ServerConfigurationManager.Configuration.SubtitleOptions = null;
                 saveConfig = true;
             }
 
@@ -473,6 +460,12 @@ namespace MediaBrowser.ServerApplication
             DtoService = new DtoService(Logger, LibraryManager, UserDataManager, ItemRepository, ImageProcessor, ServerConfigurationManager, FileSystemManager, ProviderManager, () => ChannelManager, SyncManager);
             RegisterSingleInstance(DtoService);
 
+            var encryptionManager = new EncryptionManager();
+            RegisterSingleInstance<IEncryptionManager>(encryptionManager);
+
+            ConnectManager = new ConnectManager(LogManager.GetLogger("Connect"), ApplicationPaths, JsonSerializer, encryptionManager, HttpClient, this, ServerConfigurationManager);
+            RegisterSingleInstance(ConnectManager);
+
             SessionManager = new SessionManager(UserDataManager, ServerConfigurationManager, Logger, UserRepository, LibraryManager, UserManager, musicManager, DtoService, ImageProcessor, ItemRepository, JsonSerializer, this, HttpClient, AuthenticationRepository);
             RegisterSingleInstance(SessionManager);
 
@@ -514,8 +507,6 @@ namespace MediaBrowser.ServerApplication
             NotificationManager = new NotificationManager(LogManager, UserManager, ServerConfigurationManager);
             RegisterSingleInstance(NotificationManager);
 
-            RegisterSingleInstance<IEncryptionManager>(new EncryptionManager());
-
             SubtitleManager = new SubtitleManager(LogManager.GetLogger("SubtitleManager"), FileSystemManager, LibraryMonitor, LibraryManager, ItemRepository);
             RegisterSingleInstance(SubtitleManager);
 
@@ -535,7 +526,7 @@ namespace MediaBrowser.ServerApplication
             RegisterSingleInstance<ISessionContext>(new SessionContext(UserManager, authContext, SessionManager));
             RegisterSingleInstance<IAuthService>(new AuthService(UserManager, SessionManager, authContext, ServerConfigurationManager));
 
-            RegisterSingleInstance<ISubtitleEncoder>(new SubtitleEncoder(LibraryManager, LogManager.GetLogger("SubtitleEncoder"), ApplicationPaths, FileSystemManager, MediaEncoder));
+            RegisterSingleInstance<ISubtitleEncoder>(new SubtitleEncoder(LibraryManager, LogManager.GetLogger("SubtitleEncoder"), ApplicationPaths, FileSystemManager, MediaEncoder, JsonSerializer));
 
             var displayPreferencesTask = Task.Run(async () => await ConfigureDisplayPreferencesRepositories().ConfigureAwait(false));
             var itemsTask = Task.Run(async () => await ConfigureItemRepositories().ConfigureAwait(false));
@@ -554,9 +545,9 @@ namespace MediaBrowser.ServerApplication
             SetKernelProperties();
         }
 
-        protected override INetworkManager CreateNetworkManager()
+        protected override INetworkManager CreateNetworkManager(ILogger logger)
         {
-            return new NetworkManager();
+            return new NetworkManager(logger);
         }
 
         protected override IFileSystem CreateFileSystemManager()
@@ -953,13 +944,42 @@ namespace MediaBrowser.ServerApplication
                 OperatingSystem = Environment.OSVersion.ToString(),
                 CanSelfRestart = CanSelfRestart,
                 CanSelfUpdate = CanSelfUpdate,
-                WanAddress = GetWanAddress(),
+                WanAddress = ConnectManager.WanApiAddress,
                 HasUpdateAvailable = HasUpdateAvailable,
                 SupportsAutoRunAtStartup = SupportsAutoRunAtStartup,
                 TranscodingTempPath = ApplicationPaths.TranscodingTempPath,
                 IsRunningAsService = IsRunningAsService,
-                ServerName = FriendlyName
+                ServerName = FriendlyName,
+                LocalAddress = GetLocalIpAddress()
             };
+        }
+
+        /// <summary>
+        /// Gets the local ip address.
+        /// </summary>
+        /// <returns>System.String.</returns>
+        private string GetLocalIpAddress()
+        {
+            var localAddresses = NetworkManager.GetLocalIpAddresses().ToList();
+
+            // Cross-check the local ip addresses with addresses that have been received on with the http server
+            var matchedAddress = HttpServer.LocalEndPoints
+                .ToList()
+                .Select(i => i.Split(':').FirstOrDefault())
+                .Where(i => !string.IsNullOrEmpty(i))
+                .FirstOrDefault(i => localAddresses.Contains(i, StringComparer.OrdinalIgnoreCase));
+
+            // Return the first matched address, if found, or the first known local address
+            var address = matchedAddress ?? localAddresses.FirstOrDefault();
+
+            if (!string.IsNullOrWhiteSpace(address))
+            {
+                address = string.Format("http://{0}:{1}",
+                    address,
+                    ServerConfigurationManager.Configuration.HttpServerPortNumber.ToString(CultureInfo.InvariantCulture));
+            }
+
+            return address;
         }
 
         public string FriendlyName
@@ -975,30 +995,6 @@ namespace MediaBrowser.ServerApplication
         public int HttpServerPort
         {
             get { return ServerConfigurationManager.Configuration.HttpServerPortNumber; }
-        }
-
-        private readonly CultureInfo _usCulture = new CultureInfo("en-US");
-        private string GetWanAddress()
-        {
-            var ip = ServerConfigurationManager.Configuration.WanDdns;
-
-            if (string.IsNullOrWhiteSpace(ip))
-            {
-                ip = WanAddressEntryPoint.WanAddress;
-            }
-
-            if (!string.IsNullOrEmpty(ip))
-            {
-                if (!ip.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
-                    !ip.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-                {
-                    ip = "http://" + ip;
-                }
-
-                return ip + ":" + ServerConfigurationManager.Configuration.HttpServerPortNumber.ToString(_usCulture);
-            }
-
-            return null;
         }
 
         /// <summary>
