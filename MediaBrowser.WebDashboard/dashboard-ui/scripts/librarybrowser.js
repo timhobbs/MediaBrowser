@@ -1,6 +1,6 @@
 ﻿var LibraryBrowser = (function (window, document, $, screen, store) {
 
-    var pageSizeKey = 'pagesize_v2';
+    var pageSizeKey = 'pagesize_v3';
 
     $(function () {
         $("body").on("create", function () {
@@ -11,18 +11,26 @@
     var defaultBackground = "#333";
 
     return {
-        getDefaultPageSize: function () {
+        getDefaultPageSize: function (key, defaultValue) {
 
-            var saved = store.getItem(pageSizeKey);
+            var saved = store.getItem(key || pageSizeKey);
 
             if (saved) {
                 return parseInt(saved);
             }
 
-            if (window.location.toString().toLowerCase().indexOf('localhost') != -1) {
-                return 100;
+            if (defaultValue) {
+                return defaultValue;
             }
-            return 50;
+
+            // Chrome seems to have virtualization built-in and can handle large lists easily
+            var isChrome = $.browser.chrome;
+
+            if (window.location.toString().toLowerCase().indexOf('localhost') != -1) {
+                return isChrome ? 200 : 100;
+            }
+
+            return isChrome ? 100 : 50;
         },
 
         getDefaultItemsView: function (view, mobileView) {
@@ -557,7 +565,7 @@
         },
 
         getUserDataCssClass: function (key) {
-            return 'libraryItemUserData' + key;
+            return 'libraryItemUserData' + key.replace(new RegExp(' ', 'g'), '');
         },
 
         getListViewHtml: function (options) {
@@ -601,8 +609,12 @@
                     cssClass += ' ' + LibraryBrowser.getUserDataCssClass(item.UserData.Key);
                 }
 
+
                 var href = LibraryBrowser.getHref(item, options.context);
-                html += '<li class="' + cssClass + '"' + dataAttributes + ' data-index="' + index + '" data-itemid="' + item.Id + '" data-playlistitemid="' + (item.PlaylistItemId || '') + '" data-href="' + href + '"><a href="' + href + '">';
+                html += '<li class="' + cssClass + '"' + dataAttributes + ' data-index="' + index + '" data-itemid="' + item.Id + '" data-playlistitemid="' + (item.PlaylistItemId || '') + '" data-href="' + href + '">';
+
+                var defaultActionAttribute = options.defaultAction ? (' data-action="' + options.defaultAction + '" class="itemWithAction"') : '';
+                html += '<a' + defaultActionAttribute + ' href="' + href + '">';
 
                 var imgUrl;
 
@@ -1085,7 +1097,13 @@
 
                 var dataAttributes = LibraryBrowser.getItemDataAttributes(item, options);
 
-                html += '<a' + dataAttributes + ' class="' + cssClass + '" href="' + href + '">';
+                var defaultActionAttribute = options.defaultAction ? (' data-action="' + options.defaultAction + '"') : '';
+
+                if (options.defaultAction) {
+                    cssClass += ' itemWithAction';
+                }
+
+                html += '<a' + dataAttributes + ' class="' + cssClass + '" href="' + href + '"' + defaultActionAttribute + '>';
 
                 var style = "";
 
@@ -1623,7 +1641,7 @@
 
             if (limit && options.updatePageSizeSetting !== false) {
                 try {
-                    store.setItem(pageSizeKey, limit);
+                    store.setItem(options.pageSizeKey || pageSizeKey, limit);
                 } catch (e) {
 
                 }
@@ -2067,7 +2085,7 @@
             var miscInfo = [];
             var text, date;
 
-            if (item.Type == "Episode") {
+            if (item.Type == "Episode" || item.MediaType == 'Photo') {
 
                 if (item.PremiereDate) {
 
@@ -2131,7 +2149,7 @@
                 }
             }
 
-            if (item.Type != "Series" && item.Type != "Episode") {
+            if (item.Type != "Series" && item.Type != "Episode" && item.MediaType != 'Photo') {
 
                 if (item.ProductionYear) {
 
@@ -2172,6 +2190,10 @@
 
             if (item.Video3DFormat) {
                 miscInfo.push("3D");
+            }
+
+            if (item.MediaType == 'Photo' && item.Width && item.Height) {
+                miscInfo.push(item.Width + "x" + item.Height);
             }
 
             return miscInfo.join('&nbsp;&nbsp;&nbsp;&nbsp;');

@@ -156,7 +156,10 @@
     <Compile Include="Entities\MusicVideo.cs" />
     <Compile Include="Entities\IHasAwards.cs" />
     <Compile Include="Entities\Photo.cs" />
+    <Compile Include="Entities\PhotoAlbum.cs" />
+    <Compile Include="Entities\UserItemsQuery.cs" />
     <Compile Include="Entities\UserView.cs" />
+    <Compile Include="Entities\UserViewBuilder.cs" />
     <Compile Include="FileOrganization\IFileOrganizationService.cs" />
     <Compile Include="Library\DeleteOptions.cs" />
     <Compile Include="Library\ILibraryPostScanTask.cs" />
@@ -213,6 +216,7 @@
     <Compile Include="Net\IRestfulService.cs" />
     <Compile Include="Net\ISessionContext.cs" />
     <Compile Include="Net\LoggedAttribute.cs" />
+    <Compile Include="Net\StaticResultOptions.cs" />
     <Compile Include="News\INewsService.cs" />
     <Compile Include="Notifications\INotificationManager.cs" />
     <Compile Include="Notifications\INotificationService.cs" />
@@ -334,6 +338,7 @@
     <Compile Include="Sync\ISyncRepository.cs" />
     <Compile Include="Themes\IAppThemeManager.cs" />
     <Compile Include="Themes\InternalThemeImage.cs" />
+    <Compile Include="TV\ITVSeriesManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MediaBrowser.Common\MediaBrowser.Common.csproj">

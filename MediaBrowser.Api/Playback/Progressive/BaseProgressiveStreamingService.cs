@@ -1,4 +1,5 @@
-﻿using MediaBrowser.Common.IO;
+﻿using System.Linq;
+using MediaBrowser.Common.IO;
 using MediaBrowser.Common.Net;
 using MediaBrowser.Controller.Channels;
 using MediaBrowser.Controller.Configuration;
@@ -7,6 +8,7 @@ using MediaBrowser.Controller.Drawing;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.LiveTv;
 using MediaBrowser.Controller.MediaEncoding;
+using MediaBrowser.Controller.Net;
 using MediaBrowser.Model.IO;
 using MediaBrowser.Model.MediaInfo;
 using ServiceStack.Web;
@@ -26,7 +28,8 @@ namespace MediaBrowser.Api.Playback.Progressive
         protected readonly IImageProcessor ImageProcessor;
         protected readonly IHttpClient HttpClient;
 
-        protected BaseProgressiveStreamingService(IServerConfigurationManager serverConfig, IUserManager userManager, ILibraryManager libraryManager, IIsoManager isoManager, IMediaEncoder mediaEncoder, IFileSystem fileSystem, ILiveTvManager liveTvManager, IDlnaManager dlnaManager, IChannelManager channelManager, ISubtitleEncoder subtitleEncoder, IImageProcessor imageProcessor, IHttpClient httpClient) : base(serverConfig, userManager, libraryManager, isoManager, mediaEncoder, fileSystem, liveTvManager, dlnaManager, channelManager, subtitleEncoder)
+        protected BaseProgressiveStreamingService(IServerConfigurationManager serverConfig, IUserManager userManager, ILibraryManager libraryManager, IIsoManager isoManager, IMediaEncoder mediaEncoder, IFileSystem fileSystem, ILiveTvManager liveTvManager, IDlnaManager dlnaManager, IChannelManager channelManager, ISubtitleEncoder subtitleEncoder, IImageProcessor imageProcessor, IHttpClient httpClient)
+            : base(serverConfig, userManager, libraryManager, isoManager, mediaEncoder, fileSystem, liveTvManager, dlnaManager, channelManager, subtitleEncoder)
         {
             ImageProcessor = imageProcessor;
             HttpClient = httpClient;
@@ -52,23 +55,23 @@ namespace MediaBrowser.Api.Playback.Progressive
             if (isVideoRequest)
             {
                 var videoCodec = state.VideoRequest.VideoCodec;
-                
-                    if (string.Equals(videoCodec, "h264", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return ".ts";
-                    }
-                    if (string.Equals(videoCodec, "theora", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return ".ogv";
-                    }
-                    if (string.Equals(videoCodec, "vpx", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return ".webm";
-                    }
-                    if (string.Equals(videoCodec, "wmv", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return ".asf";
-                    }
+
+                if (string.Equals(videoCodec, "h264", StringComparison.OrdinalIgnoreCase))
+                {
+                    return ".ts";
+                }
+                if (string.Equals(videoCodec, "theora", StringComparison.OrdinalIgnoreCase))
+                {
+                    return ".ogv";
+                }
+                if (string.Equals(videoCodec, "vpx", StringComparison.OrdinalIgnoreCase))
+                {
+                    return ".webm";
+                }
+                if (string.Equals(videoCodec, "wmv", StringComparison.OrdinalIgnoreCase))
+                {
+                    return ".asf";
+                }
             }
 
             // Try to infer based on the desired audio codec
@@ -139,10 +142,9 @@ namespace MediaBrowser.Api.Playback.Progressive
             var outputPath = state.OutputFilePath;
             var outputPathExists = File.Exists(outputPath);
 
-            var isStatic = request.Static ||
-                           (outputPathExists && !ApiEntryPoint.Instance.HasActiveTranscodingJob(outputPath, TranscodingJobType.Progressive));
+            var isTranscodeCached = outputPathExists && !ApiEntryPoint.Instance.HasActiveTranscodingJob(outputPath, TranscodingJobType.Progressive);
 
-            AddDlnaHeaders(state, responseHeaders, isStatic);
+            AddDlnaHeaders(state, responseHeaders, request.Static || isTranscodeCached);
 
             // Static stream
             if (request.Static)
@@ -151,18 +153,67 @@ namespace MediaBrowser.Api.Playback.Progressive
 
                 using (state)
                 {
-                    return ResultFactory.GetStaticFileResult(Request, state.MediaPath, contentType, null, FileShare.Read, responseHeaders, isHeadRequest);
+                    var job = string.IsNullOrEmpty(request.TranscodingJobId) ?
+                        null :
+                        ApiEntryPoint.Instance.GetTranscodingJob(request.TranscodingJobId);
+
+                    var limits = new List<long>();
+                    if (state.InputBitrate.HasValue)
+                    {
+                        // Bytes per second
+                        limits.Add((state.InputBitrate.Value / 8));
+                    }
+                    if (state.InputFileSize.HasValue && state.RunTimeTicks.HasValue)
+                    {
+                        var totalSeconds = TimeSpan.FromTicks(state.RunTimeTicks.Value).TotalSeconds;
+
+                        if (totalSeconds > 1)
+                        {
+                            var timeBasedLimit = state.InputFileSize.Value / totalSeconds;
+                            limits.Add(Convert.ToInt64(timeBasedLimit));
+                        }
+                    }
+
+                    // Take the greater of the above to methods, just to be safe
+                    var throttleLimit = limits.Count > 0 ? limits.First() : 0;
+
+                    // Pad to play it safe
+                    var bytesPerSecond = Convert.ToInt64(1.05 * throttleLimit);
+
+                    // Don't even start evaluating this until at least two minutes have content have been consumed
+                    var targetGap = throttleLimit * 120;
+
+                    return ResultFactory.GetStaticFileResult(Request, new StaticFileResultOptions
+                    {
+                        ResponseHeaders = responseHeaders,
+                        ContentType = contentType,
+                        IsHeadRequest = isHeadRequest,
+                        Path = state.MediaPath,
+                        Throttle = request.Throttle,
+
+                        ThrottleLimit = bytesPerSecond,
+
+                        MinThrottlePosition = targetGap,
+
+                        ThrottleCallback = (l1, l2) => ThrottleCallack(l1, l2, bytesPerSecond, job)
+                    });
                 }
             }
 
             // Not static but transcode cache file exists
-            if (outputPathExists && !ApiEntryPoint.Instance.HasActiveTranscodingJob(outputPath, TranscodingJobType.Progressive))
+            if (isTranscodeCached)
             {
                 var contentType = state.GetMimeType(outputPath);
 
                 try
                 {
-                    return ResultFactory.GetStaticFileResult(Request, outputPath, contentType, null, FileShare.Read, responseHeaders, isHeadRequest);
+                    return ResultFactory.GetStaticFileResult(Request, new StaticFileResultOptions
+                    {
+                        ResponseHeaders = responseHeaders,
+                        ContentType = contentType,
+                        IsHeadRequest = isHeadRequest,
+                        Path = outputPath
+                    });
                 }
                 finally
                 {
@@ -181,6 +232,67 @@ namespace MediaBrowser.Api.Playback.Progressive
 
                 throw;
             }
+        }
+
+        private readonly long _gapLengthInTicks = TimeSpan.FromMinutes(3).Ticks;
+
+        private long ThrottleCallack(long currentBytesPerSecond, long bytesWritten, long originalBytesPerSecond, TranscodingJob job)
+        {
+            var bytesDownloaded = job.BytesDownloaded ?? 0;
+            var transcodingPositionTicks = job.TranscodingPositionTicks ?? 0;
+            var downloadPositionTicks = job.DownloadPositionTicks ?? 0;
+
+            var path = job.Path;
+
+            if (bytesDownloaded > 0 && transcodingPositionTicks > 0)
+            {
+                // Progressive Streaming - byte-based consideration
+
+                try
+                {
+                    var bytesTranscoded = job.BytesTranscoded ?? new FileInfo(path).Length;
+
+                    // Estimate the bytes the transcoder should be ahead
+                    double gapFactor = _gapLengthInTicks;
+                    gapFactor /= transcodingPositionTicks;
+                    var targetGap = bytesTranscoded * gapFactor;
+
+                    var gap = bytesTranscoded - bytesDownloaded;
+
+                    if (gap < targetGap)
+                    {
+                        //Logger.Debug("Not throttling transcoder gap {0} target gap {1} bytes downloaded {2}", gap, targetGap, bytesDownloaded);
+                        return 0;
+                    }
+
+                    //Logger.Debug("Throttling transcoder gap {0} target gap {1} bytes downloaded {2}", gap, targetGap, bytesDownloaded);
+                }
+                catch
+                {
+                    //Logger.Error("Error getting output size");
+                }
+            }
+            else if (downloadPositionTicks > 0 && transcodingPositionTicks > 0)
+            {
+                // HLS - time-based consideration
+
+                var targetGap = _gapLengthInTicks;
+                var gap = transcodingPositionTicks - downloadPositionTicks;
+
+                if (gap < targetGap)
+                {
+                    //Logger.Debug("Not throttling transcoder gap {0} target gap {1}", gap, targetGap);
+                    return 0;
+                }
+
+                //Logger.Debug("Throttling transcoder gap {0} target gap {1}", gap, targetGap);
+            }
+            else
+            {
+                //Logger.Debug("No throttle data for " + path);
+            }
+
+            return originalBytesPerSecond;
         }
 
         /// <summary>
@@ -283,17 +395,18 @@ namespace MediaBrowser.Api.Playback.Progressive
             await ApiEntryPoint.Instance.TranscodingStartLock.WaitAsync(cancellationTokenSource.Token).ConfigureAwait(false);
             try
             {
+                TranscodingJob job;
+
                 if (!File.Exists(outputPath))
                 {
-                    await StartFfMpeg(state, outputPath, cancellationTokenSource).ConfigureAwait(false);
+                    job = await StartFfMpeg(state, outputPath, cancellationTokenSource).ConfigureAwait(false);
                 }
                 else
                 {
-                    ApiEntryPoint.Instance.OnTranscodeBeginRequest(outputPath, TranscodingJobType.Progressive);
+                    job = ApiEntryPoint.Instance.OnTranscodeBeginRequest(outputPath, TranscodingJobType.Progressive);
                     state.Dispose();
                 }
 
-                var job = ApiEntryPoint.Instance.GetTranscodingJob(outputPath, TranscodingJobType.Progressive);
                 var result = new ProgressiveStreamWriter(outputPath, Logger, FileSystem, job);
 
                 result.Options["Content-Type"] = contentType;

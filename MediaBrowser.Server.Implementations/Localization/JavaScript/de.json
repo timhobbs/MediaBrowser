@@ -122,7 +122,7 @@
     "HeaderResume": "Fortsetzen",
     "HeaderMyViews": "Meine Ansichten",
     "HeaderLibraryFolders": "Medienverzeichnisse",
-    "HeaderLatestMedia": "Letzte Medien",
+    "HeaderLatestMedia": "Neueste Medien",
     "ButtonMoreItems": "Mehr...",
     "ButtonMore": "Mehr",
     "HeaderFavoriteMovies": "Lieblingsfilme",
@@ -429,5 +429,14 @@
     "TabMusicVideos": "Musikvideos",
     "BirthPlaceValue": "Geburtsort: {0}",
     "DeathDateValue": "Gestorben: {0}",
-    "BirthDateValue": "Geboren: {0}"
+    "BirthDateValue": "Geboren: {0}",
+    "HeaderLatestReviews": "Neueste Rezensionen",
+    "HeaderPluginInstallation": "Plugin Installation",
+    "MessageAlreadyInstalled": "Diese Version ist bereits installiert",
+    "ValueReviewCount": "{0} Rezensionen",
+    "MessageYouHaveVersionInstalled": "Du hast momentan Version {0} installiert.",
+    "MessageTrialExpired": "Die Testzeitraum f\u00fcr diese Funktion in ausgelaufen",
+    "MessageTrialWillExpireIn": "Der Testzeitraum f\u00fcr diese Funktion wird in {0} Tag(en) auslaufen",
+    "MessageInstallPluginFromApp": "Dieses Plugin muss von der App aus installiert werden, mit der du es benutzen willst.",
+    "ValuePriceUSD": "Preis: {0} (USD)"
 }

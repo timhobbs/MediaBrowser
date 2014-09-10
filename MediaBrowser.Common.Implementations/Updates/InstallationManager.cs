@@ -154,7 +154,12 @@ namespace MediaBrowser.Common.Implementations.Updates
             PackageType? packageType = null,
             Version applicationVersion = null)
         {
-            var data = new Dictionary<string, string> { { "key", _securityManager.SupporterKey }, { "mac", _networkManager.GetMacAddress() } };
+            var data = new Dictionary<string, string>
+            {
+                { "key", _securityManager.SupporterKey }, 
+                { "mac", _networkManager.GetMacAddress() }, 
+                { "systemid", _applicationHost.SystemId }
+            };
 
             using (var json = await _httpClient.Post(Constants.Constants.MbAdminUrl + "service/package/retrieveall", data, cancellationToken).ConfigureAwait(false))
             {
@@ -188,7 +193,7 @@ namespace MediaBrowser.Common.Implementations.Updates
                         cacheLength = TimeSpan.FromMinutes(3);
                         break;
                     default:
-                        cacheLength = TimeSpan.FromHours(6);
+                        cacheLength = TimeSpan.FromHours(3);
                         break;
                 }
 

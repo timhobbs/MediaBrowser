@@ -17,10 +17,12 @@ namespace MediaBrowser.Controller.Entities.Audio
 
         public MusicAlbum()
         {
-            Artists = new List<string>();
             SoundtrackIds = new List<Guid>();
+            Artists = new List<string>();
+            AlbumArtists = new List<string>();
         }
 
+        [IgnoreDataMember]
         public override bool SupportsAddingToPlaylist
         {
             get { return true; }
@@ -40,7 +42,7 @@ namespace MediaBrowser.Controller.Entities.Audio
         {
             get
             {
-                var list = AlbumArtists;
+                var list = AlbumArtists.ToList();
 
                 list.AddRange(Artists);
 
@@ -49,24 +51,12 @@ namespace MediaBrowser.Controller.Entities.Audio
             }
         }
 
+        public List<string> AlbumArtists { get; set; }
+
         [IgnoreDataMember]
-        public List<string> AlbumArtists
+        public string AlbumArtist
         {
-            get
-            {
-                var list = new List<string>();
-
-                if (!string.IsNullOrEmpty(AlbumArtist))
-                {
-                    list.Add(AlbumArtist);
-                }
-
-                return list;
-            }
-            set
-            {
-                AlbumArtist = value.FirstOrDefault();
-            }
+            get { return AlbumArtists.FirstOrDefault(); }
         }
 
         /// <summary>
@@ -138,8 +128,6 @@ namespace MediaBrowser.Controller.Entities.Audio
         {
             return AllArtists.Contains(artist, StringComparer.OrdinalIgnoreCase);
         }
-
-        public string AlbumArtist { get; set; }
 
         public List<string> Artists { get; set; }
 

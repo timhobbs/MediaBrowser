@@ -383,10 +383,10 @@
     "LabelTitleDisplayOrder": "Titel weergave volgorde:",
     "OptionSortName": "Sorteerbaar",
     "OptionReleaseDate": "Uitgave datum",
-    "LabelSeasonNumber": "Seizoennummer:",
+    "LabelSeasonNumber": "Seizoen nummer:",
     "LabelDiscNumber": "Disc nummer",
     "LabelParentNumber": "Bovenliggend nummer",
-    "LabelEpisodeNumber": "Afleveringsnummer:",
+    "LabelEpisodeNumber": "Aflevering nummer:",
     "LabelTrackNumber": "Tracknummer:",
     "LabelNumber": "Nummer:",
     "LabelReleaseDate": "Uitgave datum:",
@@ -429,5 +429,14 @@
     "TabMusicVideos": "Music Videos",
     "BirthPlaceValue": "Geboorte plaats: {0})",
     "DeathDateValue": "Overleden: {0}",
-    "BirthDateValue": "Geboren: {0}"
+    "BirthDateValue": "Geboren: {0}",
+    "HeaderLatestReviews": "Recente reviews",
+    "HeaderPluginInstallation": "Plugin installatie",
+    "MessageAlreadyInstalled": "Deze versie is al ge\u00efnstalleerd",
+    "ValueReviewCount": "{0} Reviews",
+    "MessageYouHaveVersionInstalled": "Op dit moment is versie {0} ge\u00efnstalleerd.",
+    "MessageTrialExpired": "De proef periode voor deze feature is verlopen",
+    "MessageTrialWillExpireIn": "De proef periode voor deze feature zal in {0} dag(en) verlopen",
+    "MessageInstallPluginFromApp": "Deze plugin moet ge\u00efnstalleerd worden vanuit de app waarin je het wil gebruiken.",
+    "ValuePriceUSD": "Prijs {0} (USD)"
 }

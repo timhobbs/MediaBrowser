@@ -62,30 +62,6 @@ namespace MediaBrowser.Model.ApiClient
             where T : class;
 
         /// <summary>
-        /// Gets the url needed to stream an audio file
-        /// </summary>
-        /// <param name="options">The options.</param>
-        /// <returns>System.String.</returns>
-        /// <exception cref="ArgumentNullException">options</exception>
-        string GetAudioStreamUrl(StreamOptions options);
-
-        /// <summary>
-        /// Gets the url needed to stream a video file
-        /// </summary>
-        /// <param name="options">The options.</param>
-        /// <returns>System.String.</returns>
-        /// <exception cref="ArgumentNullException">options</exception>
-        string GetVideoStreamUrl(VideoStreamOptions options);
-
-        /// <summary>
-        /// Formulates a url for streaming video using the HLS protocol
-        /// </summary>
-        /// <param name="options">The options.</param>
-        /// <returns>System.String.</returns>
-        /// <exception cref="ArgumentNullException">options</exception>
-        string GetHlsVideoStreamUrl(VideoStreamOptions options);
-
-        /// <summary>
         /// Reports the capabilities.
         /// </summary>
         /// <param name="capabilities">The capabilities.</param>
@@ -814,7 +790,8 @@ namespace MediaBrowser.Model.ApiClient
         /// Changes the server location.
         /// </summary>
         /// <param name="address">The address.</param>
-        void ChangeServerLocation(string address);
+        /// <param name="keepExistingAuth">Don't clear any existing authentication</param>
+        void ChangeServerLocation(string address, bool keepExistingAuth = false);
 
         /// <summary>
         /// Gets or sets the type of the client.
@@ -1289,5 +1266,32 @@ namespace MediaBrowser.Model.ApiClient
         /// <param name="query">The query.</param>
         /// <returns>Task&lt;QueryResult&lt;BaseItemDto&gt;&gt;.</returns>
         Task<QueryResult<BaseItemDto>> GetPlaylistItems(PlaylistItemQuery query);
+
+        /// <summary>
+        /// Gets the url needed to stream an audio file
+        /// </summary>
+        /// <param name="options">The options.</param>
+        /// <returns>System.String.</returns>
+        /// <exception cref="ArgumentNullException">options</exception>
+        [Obsolete]
+        string GetAudioStreamUrl(StreamOptions options);
+
+        /// <summary>
+        /// Gets the url needed to stream a video file
+        /// </summary>
+        /// <param name="options">The options.</param>
+        /// <returns>System.String.</returns>
+        /// <exception cref="ArgumentNullException">options</exception>
+        [Obsolete]
+        string GetVideoStreamUrl(VideoStreamOptions options);
+
+        /// <summary>
+        /// Formulates a url for streaming video using the HLS protocol
+        /// </summary>
+        /// <param name="options">The options.</param>
+        /// <returns>System.String.</returns>
+        /// <exception cref="ArgumentNullException">options</exception>
+        [Obsolete]
+        string GetHlsVideoStreamUrl(VideoStreamOptions options);
     }
 }

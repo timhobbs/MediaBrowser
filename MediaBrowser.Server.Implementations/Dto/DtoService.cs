@@ -1,5 +1,4 @@
-﻿using MediaBrowser.Common.Extensions;
-using MediaBrowser.Common.IO;
+﻿using MediaBrowser.Common.IO;
 using MediaBrowser.Controller.Channels;
 using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Drawing;
@@ -356,6 +355,32 @@ namespace MediaBrowser.Server.Implementations.Dto
         private void SetBookProperties(BaseItemDto dto, Book item)
         {
             dto.SeriesName = item.SeriesName;
+        }
+        private void SetPhotoProperties(BaseItemDto dto, Photo item)
+        {
+            dto.Width = item.Width;
+            dto.Height = item.Height;
+            dto.CameraMake = item.CameraMake;
+            dto.CameraModel = item.CameraModel;
+            dto.Software = item.Software;
+            dto.ExposureTime = item.ExposureTime;
+            dto.FocalLength = item.FocalLength;
+            dto.ImageOrientation = item.Orientation;
+            dto.Aperture = item.Aperture;
+            dto.ShutterSpeed = item.ShutterSpeed;
+
+            dto.Latitude = item.Latitude;
+            dto.Longitude = item.Longitude;
+            dto.Altitude = item.Altitude;
+            dto.IsoSpeedRating = item.IsoSpeedRating;
+            
+            var album = item.Album;
+
+            if (album != null)
+            {
+                dto.Album = album.Name;
+                dto.AlbumId = album.Id.ToString("N");
+            }
         }
 
         private void SetMusicVideoProperties(BaseItemDto dto, MusicVideo item)
@@ -1187,21 +1212,24 @@ namespace MediaBrowser.Server.Implementations.Dto
             }
 
             var book = item as Book;
-
             if (book != null)
             {
                 SetBookProperties(dto, book);
             }
 
-            var tvChannel = item as LiveTvChannel;
+            var photo = item as Photo;
+            if (photo != null)
+            {
+                SetPhotoProperties(dto, photo);
+            }
 
+            var tvChannel = item as LiveTvChannel;
             if (tvChannel != null)
             {
                 dto.MediaSources = tvChannel.GetMediaSources(true).ToList();
             }
 
             var channelItem = item as IChannelItem;
-
             if (channelItem != null)
             {
                 dto.ChannelId = channelItem.ChannelId;

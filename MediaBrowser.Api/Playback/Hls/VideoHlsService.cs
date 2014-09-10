@@ -10,7 +10,6 @@ using ServiceStack;
 using System;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace MediaBrowser.Api.Playback.Hls
@@ -74,18 +73,7 @@ namespace MediaBrowser.Api.Playback.Hls
 
             file = Path.Combine(ServerConfigurationManager.ApplicationPaths.TranscodingTempPath, file);
 
-            OnBeginRequest(request.PlaylistId);
-
-            return ResultFactory.GetStaticFileResult(Request, file);
-        }
-
-        /// <summary>
-        /// Called when [begin request].
-        /// </summary>
-        /// <param name="playlistId">The playlist id.</param>
-        protected void OnBeginRequest(string playlistId)
-        {
-            var normalizedPlaylistId = playlistId.Replace("-low", string.Empty);
+            var normalizedPlaylistId = request.PlaylistId.Replace("-low", string.Empty);
 
             foreach (var playlist in Directory.EnumerateFiles(ServerConfigurationManager.ApplicationPaths.TranscodingTempPath, "*.m3u8")
                 .Where(i => i.IndexOf(normalizedPlaylistId, StringComparison.OrdinalIgnoreCase) != -1)
@@ -93,15 +81,20 @@ namespace MediaBrowser.Api.Playback.Hls
             {
                 ExtendPlaylistTimer(playlist);
             }
+
+            return ResultFactory.GetStaticFileResult(Request, file);
         }
 
         private async void ExtendPlaylistTimer(string playlist)
         {
-            ApiEntryPoint.Instance.OnTranscodeBeginRequest(playlist, TranscodingJobType.Hls);
+            var job = ApiEntryPoint.Instance.OnTranscodeBeginRequest(playlist, TranscodingJobType.Hls);
 
             await Task.Delay(20000).ConfigureAwait(false);
 
-            ApiEntryPoint.Instance.OnTranscodeEndRequest(playlist, TranscodingJobType.Hls);
+            if (job != null)
+            {
+                ApiEntryPoint.Instance.OnTranscodeEndRequest(job);
+            }
         }
 
         /// <summary>

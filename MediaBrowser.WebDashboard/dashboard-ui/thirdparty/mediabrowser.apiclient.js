@@ -2125,7 +2125,7 @@ MediaBrowser.ApiClient = function ($, navigator, JSON, WebSocket, setTimeout, wi
         function supportsWebP() {
 
             // TODO: Improve with http://webpjs.appspot.com/
-            return $.browser.chrome || $.browser.android;
+            return $.browser.chrome;
         }
 
         function normalizeImageOptions(options) {
@@ -3196,7 +3196,7 @@ MediaBrowser.ApiClient = function ($, navigator, JSON, WebSocket, setTimeout, wi
             });
         };
 
-        self.getPackageReviews = function (packageId, minRating, maxRating, limit, forceTitle) {
+        self.getPackageReviews = function (packageId, minRating, maxRating, limit) {
 
             if (!packageId) {
                 throw new Error("null packageId");
@@ -3212,9 +3212,6 @@ MediaBrowser.ApiClient = function ($, navigator, JSON, WebSocket, setTimeout, wi
             }
             if (limit) {
                 options.Limit = limit;
-            }
-            if (forceTitle) {
-                options.ForceTitle = true;
             }
 
             var url = self.getUrl("Packages/" + packageId + "/Reviews", options);

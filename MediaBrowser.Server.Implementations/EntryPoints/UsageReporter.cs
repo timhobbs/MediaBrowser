@@ -1,11 +1,11 @@
-﻿using MediaBrowser.Common.Net;
+﻿using MediaBrowser.Common;
+using MediaBrowser.Common.Net;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MediaBrowser.Common.Implementations.Security
+namespace MediaBrowser.Server.Implementations.EntryPoints
 {
     public class UsageReporter
     {
@@ -30,27 +30,36 @@ namespace MediaBrowser.Common.Implementations.Security
             {
                 { "feature", _applicationHost.Name }, 
                 { "mac", mac }, 
+                { "serverid", _applicationHost.SystemId }, 
+                { "deviceid", _applicationHost.SystemId }, 
                 { "ver", _applicationHost.ApplicationVersion.ToString() }, 
                 { "platform", Environment.OSVersion.VersionString }, 
                 { "isservice", _applicationHost.IsRunningAsService.ToString().ToLower()}
             };
 
-            return _httpClient.Post(Constants.Constants.MbAdminUrl + "service/registration/ping", data, cancellationToken);
+            return _httpClient.Post(Common.Constants.Constants.MbAdminUrl + "service/registration/ping", data, cancellationToken);
         }
 
         public Task ReportAppUsage(ClientInfo app, CancellationToken cancellationToken)
         {
+            if (string.IsNullOrWhiteSpace(app.DeviceId))
+            {
+                throw new ArgumentException("Client info must have a device Id");
+            }
+
             cancellationToken.ThrowIfCancellationRequested();
 
             var data = new Dictionary<string, string>
             {
                 { "feature", app.AppName ?? "Unknown App" }, 
-                { "mac", app.DeviceId ?? _networkManager.GetMacAddress() }, 
+                { "serverid", _applicationHost.SystemId }, 
+                { "deviceid", app.DeviceId }, 
+                { "mac", app.DeviceId }, 
                 { "ver", app.AppVersion ?? "Unknown" }, 
                 { "platform", app.DeviceName }, 
             };
 
-            return _httpClient.Post(Constants.Constants.MbAdminUrl + "service/registration/ping", data, cancellationToken);
+            return _httpClient.Post(Common.Constants.Constants.MbAdminUrl + "service/registration/ping", data, cancellationToken);
         }
     }
 

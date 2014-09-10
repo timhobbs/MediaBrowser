@@ -2,6 +2,8 @@
 
     function loadAdvancedConfig(page, config) {
 
+        $('#chkSaveMetadataHidden', page).checked(config.SaveMetadataHidden).checkboxradio("refresh");
+
         $('#chkEnableTmdbPersonUpdates', page).checked(config.EnableTmdbUpdates).checkboxradio("refresh");
         $('#chkEnableTvdbUpdates', page).checked(config.EnableTvDbUpdates).checkboxradio("refresh");
         $('#chkEnableFanartUpdates', page).checked(config.EnableFanArtUpdates).checkboxradio("refresh");
@@ -34,6 +36,8 @@
 
         $('#chkDownloadChapterMovies', page).checked(config.DownloadMovieChapters).checkboxradio("refresh");
         $('#chkDownloadChapterEpisodes', page).checked(config.DownloadEpisodeChapters).checkboxradio("refresh");
+
+        $('#chkExtractChaptersDuringLibraryScan', page).checked(config.ExtractDuringLibraryScan).checkboxradio("refresh");
 
         renderChapterFetchers(page, config, providers);
 
@@ -174,6 +178,8 @@
 
         ApiClient.getServerConfiguration().done(function (config) {
 
+            config.SaveMetadataHidden = $('#chkSaveMetadataHidden', form).checked();
+
             config.EnableTvDbUpdates = $('#chkEnableTvdbUpdates', form).checked();
             config.EnableTmdbUpdates = $('#chkEnableTmdbPersonUpdates', form).checked();
             config.EnableFanArtUpdates = $('#chkEnableFanartUpdates', form).checked();
@@ -201,6 +207,7 @@
 
             config.DownloadMovieChapters = $('#chkDownloadChapterMovies', form).checked();
             config.DownloadEpisodeChapters = $('#chkDownloadChapterEpisodes', form).checked();
+            config.ExtractDuringLibraryScan = $('#chkExtractChaptersDuringLibraryScan', form).checked();
 
             config.DisabledFetchers = $('.chkChapterFetcher:not(:checked)', form).get().map(function (c) {
 

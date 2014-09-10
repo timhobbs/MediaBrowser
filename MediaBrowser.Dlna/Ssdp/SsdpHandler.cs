@@ -65,7 +65,7 @@ namespace MediaBrowser.Dlna.Ssdp
                 string mx = null;
                 args.Headers.TryGetValue("mx", out mx);
                 int delaySeconds;
-                if (!string.IsNullOrWhiteSpace(mx) && 
+                if (!string.IsNullOrWhiteSpace(mx) &&
                     int.TryParse(mx, NumberStyles.Any, CultureInfo.InvariantCulture, out delaySeconds)
                     && delaySeconds > 0)
                 {
@@ -101,7 +101,7 @@ namespace MediaBrowser.Dlna.Ssdp
             ReloadAliveNotifier();
         }
 
-        public void SendSearchMessage(IPEndPoint localIp)
+        public void SendSearchMessage(EndPoint localIp)
         {
             var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -121,7 +121,7 @@ namespace MediaBrowser.Dlna.Ssdp
 
         public void SendDatagram(string header,
             Dictionary<string, string> values,
-            IPEndPoint localAddress,
+            EndPoint localAddress,
             int sendCount = 1)
         {
             SendDatagram(header, values, _ssdpEndp, localAddress, sendCount);
@@ -129,13 +129,14 @@ namespace MediaBrowser.Dlna.Ssdp
 
         public void SendDatagram(string header,
             Dictionary<string, string> values,
-            IPEndPoint endpoint,
-            IPEndPoint localAddress,
+            EndPoint endpoint,
+            EndPoint localAddress,
             int sendCount = 1)
         {
             var msg = new SsdpMessageBuilder().BuildMessage(header, values);
 
             var dgram = new Datagram(endpoint, localAddress, _logger, msg, sendCount);
+
             if (_messageQueue.Count == 0)
             {
                 dgram.Send();
@@ -146,7 +147,7 @@ namespace MediaBrowser.Dlna.Ssdp
             StartQueueTimer();
         }
 
-        private void RespondToSearch(IPEndPoint endpoint, string deviceType)
+        private void RespondToSearch(EndPoint endpoint, string deviceType)
         {
             if (_config.GetDlnaConfiguration().EnableDebugLogging)
             {
@@ -170,7 +171,7 @@ namespace MediaBrowser.Dlna.Ssdp
                     values["ST"] = d.Type;
                     values["USN"] = d.USN;
 
-                    SendDatagram(header, values, endpoint, new IPEndPoint(d.Address, 0));
+                    SendDatagram(header, values, endpoint, null);
 
                     if (_config.GetDlnaConfiguration().EnableDebugLogging)
                     {
@@ -266,7 +267,8 @@ namespace MediaBrowser.Dlna.Ssdp
                     _logger.Debug(Encoding.ASCII.GetString(received));
                 }
 
-                var args = SsdpHelper.ParseSsdpResponse(received, (IPEndPoint)endpoint);
+                var args = SsdpHelper.ParseSsdpResponse(received);
+                args.EndPoint = endpoint;
 
                 if (_config.GetDlnaConfiguration().EnableDebugLogging)
                 {

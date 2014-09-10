@@ -1,4 +1,5 @@
-﻿using MediaBrowser.Model.Entities;
+﻿using MediaBrowser.Model.Drawing;
+using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Extensions;
 using MediaBrowser.Model.Library;
 using MediaBrowser.Model.Providers;
@@ -720,6 +721,21 @@ namespace MediaBrowser.Model.Dto
         /// </summary>
         /// <value><c>true</c> if [enable internet providers]; otherwise, <c>false</c>.</value>
         public bool? LockData { get; set; }
+
+        public int? Width { get; set; }
+        public int? Height { get; set; }
+        public string CameraMake { get; set; }
+        public string CameraModel { get; set; }
+        public string Software { get; set; }
+        public double? ExposureTime { get; set; }
+        public double? FocalLength { get; set; }
+        public ImageOrientation? ImageOrientation { get; set; }
+        public double? Aperture { get; set; }
+        public double? ShutterSpeed { get; set; }
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+        public double? Altitude { get; set; }
+        public int? IsoSpeedRating { get; set; }
 
         /// <summary>
         /// Gets a value indicating whether this instance can resume.

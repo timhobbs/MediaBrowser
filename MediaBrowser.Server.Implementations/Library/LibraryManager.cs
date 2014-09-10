@@ -861,13 +861,7 @@ namespace MediaBrowser.Server.Implementations.Library
 
             if (!fileInfo.Exists)
             {
-                Directory.CreateDirectory(path);
-                fileInfo = new DirectoryInfo(path);
-
-                if (!fileInfo.Exists)
-                {
-                    throw new IOException("Path not created: " + path);
-                }
+                fileInfo = Directory.CreateDirectory(path);
 
                 isNew = true;
             }
@@ -1470,33 +1464,31 @@ namespace MediaBrowser.Server.Implementations.Library
             return collectionTypes.Count == 1 ? collectionTypes[0] : null;
         }
 
-
-        public IEnumerable<string> GetAllArtists()
+        public Task<UserView> GetNamedView(string name, string type, string sortName, CancellationToken cancellationToken)
         {
-            return GetAllArtists(RootFolder.RecursiveChildren);
+            return GetNamedView(name, null, type, sortName, cancellationToken);
         }
 
-        public IEnumerable<string> GetAllArtists(IEnumerable<BaseItem> items)
-        {
-            return items
-                .OfType<Audio>()
-                .SelectMany(i => i.AllArtists)
-                .Distinct(StringComparer.OrdinalIgnoreCase);
-        }
-
-        public async Task<UserView> GetNamedView(string name, string type, string sortName, CancellationToken cancellationToken)
+        public async Task<UserView> GetNamedView(string name, string category, string type, string sortName, CancellationToken cancellationToken)
         {
             var path = Path.Combine(ConfigurationManager.ApplicationPaths.ItemsByNamePath,
-                "views",
-                _fileSystem.GetValidFilename(type));
+                "views");
+
+            if (!string.IsNullOrWhiteSpace(category))
+            {
+                path = Path.Combine(path, _fileSystem.GetValidFilename(category));
+            }
+
+            path = Path.Combine(path, _fileSystem.GetValidFilename(type));
 
             var id = (path + "_namedview_" + name).GetMBId(typeof(UserView));
 
             var item = GetItemById(id) as UserView;
-            
-            if (item == null)
+
+            if (item == null || 
+                !string.Equals(item.Path, path, StringComparison.OrdinalIgnoreCase))
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                Directory.CreateDirectory(path);
 
                 item = new UserView
                 {

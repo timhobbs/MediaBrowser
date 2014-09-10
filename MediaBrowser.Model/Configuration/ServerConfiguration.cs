@@ -1,8 +1,6 @@
 ﻿using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.FileOrganization;
 using MediaBrowser.Model.LiveTv;
-using MediaBrowser.Model.Notifications;
-using MediaBrowser.Model.Providers;
 
 namespace MediaBrowser.Model.Configuration
 {
@@ -162,7 +160,6 @@ namespace MediaBrowser.Model.Configuration
         public bool EnableAutomaticRestart { get; set; }
 
         public TvFileOrganizationOptions TvFileOrganizationOptions { get; set; }
-        public LiveTvOptions LiveTvOptions { get; set; }
 
         public bool EnableRealtimeMonitor { get; set; }
         public PathSubstitution[] PathSubstitutions { get; set; }
@@ -178,8 +175,11 @@ namespace MediaBrowser.Model.Configuration
 
         public bool DefaultMetadataSettingsApplied { get; set; }
 
-        public bool EnableTokenAuthentication { get; set; }
         public PeopleMetadataOptions PeopleMetadataOptions { get; set; }
+
+        public string[] SecureApps1 { get; set; }
+
+        public bool SaveMetadataHidden { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServerConfiguration" /> class.
@@ -206,7 +206,7 @@ namespace MediaBrowser.Model.Configuration
 
             RealtimeMonitorDelay = 30;
 
-            EnableInternetProviders = true; //initial installs will need these
+            EnableInternetProviders = true; 
 
             PathSubstitutions = new PathSubstitution[] { };
 
@@ -224,6 +224,17 @@ namespace MediaBrowser.Model.Configuration
             UICulture = "en-us";
 
             PeopleMetadataOptions = new PeopleMetadataOptions();
+
+            SecureApps1 = new[]
+            {
+                "Dashboard",
+                "MBKinect",
+                "NuVue",
+                "Media Browser Theater",
+
+                //"Chrome Companion",
+                //"MB-Classic"
+            };
 
             MetadataOptions = new[]
             {

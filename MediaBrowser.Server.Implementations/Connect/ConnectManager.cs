@@ -5,6 +5,7 @@ using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Connect;
 using MediaBrowser.Controller.Security;
 using MediaBrowser.Model.Logging;
+using MediaBrowser.Model.Net;
 using MediaBrowser.Model.Serialization;
 using System;
 using System.Collections.Generic;
@@ -30,8 +31,23 @@ namespace MediaBrowser.Server.Implementations.Connect
         public string ConnectServerId { get; set; }
         public string ConnectAccessKey { get; set; }
 
-        public string WanIpAddress { get; private set; }
+        public string DiscoveredWanIpAddress { get; private set; }
 
+        public string WanIpAddress
+        {
+            get
+            {
+                var address = _config.Configuration.WanDdns;
+
+                if (string.IsNullOrWhiteSpace(address))
+                {
+                    address = DiscoveredWanIpAddress;
+                }
+
+                return address;
+            }
+        }
+        
         public string WanApiAddress
         {
             get
@@ -74,9 +90,9 @@ namespace MediaBrowser.Server.Implementations.Connect
 
         internal void OnWanAddressResolved(string address)
         {
-            WanIpAddress = address;
+            DiscoveredWanIpAddress = address;
 
-            UpdateConnectInfo();
+            //UpdateConnectInfo();
         }
 
         private async void UpdateConnectInfo()
@@ -94,13 +110,28 @@ namespace MediaBrowser.Server.Implementations.Connect
                 var hasExistingRecord = !string.IsNullOrWhiteSpace(ConnectServerId) &&
                                   !string.IsNullOrWhiteSpace(ConnectAccessKey);
 
+                var createNewRegistration = !hasExistingRecord;
+
                 if (hasExistingRecord)
                 {
-                    //await UpdateServerRegistration(wanApiAddress).ConfigureAwait(false);
+                    try
+                    {
+                        await UpdateServerRegistration(wanApiAddress).ConfigureAwait(false);
+                    }
+                    catch (HttpException ex)
+                    {
+                        if (!ex.StatusCode.HasValue || ex.StatusCode.Value != HttpStatusCode.NotFound || ex.StatusCode.Value != HttpStatusCode.Unauthorized)
+                        {
+                            throw;
+                        }
+
+                        createNewRegistration = true;
+                    }
                 }
-                else
+
+                if (createNewRegistration)
                 {
-                    //await CreateServerRegistration(wanApiAddress).ConfigureAwait(false);
+                    await CreateServerRegistration(wanApiAddress).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
@@ -113,10 +144,15 @@ namespace MediaBrowser.Server.Implementations.Connect
         {
             var url = "Servers";
             url = GetConnectUrl(url);
-            url += "?Name=" + WebUtility.UrlEncode(_appHost.FriendlyName);
-            url += "&Url=" + WebUtility.UrlEncode(wanApiAddress);
 
-            using (var stream = await _httpClient.Post(url, new Dictionary<string, string>(), CancellationToken.None).ConfigureAwait(false))
+            var postData = new Dictionary<string, string>
+            {
+                {"name", _appHost.FriendlyName}, 
+                {"url", wanApiAddress}, 
+                {"systemid", _appHost.SystemId}
+            };
+
+            using (var stream = await _httpClient.Post(url, postData, CancellationToken.None).ConfigureAwait(false))
             {
                 var data = _json.DeserializeFromStream<ServerRegistrationResponse>(stream);
 
@@ -129,15 +165,27 @@ namespace MediaBrowser.Server.Implementations.Connect
 
         private async Task UpdateServerRegistration(string wanApiAddress)
         {
-            var url = "Servers/" + ConnectServerId;
+            var url = "Servers";
             url = GetConnectUrl(url);
-            url += "?Name=" + WebUtility.UrlEncode(_appHost.FriendlyName);
-            url += "&Url=" + WebUtility.UrlEncode(wanApiAddress);
+            url += "?id=" + ConnectServerId;
 
-            // TODO: Add AccessKey http request header
+            var options = new HttpRequestOptions
+            {
+                Url = url,
+                CancellationToken = CancellationToken.None
+            };
+
+            options.SetPostData(new Dictionary<string, string>
+            {
+                {"name", _appHost.FriendlyName}, 
+                {"url", wanApiAddress}, 
+                {"systemid", _appHost.SystemId}
+            });
+
+            options.RequestHeaders.Add("X-Connect-Token", ConnectAccessKey);
 
             // No need to examine the response
-            using (var stream = await _httpClient.Post(url, new Dictionary<string, string>(), CancellationToken.None).ConfigureAwait(false))
+            using (var stream = (await _httpClient.Post(options).ConfigureAwait(false)).Content)
             {
             }
         }
@@ -198,7 +246,7 @@ namespace MediaBrowser.Server.Implementations.Connect
 
         private string GetConnectUrl(string handler)
         {
-            return "http://mb3admin.com/admin/connect/" + handler;
+            return "http://mb3admin.com/test/connect/" + handler;
         }
     }
 }

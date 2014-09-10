@@ -68,6 +68,9 @@ namespace MediaBrowser.Api.Playback
 
         public long? RunTimeTicks;
 
+        public long? InputBitrate { get; set; }
+        public long? InputFileSize { get; set; }
+
         public string OutputAudioSync = "1";
         public string OutputVideoSync = "vfr";
 
@@ -258,6 +261,19 @@ namespace MediaBrowser.Api.Playback
             {
                 var stream = VideoStream;
                 return stream == null || !Request.Static ? null : stream.BitDepth;
+            }
+        }
+
+        /// <summary>
+        /// Gets the target reference frames.
+        /// </summary>
+        /// <value>The target reference frames.</value>
+        public int? TargetRefFrames
+        {
+            get
+            {
+                var stream = VideoStream;
+                return stream == null || !Request.Static ? null : stream.RefFrames;
             }
         }
 

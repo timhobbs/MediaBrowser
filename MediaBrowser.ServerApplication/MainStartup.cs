@@ -207,7 +207,7 @@ namespace MediaBrowser.ServerApplication
         /// <param name="runService">if set to <c>true</c> [run service].</param>
         private static void RunApplication(ServerApplicationPaths appPaths, ILogManager logManager, bool runService)
         {
-            _appHost = new ApplicationHost(appPaths, logManager, runService);
+            _appHost = new ApplicationHost(appPaths, logManager, true, runService);
 
             var initProgress = new Progress<double>();
 
@@ -249,7 +249,7 @@ namespace MediaBrowser.ServerApplication
         {
             //Application.EnableVisualStyles();
             //Application.SetCompatibleTextRenderingDefault(false);
-            _serverNotifyIcon = new ServerNotifyIcon(_appHost.LogManager, _appHost, _appHost.ServerConfigurationManager, _appHost.UserManager, _appHost.LibraryManager, _appHost.JsonSerializer, _appHost.ItemRepository, _appHost.LocalizationManager);
+            _serverNotifyIcon = new ServerNotifyIcon(_appHost.LogManager, _appHost, _appHost.ServerConfigurationManager, _appHost.UserManager, _appHost.LibraryManager, _appHost.JsonSerializer, _appHost.LocalizationManager, _appHost.UserViewManager);
             Application.Run();
         }
 

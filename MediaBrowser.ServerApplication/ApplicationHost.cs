@@ -4,6 +4,7 @@ using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Events;
 using MediaBrowser.Common.Extensions;
 using MediaBrowser.Common.Implementations;
+using MediaBrowser.Common.Implementations.Devices;
 using MediaBrowser.Common.Implementations.ScheduledTasks;
 using MediaBrowser.Common.IO;
 using MediaBrowser.Common.Net;
@@ -38,6 +39,7 @@ using MediaBrowser.Controller.Sorting;
 using MediaBrowser.Controller.Subtitles;
 using MediaBrowser.Controller.Sync;
 using MediaBrowser.Controller.Themes;
+using MediaBrowser.Controller.TV;
 using MediaBrowser.Dlna;
 using MediaBrowser.Dlna.ConnectionManager;
 using MediaBrowser.Dlna.ContentDirectory;
@@ -79,6 +81,7 @@ using MediaBrowser.Server.Implementations.ServerManager;
 using MediaBrowser.Server.Implementations.Session;
 using MediaBrowser.Server.Implementations.Sync;
 using MediaBrowser.Server.Implementations.Themes;
+using MediaBrowser.Server.Implementations.TV;
 using MediaBrowser.ServerApplication.FFMpeg;
 using MediaBrowser.ServerApplication.IO;
 using MediaBrowser.ServerApplication.Native;
@@ -213,21 +216,24 @@ namespace MediaBrowser.ServerApplication
         private ISubtitleManager SubtitleManager { get; set; }
         private IChapterManager ChapterManager { get; set; }
 
-        private IUserViewManager UserViewManager { get; set; }
+        internal IUserViewManager UserViewManager { get; set; }
 
         private IAuthenticationRepository AuthenticationRepository { get; set; }
         private ISyncRepository SyncRepository { get; set; }
+        private ITVSeriesManager TVSeriesManager { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ApplicationHost" /> class.
         /// </summary>
         /// <param name="applicationPaths">The application paths.</param>
         /// <param name="logManager">The log manager.</param>
+        /// <param name="supportsRunningAsService">if set to <c>true</c> [supports running as service].</param>
         /// <param name="isRunningAsService">if set to <c>true</c> [is running as service].</param>
-        public ApplicationHost(ServerApplicationPaths applicationPaths, ILogManager logManager, bool isRunningAsService)
+        public ApplicationHost(ServerApplicationPaths applicationPaths, ILogManager logManager, bool supportsRunningAsService, bool isRunningAsService)
             : base(applicationPaths, logManager)
         {
             _isRunningAsService = isRunningAsService;
+            SupportsRunningAsService = supportsRunningAsService;
         }
 
         private readonly bool _isRunningAsService;
@@ -235,6 +241,8 @@ namespace MediaBrowser.ServerApplication
         {
             get { return _isRunningAsService; }
         }
+
+        public bool SupportsRunningAsService { get; private set; }
 
         /// <summary>
         /// Gets the name.
@@ -304,20 +312,6 @@ namespace MediaBrowser.ServerApplication
         private void MigrateModularConfigurations()
         {
             var saveConfig = false;
-
-            if (ServerConfigurationManager.Configuration.DlnaOptions != null)
-            {
-                ServerConfigurationManager.SaveConfiguration("dlna", ServerConfigurationManager.Configuration.DlnaOptions);
-                ServerConfigurationManager.Configuration.DlnaOptions = null;
-                saveConfig = true;
-            }
-
-            if (ServerConfigurationManager.Configuration.LiveTvOptions != null)
-            {
-                ServerConfigurationManager.SaveConfiguration("livetv", ServerConfigurationManager.Configuration.LiveTvOptions);
-                ServerConfigurationManager.Configuration.LiveTvOptions = null;
-                saveConfig = true;
-            }
 
             if (ServerConfigurationManager.Configuration.TvFileOrganizationOptions != null)
             {
@@ -480,6 +474,9 @@ namespace MediaBrowser.ServerApplication
             ChannelManager = new ChannelManager(UserManager, DtoService, LibraryManager, Logger, ServerConfigurationManager, FileSystemManager, UserDataManager, JsonSerializer, LocalizationManager);
             RegisterSingleInstance(ChannelManager);
 
+            TVSeriesManager = new TVSeriesManager(UserManager, UserDataManager, LibraryManager);
+            RegisterSingleInstance(TVSeriesManager);
+
             var appThemeManager = new AppThemeManager(ApplicationPaths, FileSystemManager, JsonSerializer, Logger);
             RegisterSingleInstance<IAppThemeManager>(appThemeManager);
 
@@ -501,7 +498,7 @@ namespace MediaBrowser.ServerApplication
             UserViewManager = new UserViewManager(LibraryManager, LocalizationManager, FileSystemManager, UserManager, ChannelManager, LiveTvManager, ApplicationPaths, playlistManager);
             RegisterSingleInstance(UserViewManager);
 
-            var contentDirectory = new ContentDirectory(dlnaManager, UserDataManager, ImageProcessor, LibraryManager, ServerConfigurationManager, UserManager, LogManager.GetLogger("UpnpContentDirectory"), HttpClient, UserViewManager, ChannelManager);
+            var contentDirectory = new ContentDirectory(dlnaManager, UserDataManager, ImageProcessor, LibraryManager, ServerConfigurationManager, UserManager, LogManager.GetLogger("UpnpContentDirectory"), HttpClient);
             RegisterSingleInstance<IContentDirectory>(contentDirectory);
 
             NotificationManager = new NotificationManager(LogManager, UserManager, ServerConfigurationManager);
@@ -696,9 +693,10 @@ namespace MediaBrowser.ServerApplication
             Folder.UserManager = UserManager;
             BaseItem.FileSystem = FileSystemManager;
             BaseItem.UserDataManager = UserDataManager;
-            ChannelVideoItem.ChannelManager = ChannelManager;
+            BaseItem.ChannelManager = ChannelManager;
             BaseItem.LiveTvManager = LiveTvManager;
-            UserView.UserViewManager = UserViewManager;
+            Folder.UserViewManager = UserViewManager;
+            UserView.TVSeriesManager = TVSeriesManager;
         }
 
         /// <summary>
@@ -910,13 +908,6 @@ namespace MediaBrowser.ServerApplication
             }
         }
 
-        private readonly string _systemId = Environment.MachineName.GetMD5().ToString();
-
-        public string ServerId
-        {
-            get { return _systemId; }
-        }
-
         /// <summary>
         /// Gets the system status.
         /// </summary>
@@ -933,7 +924,7 @@ namespace MediaBrowser.ServerApplication
                 FailedPluginAssemblies = FailedAssemblies.ToList(),
                 InProgressInstallations = InstallationManager.CurrentInstallations.Select(i => i.Item1).ToList(),
                 CompletedInstallations = InstallationManager.CompletedInstallations.ToList(),
-                Id = ServerId,
+                Id = SystemId,
                 ProgramDataPath = ApplicationPaths.ProgramDataPath,
                 LogPath = ApplicationPaths.LogDirectoryPath,
                 ItemsByNamePath = ApplicationPaths.ItemsByNamePath,
@@ -949,6 +940,7 @@ namespace MediaBrowser.ServerApplication
                 SupportsAutoRunAtStartup = SupportsAutoRunAtStartup,
                 TranscodingTempPath = ApplicationPaths.TranscodingTempPath,
                 IsRunningAsService = IsRunningAsService,
+                SupportsRunningAsService = SupportsRunningAsService,
                 ServerName = FriendlyName,
                 LocalAddress = GetLocalIpAddress()
             };

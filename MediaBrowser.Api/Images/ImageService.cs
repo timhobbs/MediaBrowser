@@ -39,8 +39,8 @@ namespace MediaBrowser.Api.Images
 
     [Route("/Items/{Id}/Images/{Type}", "GET")]
     [Route("/Items/{Id}/Images/{Type}/{Index}", "GET")]
-    [Route("/Items/{Id}/Images/{Type}/{Index}/{Tag}/{Format}/{MaxWidth}/{MaxHeight}", "GET")]
-    [Route("/Items/{Id}/Images/{Type}/{Index}/{Tag}/{Format}/{MaxWidth}/{MaxHeight}", "HEAD")]
+    [Route("/Items/{Id}/Images/{Type}/{Index}/{Tag}/{Format}/{MaxWidth}/{MaxHeight}/{PercentPlayed}", "GET")]
+    [Route("/Items/{Id}/Images/{Type}/{Index}/{Tag}/{Format}/{MaxWidth}/{MaxHeight}/{PercentPlayed}", "HEAD")]
     [Api(Description = "Gets an item image")]
     public class GetItemImage : ImageRequest
     {
@@ -361,7 +361,7 @@ namespace MediaBrowser.Api.Images
         /// <returns>System.Object.</returns>
         public object Get(GetItemImage request)
         {
-            var item = string.IsNullOrEmpty(request.Id) ? 
+            var item = string.IsNullOrEmpty(request.Id) ?
                 _libraryManager.RootFolder :
                 _libraryManager.GetItemById(request.Id);
 
@@ -542,24 +542,24 @@ namespace MediaBrowser.Api.Images
                 {"realTimeInfo.dlna.org", "DLNA.ORG_TLAG=*"}
             };
 
-            return GetImageResult(item, 
-                request, 
-                imageInfo, 
-                supportedImageEnhancers, 
-                contentType, 
+            return GetImageResult(item,
+                request,
+                imageInfo,
+                supportedImageEnhancers,
+                contentType,
                 cacheDuration,
                 responseHeaders,
                 isHeadRequest)
                 .Result;
         }
 
-        private async Task<object> GetImageResult(IHasImages item, 
+        private async Task<object> GetImageResult(IHasImages item,
             ImageRequest request,
             ItemImageInfo image,
             List<IImageEnhancer> enhancers,
             string contentType,
             TimeSpan? cacheDuration,
-            IDictionary<string,string> headers,
+            IDictionary<string, string> headers,
             bool isHeadRequest)
         {
             var cropwhitespace = request.Type == ImageType.Logo || request.Type == ImageType.Art;
@@ -583,14 +583,21 @@ namespace MediaBrowser.Api.Images
                 Width = request.Width,
                 OutputFormat = request.Format,
                 AddPlayedIndicator = request.AddPlayedIndicator,
-                PercentPlayed = request.PercentPlayed,
+                PercentPlayed = request.PercentPlayed ?? 0,
                 UnplayedCount = request.UnplayedCount,
                 BackgroundColor = request.BackgroundColor
             };
 
             var file = await _imageProcessor.ProcessImage(options).ConfigureAwait(false);
 
-            return ResultFactory.GetStaticFileResult(Request, file, contentType, cacheDuration, FileShare.Read, headers, isHeadRequest);
+            return ResultFactory.GetStaticFileResult(Request, new StaticFileResultOptions
+            {
+                CacheDuration = cacheDuration,
+                ResponseHeaders = headers,
+                ContentType = contentType,
+                IsHeadRequest = isHeadRequest,
+                Path = file
+            });
         }
 
         private string GetMimeType(ImageOutputFormat format, string path)

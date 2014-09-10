@@ -3,7 +3,6 @@ using MediaBrowser.Model.Logging;
 using ServiceStack;
 using ServiceStack.Web;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,20 +14,16 @@ namespace MediaBrowser.Server.Implementations.HttpServer.SocketSharp
 {
     public class WebSocketSharpListener : IHttpListener
     {
-        private readonly ConcurrentDictionary<string, string> _localEndPoints = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        private WebSocketSharp.Net.HttpListener _listener;
-        private readonly AutoResetEvent _listenForNextRequest = new AutoResetEvent(false);
+        private HttpListener _listener;
+        private readonly ManualResetEventSlim _listenForNextRequest = new ManualResetEventSlim(false);
 
         private readonly ILogger _logger;
+        private readonly Action<string> _endpointListener;
 
-        public WebSocketSharpListener(ILogger logger)
+        public WebSocketSharpListener(ILogger logger, Action<string> endpointListener)
         {
             _logger = logger;
-        }
-
-        public IEnumerable<string> LocalEndPoints
-        {
-            get { return _localEndPoints.Keys.ToList(); }
+            _endpointListener = endpointListener;
         }
 
         public Action<Exception, IRequest> ErrorHandler { get; set; }
@@ -40,7 +35,7 @@ namespace MediaBrowser.Server.Implementations.HttpServer.SocketSharp
         public void Start(IEnumerable<string> urlPrefixes)
         {
             if (_listener == null)
-                _listener = new WebSocketSharp.Net.HttpListener();
+                _listener = new HttpListener(new SocketSharpLogger(_logger));
 
             foreach (var prefix in urlPrefixes)
             {
@@ -64,11 +59,12 @@ namespace MediaBrowser.Server.Implementations.HttpServer.SocketSharp
             while (IsListening)
             {
                 if (_listener == null) return;
+                _listenForNextRequest.Reset();
 
                 try
                 {
                     _listener.BeginGetContext(ListenerCallback, _listener);
-                    _listenForNextRequest.WaitOne();
+                    _listenForNextRequest.Wait();
                 }
                 catch (Exception ex)
                 {
@@ -82,6 +78,8 @@ namespace MediaBrowser.Server.Implementations.HttpServer.SocketSharp
         // Handle the processing of a request in here.
         private void ListenerCallback(IAsyncResult asyncResult)
         {
+            _listenForNextRequest.Set();
+            
             var listener = asyncResult.AsyncState as HttpListener;
             HttpListenerContext context;
 
@@ -107,14 +105,6 @@ namespace MediaBrowser.Server.Implementations.HttpServer.SocketSharp
                 var errMsg = ex + ": " + IsListening;
                 _logger.Warn(errMsg);
                 return;
-            }
-            finally
-            {
-                // Once we know we have a request (or exception), we signal the other thread
-                // so that it calls the BeginGetContext() (or possibly exits if we're not
-                // listening any more) method to start handling the next incoming request
-                // while we continue to process this request on a different thread.
-                _listenForNextRequest.Set();
             }
 
             Task.Factory.StartNew(() => InitTask(context));
@@ -170,7 +160,7 @@ namespace MediaBrowser.Server.Implementations.HttpServer.SocketSharp
             {
                 var address = endpoint.ToString();
 
-                _localEndPoints.GetOrAdd(address, address);
+                _endpointListener(address);
             }
 
             LogRequest(_logger, request);
@@ -218,9 +208,9 @@ namespace MediaBrowser.Server.Implementations.HttpServer.SocketSharp
         {
             var log = new StringBuilder();
 
-            //var headers = string.Join(",", request.Headers.AllKeys.Where(i => !string.Equals(i, "cookie", StringComparison.OrdinalIgnoreCase) && !string.Equals(i, "Referer", StringComparison.OrdinalIgnoreCase)).Select(k => k + "=" + request.Headers[k]));
+            var headers = string.Join(",", request.Headers.AllKeys.Where(i => !string.Equals(i, "cookie", StringComparison.OrdinalIgnoreCase) && !string.Equals(i, "Referer", StringComparison.OrdinalIgnoreCase)).Select(k => k + "=" + request.Headers[k]));
 
-            //log.AppendLine("Ip: " + request.RemoteEndPoint + ". Headers: " + headers);
+            log.AppendLine("Ip: " + request.RemoteEndPoint + ". Headers: " + headers);
 
             var type = request.IsWebSocketRequest ? "Web Socket" : "HTTP " + request.HttpMethod;
 

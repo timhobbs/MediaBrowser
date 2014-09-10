@@ -2,13 +2,13 @@
 
     function setMirrorModeEnabled(enabled) {
 
-        var val = enabled ? '1' : '';
+        var val = enabled ? '1' : '0';
 
-        store.setItem('displaymirror-' + Dashboard.getCurrentUserId(), val);
+        store.setItem('displaymirror--' + Dashboard.getCurrentUserId(), val);
 
     }
     function isMirrorModeEnabled() {
-        return (store.getItem('displaymirror-' + Dashboard.getCurrentUserId()) || '') == '1';
+        return (store.getItem('displaymirror--' + Dashboard.getCurrentUserId()) || '') != '0';
     }
 
     var currentDisplayInfo;
@@ -490,6 +490,7 @@
         html += '<p class="fieldDescription">' + Globalize.translate('LabelAllPlaysSentToPlayer') + '</p>';
 
         checkedHtml = isMirrorModeEnabled() ? ' checked="checked"' : '';
+
         html += '<div style="margin-top:1.5em;" class="fldMirrorMode"><label for="chkEnableMirrorMode">Enable display mirroring</label><input type="checkbox" class="chkEnableMirrorMode" id="chkEnableMirrorMode" data-mini="true"' + checkedHtml + ' /></div>';
 
         html += '</form>';
@@ -521,7 +522,7 @@
 
             $('.players', elem).html(getTargetsHtml(targets)).trigger('create');
 
-            $('.chkEnableMirrorMode', elem).on().on('change', function () {
+            $('.chkEnableMirrorMode', elem).on('change', function () {
                 setMirrorModeEnabled(this.checked);
 
                 if (this.checked && currentDisplayInfo) {
